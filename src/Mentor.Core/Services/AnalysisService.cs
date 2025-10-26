@@ -1,17 +1,23 @@
-using System.Text.Json;
+using System.ComponentModel;
+using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Mentor.Core.Services;
 
 public class AnalysisService : IAnalysisService
 {
-    private readonly IChatClient _chatClient;
+    private readonly ILLMClient _llmClient;
+    private readonly IWebsearch _websearch;
+    private readonly ILogger<AnalysisService> _logger;
 
-    public AnalysisService(IChatClient chatClient)
+    public AnalysisService(ILLMClient llmClient, IWebsearch websearch, ILogger<AnalysisService> logger)
     {
-        _chatClient = chatClient;
+        _llmClient = llmClient ?? throw new ArgumentNullException(nameof(llmClient));
+        _websearch = websearch;
+        _logger = logger;
     }
 
     public async Task<Recommendation> AnalyzeAsync(
@@ -26,10 +32,14 @@ public class AnalysisService : IAnalysisService
         // Build the chat messages with image content
         var systemMessage = new ChatMessage(ChatRole.System,
             "You are an expert game advisor. Analyze the provided screenshot and provide actionable recommendations. " +
-            "Return your response as JSON with the following structure: " +
-            "{ \"analysis\": \"detailed analysis\", \"summary\": \"brief summary\", " +
-            "\"recommendations\": [{ \"priority\": \"High|Medium|Low\", \"action\": \"what to do\", " +
-            "\"reasoning\": \"why\", \"context\": \"relevant context\" }], \"confidence\": 0.0-1.0 }");
+            "Backup your analysis with relevant web search results when necessary. " +
+            "Backup your recommendations using web search results");
+        
+        // should not be required as we request a structured response
+        // "Return your response as JSON with the following structure: " +
+        //     "{ \"analysis\": \"detailed analysis\", \"summary\": \"brief summary\", " +
+        //     "\"recommendations\": [{ \"priority\": \"High|Medium|Low\", \"action\": \"what to do\", " +
+        //     "\"reasoning\": \"why\", \"context\": \"relevant context\" }], \"confidence\": 0.0-1.0 }");
 
         var memoryStream = new ReadOnlyMemory<byte>(request.ImageData);
         var userImage = new DataContent(memoryStream, "image/png");
@@ -39,8 +49,24 @@ public class AnalysisService : IAnalysisService
         var messages = new List<ChatMessage> { systemMessage, userMessage };
 
         // Call the LLM
-        var options = new ChatOptions();
-        var completion = await _chatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken: cancellationToken);
+        [Description("Tool to perform web searches")]
+        string SearchTheWeb(string query)
+        {
+            _logger.LogInformation("Performing web search for query: {Query}", query);
+            return _websearch.Search(query, SearchOutputFormat.Summary, 5).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+        
+        IList<AITool> tools = [ AIFunctionFactory.Create(SearchTheWeb) ]; 
+        var options = new ChatOptions()
+        {
+            ToolMode = ChatToolMode.RequireAny, 
+        };
+        if (_llmClient.Configuration.UseWebSearchTool)
+        {
+            options.Tools = tools;
+        }
+
+        var completion = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken: cancellationToken);
 
         // Parse the response
         var jsonResponse = completion.Result;

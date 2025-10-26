@@ -1,6 +1,6 @@
 using Mentor.Core.Models;
 
-namespace Mentor.Core.Services;
+namespace Mentor.Core.Interfaces;
 
 public interface IAnalysisService
 {

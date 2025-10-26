@@ -5,7 +5,7 @@ using Mentor.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Mentor.Core.Services;
+namespace Mentor.Core.Interfaces;
 
 public interface IWebsearch
 {

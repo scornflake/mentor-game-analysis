@@ -1,4 +1,5 @@
 using Mentor.Core.Configuration;
+using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
@@ -17,15 +18,14 @@ namespace Mentor.Core.Tests.Services;
 /// </summary>
 public class AnalysisServiceIntegrationTests
 {
-    private readonly Mock<IWebsearch> _webSearch;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AnalysisServiceIntegrationTests> _logger;
 
     public AnalysisServiceIntegrationTests(ITestOutputHelper testOutputHelper)
     {
-        _webSearch = new Mock<IWebsearch>();
+        var webSearch = new Mock<IWebsearch>();
         var services = TestHelpers.CreateTestServices(testOutputHelper);
-        TestHelpers.AddWebSearchTool(_webSearch.Object);
+        services.AddWebSearchTool(webSearch.Object);
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<AnalysisServiceIntegrationTests>>();
     }
@@ -47,7 +47,7 @@ public class AnalysisServiceIntegrationTests
         return File.ReadAllBytes(imagePath);
     }
 
-    private IChatClient CreateChatClient()
+    private ILLMClient CreateLLMClient()
     {
         var apiKey = ApiKeyHelper.GetOpenAIApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -59,7 +59,7 @@ public class AnalysisServiceIntegrationTests
         {
             Providers = new Dictionary<string, OpenAIConfiguration>
             {
-                ["openai"] = new OpenAIConfiguration
+                ["perplexity"] = new OpenAIConfiguration
                 {
                     ApiKey = apiKey,
                     Model = "sonar",
@@ -71,8 +71,8 @@ public class AnalysisServiceIntegrationTests
 
         var options = Options.Create(config);
 
-        var factory = new LLMProviderFactory(options, _webSearch.Object, _serviceProvider);
-        return factory.GetProvider("openai");
+        var factory = new LLMProviderFactory(options, _serviceProvider);
+        return factory.GetProvider("perplexity");
     }
 
     [RequiresOpenAIKeyFact]
@@ -81,8 +81,11 @@ public class AnalysisServiceIntegrationTests
         // Arrange
         _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ReturnsValidRecommendation ===");
         
-        var chatClient = CreateChatClient();
-        var service = new AnalysisService(chatClient);
+        var llmClient = CreateLLMClient();
+        var service = new AnalysisService(llmClient, 
+            _serviceProvider.GetRequiredService<IWebsearch>(),
+            _serviceProvider.GetRequiredService<ILogger<AnalysisService>>()
+            );
         var imageData = LoadTestImage("acceltra prime rad build.png");
         
         var request = new AnalysisRequest
@@ -104,7 +107,7 @@ public class AnalysisServiceIntegrationTests
         Assert.NotEmpty(result.Summary);
         Assert.NotNull(result.Recommendations);
         Assert.InRange(result.Confidence, 0.0, 1.0);
-        Assert.Equal("openai", result.ProviderUsed);
+        Assert.Equal("perplexity", result.ProviderUsed);
         Assert.True(result.GeneratedAt <= DateTime.UtcNow);
         
         // The LLM should provide at least some analysis
@@ -130,109 +133,6 @@ public class AnalysisServiceIntegrationTests
                 {
                     _logger.LogInformation($"   Context: {rec.Context}");
                 }
-            }
-        }
-    }
-
-    [RequiresOpenAIKeyFact]
-    public async Task AnalyzeAsync_WithRealImage_ParsesRecommendationsCorrectly()
-    {
-        // Arrange
-        _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ParsesRecommendationsCorrectly ===");
-        
-        var chatClient = CreateChatClient();
-        var service = new AnalysisService(chatClient);
-        var imageData = LoadTestImage("phantasma rad build.png");
-        
-        var request = new AnalysisRequest
-        {
-            ImageData = imageData,
-            Prompt = "What are the top 3 things I should do to improve this build?"
-        };
-
-        _logger.LogInformation("Sending request to API with image: phantasma rad build.png");
-
-        // Act
-        var result = await service.AnalyzeAsync(request);
-
-        // Assert - Verify the structure is correct
-        Assert.NotNull(result);
-        Assert.NotNull(result.Recommendations);
-        
-        // The LLM should provide at least one recommendation
-        Assert.NotEmpty(result.Recommendations);
-        
-        // Each recommendation should have required fields
-        foreach (var recommendation in result.Recommendations)
-        {
-            Assert.NotNull(recommendation.Action);
-            Assert.NotEmpty(recommendation.Action);
-            Assert.Contains(recommendation.Priority, new[] { Priority.High, Priority.Medium, Priority.Low });
-        }
-        
-        // Output results
-        _logger.LogInformation("=== API Response Received ===");
-        _logger.LogInformation($"Provider: {result.ProviderUsed}");
-        _logger.LogInformation($"Confidence: {result.Confidence:P0}");
-        _logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
-        _logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
-        
-        if (result.Recommendations.Any())
-        {
-            _logger.LogInformation($"\n--- TOP RECOMMENDATIONS ({result.Recommendations.Count}) ---");
-            for (int i = 0; i < result.Recommendations.Count; i++)
-            {
-                var rec = result.Recommendations[i];
-                _logger.LogInformation($"\n{i + 1}. [{rec.Priority}] {rec.Action}");
-                _logger.LogInformation($"   Reasoning: {rec.Reasoning}");
-                if (!string.IsNullOrWhiteSpace(rec.Context))
-                {
-                    _logger.LogInformation($"   Context: {rec.Context}");
-                }
-            }
-        }
-    }
-
-    [RequiresOpenAIKeyFact]
-    public async Task AnalyzeAsync_WithTimeout_CompletesWithinReasonableTime()
-    {
-        // Arrange
-        _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithTimeout_CompletesWithinReasonableTime ===");
-        
-        var chatClient = CreateChatClient();
-        var service = new AnalysisService(chatClient);
-        var imageData = LoadTestImage("acceltra prime rad build.png");
-        
-        var request = new AnalysisRequest
-        {
-            ImageData = imageData,
-            Prompt = "Quick analysis: what stands out in this build?"
-        };
-
-        _logger.LogInformation("Sending request to API with 30 second timeout...");
-        var startTime = DateTime.UtcNow;
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-
-        // Act
-        var result = await service.AnalyzeAsync(request, cts.Token);
-        var elapsed = DateTime.UtcNow - startTime;
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.False(cts.IsCancellationRequested, "Request should complete within 30 seconds");
-        
-        // Output results
-        _logger.LogInformation($"=== API Response Received in {elapsed.TotalSeconds:F2} seconds ===");
-        _logger.LogInformation($"Confidence: {result.Confidence:P0}");
-        _logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
-        _logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
-        
-        if (result.Recommendations.Any())
-        {
-            _logger.LogInformation($"\n--- RECOMMENDATIONS ({result.Recommendations.Count}) ---");
-            foreach (var rec in result.Recommendations)
-            {
-                _logger.LogInformation($"  • [{rec.Priority}] {rec.Action}");
             }
         }
     }

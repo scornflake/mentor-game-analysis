@@ -1,4 +1,4 @@
-using Mentor.Core.Services;
+using Mentor.Core.Interfaces;
 using Mentor.Core.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,7 +7,23 @@ using Xunit.Abstractions;
 
 namespace Mentor.Core.Tests.Services;
 
-public class TestHelpers
+public static class TestServicesExtensions {
+    public static IServiceCollection AddWebSearchTool(this IServiceCollection services, IWebsearch? tool = null)
+    {
+        if(tool != null)
+        {
+            services.AddSingleton<IWebsearch>(tool);
+        }
+        else
+        {
+            services.AddHttpClient();
+            services.AddSingleton<IWebsearch, Websearch>();
+        }
+        return services;
+    }
+}
+
+public static class TestHelpers
 {
     public static IServiceCollection CreateTestServices(ITestOutputHelper _testOutputHelper)
     {
@@ -24,20 +40,6 @@ public class TestHelpers
         });
         services.AddSingleton(loggerFactory);
 
-        return services;
-    }
-    
-    public static IServiceCollection AddWebSearchTool(IWebsearch? tool = null)
-    {
-        var services = new ServiceCollection();
-        if(tool != null)
-        {
-            services.AddSingleton<IWebsearch>(tool);
-        }
-        else
-        {
-            services.AddSingleton<IWebsearch, Websearch>();
-        }
         return services;
     }
 }

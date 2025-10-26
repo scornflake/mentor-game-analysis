@@ -1,4 +1,5 @@
 using Mentor.Core.Configuration;
+using Mentor.Core.Interfaces;
 using Mentor.Core.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,21 +23,21 @@ public class LLMProviderFactoryTests
         
         // Create a service provider with logging support for the tests
         var services = TestHelpers.CreateTestServices(testOutputHelper);
-        TestHelpers.AddWebSearchTool(_websearchMock.Object);
+        services.AddWebSearchTool(_websearchMock.Object);
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<LLMProviderFactoryTests>>();
     }
 
     [Fact]
-    public void GetProvider_WithOpenAI_ReturnsChatClient()
+    public void GetProvider_WithOpenAI_ReturnsLLMClient()
     {
         // Arrange
         var config = new LLMConfiguration
         {
-            DefaultProvider = "openai",
+            DefaultProvider = "perplexity",
             Providers = new Dictionary<string, OpenAIConfiguration>
             {
-                ["openai"] = new OpenAIConfiguration
+                ["perplexity"] = new OpenAIConfiguration
                 {
                     ApiKey = "test-api-key",
                     Model = "sonar",
@@ -45,14 +46,19 @@ public class LLMProviderFactoryTests
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
 
         // Act
-        var provider = factory.GetProvider("openai");
+        var provider = factory.GetProvider("perplexity");
 
         // Assert
         Assert.NotNull(provider);
-        Assert.IsAssignableFrom<IChatClient>(provider);
+        Assert.IsAssignableFrom<ILLMClient>(provider);
+        Assert.NotNull(provider.ChatClient);
+        Assert.IsAssignableFrom<IChatClient>(provider.ChatClient);
+        Assert.NotNull(provider.Configuration);
+        Assert.Equal("sonar", provider.Configuration.Model);
+        Assert.Equal("https://api.perplexity.ai", provider.Configuration.BaseUrl);
     }
 
     [Fact]
@@ -61,33 +67,10 @@ public class LLMProviderFactoryTests
         // Arrange
         var config = new LLMConfiguration();
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => factory.GetProvider("invalid-provider"));
-    }
-
-    [Fact]
-    public void GetProvider_WithMissingApiKey_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var config = new LLMConfiguration
-        {
-            Providers = new Dictionary<string, OpenAIConfiguration>
-            {
-                ["openai"] = new OpenAIConfiguration
-                {
-                    ApiKey = "",
-                    Model = "sonar",
-                    IsLocal = false
-                }
-            }
-        };
-        var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
-
-        // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => factory.GetProvider("openai"));
     }
 
     [Fact]
@@ -102,20 +85,21 @@ public class LLMProviderFactoryTests
                 {
                     ApiKey = "",
                     Model = "llama3",
-                    BaseUrl = "http://localhost:11434",
-                    IsLocal = true
+                    BaseUrl = "http://localhost:11434"
                 }
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
 
         // Act
         var provider = factory.GetProvider("local");
 
         // Assert
         Assert.NotNull(provider);
-        Assert.IsAssignableFrom<IChatClient>(provider);
+        Assert.IsAssignableFrom<ILLMClient>(provider);
+        Assert.NotNull(provider.ChatClient);
+        Assert.IsAssignableFrom<IChatClient>(provider.ChatClient);
     }
 
     [Fact]
@@ -130,20 +114,21 @@ public class LLMProviderFactoryTests
                 {
                     ApiKey = "not-needed-but-present",
                     Model = "llama3",
-                    BaseUrl = "http://localhost:11434",
-                    IsLocal = true
+                    BaseUrl = "http://localhost:11434"
                 }
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
 
         // Act
         var provider = factory.GetProvider("local");
 
         // Assert
         Assert.NotNull(provider);
-        Assert.IsAssignableFrom<IChatClient>(provider);
+        Assert.IsAssignableFrom<ILLMClient>(provider);
+        Assert.NotNull(provider.ChatClient);
+        Assert.IsAssignableFrom<IChatClient>(provider.ChatClient);
     }
 
     [Fact]
@@ -164,13 +149,12 @@ public class LLMProviderFactoryTests
                 {
                     ApiKey = "",
                     Model = "llama3.2-vision:11b",
-                    BaseUrl = "http://localhost:11434/v1",
-                    IsLocal = true
+                    BaseUrl = "http://localhost:11434/v1"
                 }
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
 
         // Act
         var openaiProvider = factory.GetProvider("openai");
@@ -179,7 +163,9 @@ public class LLMProviderFactoryTests
         // Assert
         Assert.NotNull(openaiProvider);
         Assert.NotNull(localProvider);
-        Assert.IsAssignableFrom<IChatClient>(openaiProvider);
-        Assert.IsAssignableFrom<IChatClient>(localProvider);
+        Assert.IsAssignableFrom<ILLMClient>(openaiProvider);
+        Assert.IsAssignableFrom<ILLMClient>(localProvider);
+        Assert.Equal("gpt-4", openaiProvider.Configuration.Model);
+        Assert.Equal("llama3.2-vision:11b", localProvider.Configuration.Model);
     }
 }

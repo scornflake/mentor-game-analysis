@@ -1,6 +1,8 @@
 ﻿using Mentor.Core.Configuration;
+using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -14,7 +16,7 @@ public class Program
         // Basic argument parsing
         string? imagePath = null;
         string prompt = "What should I do next?";
-        string provider = "openai";
+        string provider = "perplexity";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -49,7 +51,7 @@ public class Program
         }
 
         // Set up DI container with configuration
-        var serviceProvider = ConfigureServices();
+        var serviceProvider = ConfigureServices(provider);
 
         await AnalyzeScreenshotAsync(serviceProvider, imagePath, prompt, provider);
         return 0;
@@ -70,11 +72,12 @@ public class Program
         Console.WriteLine();
         Console.WriteLine("Configuration:");
         Console.WriteLine("  API keys can be set in appsettings.Development.json or via environment variables:");
+        Console.WriteLine("  LLM__Providers__perplexity__ApiKey=your-api-key");
         Console.WriteLine("  LLM__Providers__openai__ApiKey=your-api-key");
         Console.WriteLine("  LLM__Providers__local__ApiKey=your-api-key (not needed for local LLMs)");
     }
 
-    private static ServiceProvider ConfigureServices()
+    private static ServiceProvider ConfigureServices(string provider)
     {
         // Determine base path for configuration files
         var currentDir = Directory.GetCurrentDirectory();
@@ -114,6 +117,11 @@ public class Program
         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
         services.AddTransient<IAnalysisService, AnalysisService>();
         services.AddTransient<IWebsearch, Websearch>();
+        services.AddTransient<ILLMClient>(sp =>
+        {
+            var factory = sp.GetRequiredService<ILLMProviderFactory>();
+            return factory.GetProvider(provider);
+        });
         
         return services.BuildServiceProvider();
     }
@@ -132,11 +140,7 @@ public class Program
             Console.WriteLine();
 
             // Get the provider factory and create the chat client
-            var factory = serviceProvider.GetRequiredService<ILLMProviderFactory>();
-            var chatClient = factory.GetProvider(provider);
-
-            // Create analysis service with the specific provider
-            var analysisService = new AnalysisService(chatClient);
+            var analysisService = serviceProvider.GetRequiredService<IAnalysisService>();
 
             // Read the image file
             byte[] imageData;

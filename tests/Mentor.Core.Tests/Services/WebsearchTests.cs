@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using Mentor.Core.Configuration;
+using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
