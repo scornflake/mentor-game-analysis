@@ -1,5 +1,7 @@
-﻿using Mentor.Core.Models;
+﻿using Mentor.Core.Configuration;
+using Mentor.Core.Models;
 using Mentor.Core.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mentor.CLI;
@@ -8,12 +10,10 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        // Set up DI container
-        var serviceProvider = ConfigureServices();
-
-        // Basic argument parsing for validation
+        // Basic argument parsing
         string? imagePath = null;
         string prompt = "What should I do next?";
+        string provider = "openai";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -25,6 +25,11 @@ public class Program
             else if (args[i] == "--prompt" && i + 1 < args.Length)
             {
                 prompt = args[i + 1];
+                i++;
+            }
+            else if (args[i] == "--provider" && i + 1 < args.Length)
+            {
+                provider = args[i + 1];
                 i++;
             }
             else if (args[i] == "--help" || args[i] == "-h")
@@ -42,7 +47,10 @@ public class Program
             return 1;
         }
 
-        await AnalyzeScreenshotAsync(serviceProvider, imagePath, prompt);
+        // Set up DI container with configuration
+        var serviceProvider = ConfigureServices();
+
+        await AnalyzeScreenshotAsync(serviceProvider, imagePath, prompt, provider);
         return 0;
     }
 
@@ -51,20 +59,37 @@ public class Program
         Console.WriteLine("Mentor - Game Screenshot Analysis Tool");
         Console.WriteLine();
         Console.WriteLine("Usage:");
-        Console.WriteLine("  mentor --image <path> [--prompt <text>]");
+        Console.WriteLine("  mentor --image <path> [--prompt <text>] [--provider <name>]");
         Console.WriteLine();
         Console.WriteLine("Options:");
-        Console.WriteLine("  --image <path>   Path to the screenshot image file (required)");
-        Console.WriteLine("  --prompt <text>  Analysis prompt/question (default: 'What should I do next?')");
-        Console.WriteLine("  --help, -h       Show this help message");
+        Console.WriteLine("  --image <path>      Path to the screenshot image file (required)");
+        Console.WriteLine("  --prompt <text>     Analysis prompt/question (default: 'What should I do next?')");
+        Console.WriteLine("  --provider <name>   LLM provider to use (default: 'openai')");
+        Console.WriteLine("  --help, -h          Show this help message");
+        Console.WriteLine();
+        Console.WriteLine("Configuration:");
+        Console.WriteLine("  API keys can be set in appsettings.Development.json or via environment variables:");
+        Console.WriteLine("  LLM__OpenAI__ApiKey=your-api-key");
     }
 
     private static ServiceProvider ConfigureServices()
     {
+        // Build configuration
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+
         var services = new ServiceCollection();
         
+        // Register configuration
+        services.Configure<LLMConfiguration>(configuration.GetSection("LLM"));
+        
         // Register core services
-        services.AddSingleton<IAnalysisService, AnalysisService>();
+        services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
+        services.AddTransient<IAnalysisService, AnalysisService>();
         
         return services.BuildServiceProvider();
     }
@@ -72,21 +97,39 @@ public class Program
     private static async Task AnalyzeScreenshotAsync(
         ServiceProvider serviceProvider, 
         string imagePath, 
-        string prompt)
+        string prompt,
+        string provider)
     {
         try
         {
             Console.WriteLine($"Analyzing screenshot: {imagePath}");
+            Console.WriteLine($"Provider: {provider}");
             Console.WriteLine($"Prompt: {prompt}");
             Console.WriteLine();
 
-            // Get the analysis service
-            var analysisService = serviceProvider.GetRequiredService<IAnalysisService>();
+            // Get the provider factory and create the chat client
+            var factory = serviceProvider.GetRequiredService<ILLMProviderFactory>();
+            var chatClient = factory.GetProvider(provider);
 
-            // For now, just create a stub request (not actually reading the image file)
+            // Create analysis service with the specific provider
+            var analysisService = new AnalysisService(chatClient);
+
+            // Read the image file
+            byte[] imageData;
+            try
+            {
+                imageData = await File.ReadAllBytesAsync(imagePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading image file: {ex.Message}");
+                return;
+            }
+
+            // Create analysis request
             var request = new AnalysisRequest
             {
-                ImageData = Array.Empty<byte>(), // Stub: not actually reading file yet
+                ImageData = imageData,
                 Prompt = prompt
             };
 
@@ -114,9 +157,14 @@ public class Program
                 Console.WriteLine();
             }
         }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Configuration Error: {ex.Message}");
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 }
