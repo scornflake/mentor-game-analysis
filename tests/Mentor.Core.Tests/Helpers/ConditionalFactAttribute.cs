@@ -29,3 +29,18 @@ public class RequiresOpenAIKeyFactAttribute : FactAttribute
     }
 }
 
+/// <summary>
+/// Conditional fact that skips the test if the specified environment variable is not set.
+/// </summary>
+public class ConditionalFactAttribute : FactAttribute
+{
+    public ConditionalFactAttribute(string environmentVariableName)
+    {
+        var value = Environment.GetEnvironmentVariable(environmentVariableName);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            Skip = $"Test skipped because environment variable '{environmentVariableName}' is not set.";
+        }
+    }
+}
+

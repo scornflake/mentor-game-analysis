@@ -1,8 +1,7 @@
 using Mentor.Core.Models;
 using Mentor.Core.Services;
-using OpenAI;
-using OpenAI.Chat;
-using System.ClientModel;
+using Microsoft.Extensions.AI;
+using Moq;
 
 namespace Mentor.Core.Tests.Services;
 
@@ -11,16 +10,11 @@ public class AnalysisServiceTests
     [Fact]
     public void AnalysisService_CanBeConstructed_WithChatClient()
     {
-        // Arrange - Create a ChatClient (won't be used, just testing construction)
-        var credential = new ApiKeyCredential("test-key");
-        var options = new OpenAIClientOptions
-        {
-            Endpoint = new Uri("https://api.perplexity.ai")
-        };
-        var chatClient = new ChatClient("sonar", credential, options);
+        // Arrange - Create a mock IChatClient
+        var mockChatClient = new Mock<IChatClient>();
 
         // Act
-        var service = new AnalysisService(chatClient);
+        var service = new AnalysisService(mockChatClient.Object);
 
         // Assert
         Assert.NotNull(service);
@@ -30,13 +24,8 @@ public class AnalysisServiceTests
     public async Task AnalyzeAsync_WithNullImageData_ThrowsArgumentException()
     {
         // Arrange
-        var credential = new ApiKeyCredential("test-key");
-        var options = new OpenAIClientOptions
-        {
-            Endpoint = new Uri("https://api.perplexity.ai")
-        };
-        var chatClient = new ChatClient("sonar", credential, options);
-        var service = new AnalysisService(chatClient);
+        var mockChatClient = new Mock<IChatClient>();
+        var service = new AnalysisService(mockChatClient.Object);
         var request = new AnalysisRequest
         {
             ImageData = null!,
@@ -51,16 +40,11 @@ public class AnalysisServiceTests
     public async Task AnalyzeAsync_WithEmptyImageData_ThrowsArgumentException()
     {
         // Arrange
-        var credential = new ApiKeyCredential("test-key");
-        var options = new OpenAIClientOptions
-        {
-            Endpoint = new Uri("https://api.perplexity.ai")
-        };
-        var chatClient = new ChatClient("sonar", credential, options);
-        var service = new AnalysisService(chatClient);
+        var mockChatClient = new Mock<IChatClient>();
+        var service = new AnalysisService(mockChatClient.Object);
         var request = new AnalysisRequest
         {
-            ImageData = Array.Empty<byte>(),
+            ImageData = [],
             Prompt = "Test"
         };
 

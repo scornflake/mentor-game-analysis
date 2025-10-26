@@ -1,0 +1,43 @@
+using Mentor.Core.Services;
+using Mentor.Core.Tests.Helpers;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Xunit.Abstractions;
+
+namespace Mentor.Core.Tests.Services;
+
+public class TestHelpers
+{
+    public static IServiceCollection CreateTestServices(ITestOutputHelper _testOutputHelper)
+    {
+        var services = new ServiceCollection();
+
+        // Register other necessary services and mocks here as needed for testing
+        services.AddLogging(sp => sp.AddSerilog());
+
+        // Set up logging bridge from Microsoft.Extensions.Logging to xUnit
+        var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.SetMinimumLevel(LogLevel.Debug);
+            builder.AddProvider(new XUnitLoggerProvider(_testOutputHelper, LogLevel.Debug));
+        });
+        services.AddSingleton(loggerFactory);
+
+        return services;
+    }
+    
+    public static IServiceCollection AddWebSearchTool(IWebsearch? tool = null)
+    {
+        var services = new ServiceCollection();
+        if(tool != null)
+        {
+            services.AddSingleton<IWebsearch>(tool);
+        }
+        else
+        {
+            services.AddSingleton<IWebsearch, Websearch>();
+        }
+        return services;
+    }
+}

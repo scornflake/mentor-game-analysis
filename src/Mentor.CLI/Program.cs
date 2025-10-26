@@ -3,6 +3,7 @@ using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace Mentor.CLI;
 
@@ -92,14 +93,27 @@ public class Program
             .AddEnvironmentVariables()
             .Build();
 
+        // Configure Serilog
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .CreateLogger();
+
         var services = new ServiceCollection();
         
         // Register configuration
         services.Configure<LLMConfiguration>(configuration.GetSection("LLM"));
+        services.Configure<BraveSearchConfiguration>(configuration.GetSection("BraveSearch"));
         
         // Register core services
+        services.AddHttpClient();
+        services.AddLogging(sp =>
+        {
+            sp.AddSerilog();
+        });
         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
         services.AddTransient<IAnalysisService, AnalysisService>();
+        services.AddTransient<IWebsearch, Websearch>();
         
         return services.BuildServiceProvider();
     }

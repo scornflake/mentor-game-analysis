@@ -1,12 +1,32 @@
 using Mentor.Core.Configuration;
 using Mentor.Core.Services;
-using OpenAI.Chat;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
+using Serilog;
+using Xunit.Abstractions;
 
 namespace Mentor.Core.Tests.Services;
 
 public class LLMProviderFactoryTests
 {
+    private readonly Mock<IWebsearch> _websearchMock;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<LLMProviderFactoryTests> _logger;
+
+    public LLMProviderFactoryTests(ITestOutputHelper testOutputHelper)
+    {
+        _websearchMock = new Mock<IWebsearch>();
+        
+        // Create a service provider with logging support for the tests
+        var services = TestHelpers.CreateTestServices(testOutputHelper);
+        TestHelpers.AddWebSearchTool(_websearchMock.Object);
+        _serviceProvider = services.BuildServiceProvider();
+        _logger = _serviceProvider.GetRequiredService<ILogger<LLMProviderFactoryTests>>();
+    }
+
     [Fact]
     public void GetProvider_WithOpenAI_ReturnsChatClient()
     {
@@ -25,14 +45,14 @@ public class LLMProviderFactoryTests
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
 
         // Act
         var provider = factory.GetProvider("openai");
 
         // Assert
         Assert.NotNull(provider);
-        Assert.IsAssignableFrom<ChatClient>(provider);
+        Assert.IsAssignableFrom<IChatClient>(provider);
     }
 
     [Fact]
@@ -41,7 +61,7 @@ public class LLMProviderFactoryTests
         // Arrange
         var config = new LLMConfiguration();
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => factory.GetProvider("invalid-provider"));
@@ -64,7 +84,7 @@ public class LLMProviderFactoryTests
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() => factory.GetProvider("openai"));
@@ -88,14 +108,14 @@ public class LLMProviderFactoryTests
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
 
         // Act
         var provider = factory.GetProvider("local");
 
         // Assert
         Assert.NotNull(provider);
-        Assert.IsAssignableFrom<ChatClient>(provider);
+        Assert.IsAssignableFrom<IChatClient>(provider);
     }
 
     [Fact]
@@ -116,14 +136,14 @@ public class LLMProviderFactoryTests
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
 
         // Act
         var provider = factory.GetProvider("local");
 
         // Assert
         Assert.NotNull(provider);
-        Assert.IsAssignableFrom<ChatClient>(provider);
+        Assert.IsAssignableFrom<IChatClient>(provider);
     }
 
     [Fact]
@@ -150,7 +170,7 @@ public class LLMProviderFactoryTests
             }
         };
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+        var factory = new LLMProviderFactory(options, _websearchMock.Object, _serviceProvider);
 
         // Act
         var openaiProvider = factory.GetProvider("openai");
@@ -159,8 +179,7 @@ public class LLMProviderFactoryTests
         // Assert
         Assert.NotNull(openaiProvider);
         Assert.NotNull(localProvider);
-        Assert.IsAssignableFrom<ChatClient>(openaiProvider);
-        Assert.IsAssignableFrom<ChatClient>(localProvider);
+        Assert.IsAssignableFrom<IChatClient>(openaiProvider);
+        Assert.IsAssignableFrom<IChatClient>(localProvider);
     }
 }
-

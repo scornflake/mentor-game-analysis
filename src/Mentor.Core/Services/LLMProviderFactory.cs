@@ -3,19 +3,24 @@ using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
+using Microsoft.Extensions.AI;
 
 namespace Mentor.Core.Services;
 
 public class LLMProviderFactory : ILLMProviderFactory
 {
+    private readonly IWebsearch? _websearch;
     private readonly LLMConfiguration _configuration;
+    private readonly IServiceProvider _serviceProvider;
 
-    public LLMProviderFactory(IOptions<LLMConfiguration> configuration)
+    public LLMProviderFactory(IOptions<LLMConfiguration> configuration, IWebsearch websearch, IServiceProvider serviceProvider)
     {
+        _websearch = websearch;
         _configuration = configuration.Value;
+        _serviceProvider = serviceProvider;
     }
 
-    public ChatClient GetProvider(string providerName)
+    public IChatClient GetProvider(string providerName)
     {
         var normalizedProviderName = providerName.ToLowerInvariant();
         
@@ -31,7 +36,7 @@ public class LLMProviderFactory : ILLMProviderFactory
         return CreateOpenAICompatibleClient(config, providerName);
     }
 
-    private ChatClient CreateOpenAICompatibleClient(OpenAIConfiguration config, string providerName)
+    private IChatClient CreateOpenAICompatibleClient(OpenAIConfiguration config, string providerName)
     {
         // For non-local LLMs, API key is required
         if (!config.IsLocal && string.IsNullOrWhiteSpace(config.ApiKey))
@@ -51,7 +56,13 @@ public class LLMProviderFactory : ILLMProviderFactory
             Endpoint = new Uri(config.BaseUrl)
         };
         
-        return new ChatClient(config.Model, credential, options);
+        var openAIClient = new ChatClient(config.Model, credential, options); 
+        var newClient = openAIClient.AsIChatClient()
+            .AsBuilder()
+            .UseLogging()
+            .UseFunctionInvocation()
+            .Build(_serviceProvider);
+        return newClient;
     }
 }
 

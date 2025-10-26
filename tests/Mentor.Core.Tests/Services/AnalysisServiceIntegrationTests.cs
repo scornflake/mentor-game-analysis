@@ -2,9 +2,11 @@ using Mentor.Core.Configuration;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenAI.Chat;
+using Moq;
 using Xunit.Abstractions;
 
 namespace Mentor.Core.Tests.Services;
@@ -15,22 +17,20 @@ namespace Mentor.Core.Tests.Services;
 /// </summary>
 public class AnalysisServiceIntegrationTests
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly Mock<IWebsearch> _webSearch;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<AnalysisServiceIntegrationTests> _logger;
 
     public AnalysisServiceIntegrationTests(ITestOutputHelper testOutputHelper)
     {
-        _testOutputHelper = testOutputHelper;
-        
-        // Set up logging bridge from Microsoft.Extensions.Logging to xUnit
-        _loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder.SetMinimumLevel(LogLevel.Debug);
-            builder.AddProvider(new XUnitLoggerProvider(_testOutputHelper, LogLevel.Debug));
-        });
+        _webSearch = new Mock<IWebsearch>();
+        var services = TestHelpers.CreateTestServices(testOutputHelper);
+        TestHelpers.AddWebSearchTool(_webSearch.Object);
+        _serviceProvider = services.BuildServiceProvider();
+        _logger = _serviceProvider.GetRequiredService<ILogger<AnalysisServiceIntegrationTests>>();
     }
 
-    private static byte[] LoadTestImage(string filename)
+    private  byte[] LoadTestImage(string filename)
     {
         var projectRoot = ApiKeyHelper.FindProjectRoot(AppContext.BaseDirectory);
         if (projectRoot == null)
@@ -47,7 +47,7 @@ public class AnalysisServiceIntegrationTests
         return File.ReadAllBytes(imagePath);
     }
 
-    private static ChatClient CreateChatClient()
+    private IChatClient CreateChatClient()
     {
         var apiKey = ApiKeyHelper.GetOpenAIApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -70,7 +70,8 @@ public class AnalysisServiceIntegrationTests
         };
 
         var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options);
+
+        var factory = new LLMProviderFactory(options, _webSearch.Object, _serviceProvider);
         return factory.GetProvider("openai");
     }
 
@@ -78,8 +79,7 @@ public class AnalysisServiceIntegrationTests
     public async Task AnalyzeAsync_WithRealImage_ReturnsValidRecommendation()
     {
         // Arrange
-        var logger = _loggerFactory.CreateLogger<AnalysisServiceIntegrationTests>();
-        logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ReturnsValidRecommendation ===");
+        _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ReturnsValidRecommendation ===");
         
         var chatClient = CreateChatClient();
         var service = new AnalysisService(chatClient);
@@ -91,7 +91,7 @@ public class AnalysisServiceIntegrationTests
             Prompt = "Analyze this Warframe build screenshot and provide recommendations for improvement."
         };
 
-        logger.LogInformation("Sending request to API with image: acceltra prime rad build.png");
+        _logger.LogInformation("Sending request to API with image: acceltra prime rad build.png");
 
         // Act
         var result = await service.AnalyzeAsync(request);
@@ -111,24 +111,24 @@ public class AnalysisServiceIntegrationTests
         Assert.True(result.Analysis.Length > 50, "Analysis should contain meaningful content");
         
         // Output results
-        logger.LogInformation("=== API Response Received ===");
-        logger.LogInformation($"Provider: {result.ProviderUsed}");
-        logger.LogInformation($"Confidence: {result.Confidence:P0}");
-        logger.LogInformation($"Generated At: {result.GeneratedAt:u}");
-        logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
-        logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
+        _logger.LogInformation("=== API Response Received ===");
+        _logger.LogInformation($"Provider: {result.ProviderUsed}");
+        _logger.LogInformation($"Confidence: {result.Confidence:P0}");
+        _logger.LogInformation($"Generated At: {result.GeneratedAt:u}");
+        _logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
+        _logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
         
         if (result.Recommendations.Any())
         {
-            logger.LogInformation($"\n--- RECOMMENDATIONS ({result.Recommendations.Count}) ---");
+            _logger.LogInformation($"\n--- RECOMMENDATIONS ({result.Recommendations.Count}) ---");
             for (int i = 0; i < result.Recommendations.Count; i++)
             {
                 var rec = result.Recommendations[i];
-                logger.LogInformation($"\n{i + 1}. [{rec.Priority}] {rec.Action}");
-                logger.LogInformation($"   Reasoning: {rec.Reasoning}");
+                _logger.LogInformation($"\n{i + 1}. [{rec.Priority}] {rec.Action}");
+                _logger.LogInformation($"   Reasoning: {rec.Reasoning}");
                 if (!string.IsNullOrWhiteSpace(rec.Context))
                 {
-                    logger.LogInformation($"   Context: {rec.Context}");
+                    _logger.LogInformation($"   Context: {rec.Context}");
                 }
             }
         }
@@ -138,8 +138,7 @@ public class AnalysisServiceIntegrationTests
     public async Task AnalyzeAsync_WithRealImage_ParsesRecommendationsCorrectly()
     {
         // Arrange
-        var logger = _loggerFactory.CreateLogger<AnalysisServiceIntegrationTests>();
-        logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ParsesRecommendationsCorrectly ===");
+        _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ParsesRecommendationsCorrectly ===");
         
         var chatClient = CreateChatClient();
         var service = new AnalysisService(chatClient);
@@ -151,7 +150,7 @@ public class AnalysisServiceIntegrationTests
             Prompt = "What are the top 3 things I should do to improve this build?"
         };
 
-        logger.LogInformation("Sending request to API with image: phantasma rad build.png");
+        _logger.LogInformation("Sending request to API with image: phantasma rad build.png");
 
         // Act
         var result = await service.AnalyzeAsync(request);
@@ -172,23 +171,23 @@ public class AnalysisServiceIntegrationTests
         }
         
         // Output results
-        logger.LogInformation("=== API Response Received ===");
-        logger.LogInformation($"Provider: {result.ProviderUsed}");
-        logger.LogInformation($"Confidence: {result.Confidence:P0}");
-        logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
-        logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
+        _logger.LogInformation("=== API Response Received ===");
+        _logger.LogInformation($"Provider: {result.ProviderUsed}");
+        _logger.LogInformation($"Confidence: {result.Confidence:P0}");
+        _logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
+        _logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
         
         if (result.Recommendations.Any())
         {
-            logger.LogInformation($"\n--- TOP RECOMMENDATIONS ({result.Recommendations.Count}) ---");
+            _logger.LogInformation($"\n--- TOP RECOMMENDATIONS ({result.Recommendations.Count}) ---");
             for (int i = 0; i < result.Recommendations.Count; i++)
             {
                 var rec = result.Recommendations[i];
-                logger.LogInformation($"\n{i + 1}. [{rec.Priority}] {rec.Action}");
-                logger.LogInformation($"   Reasoning: {rec.Reasoning}");
+                _logger.LogInformation($"\n{i + 1}. [{rec.Priority}] {rec.Action}");
+                _logger.LogInformation($"   Reasoning: {rec.Reasoning}");
                 if (!string.IsNullOrWhiteSpace(rec.Context))
                 {
-                    logger.LogInformation($"   Context: {rec.Context}");
+                    _logger.LogInformation($"   Context: {rec.Context}");
                 }
             }
         }
@@ -198,8 +197,7 @@ public class AnalysisServiceIntegrationTests
     public async Task AnalyzeAsync_WithTimeout_CompletesWithinReasonableTime()
     {
         // Arrange
-        var logger = _loggerFactory.CreateLogger<AnalysisServiceIntegrationTests>();
-        logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithTimeout_CompletesWithinReasonableTime ===");
+        _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithTimeout_CompletesWithinReasonableTime ===");
         
         var chatClient = CreateChatClient();
         var service = new AnalysisService(chatClient);
@@ -211,7 +209,7 @@ public class AnalysisServiceIntegrationTests
             Prompt = "Quick analysis: what stands out in this build?"
         };
 
-        logger.LogInformation("Sending request to API with 30 second timeout...");
+        _logger.LogInformation("Sending request to API with 30 second timeout...");
         var startTime = DateTime.UtcNow;
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
@@ -224,19 +222,18 @@ public class AnalysisServiceIntegrationTests
         Assert.False(cts.IsCancellationRequested, "Request should complete within 30 seconds");
         
         // Output results
-        logger.LogInformation($"=== API Response Received in {elapsed.TotalSeconds:F2} seconds ===");
-        logger.LogInformation($"Confidence: {result.Confidence:P0}");
-        logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
-        logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
+        _logger.LogInformation($"=== API Response Received in {elapsed.TotalSeconds:F2} seconds ===");
+        _logger.LogInformation($"Confidence: {result.Confidence:P0}");
+        _logger.LogInformation($"\n--- SUMMARY ---\n{result.Summary}\n");
+        _logger.LogInformation($"\n--- ANALYSIS ---\n{result.Analysis}\n");
         
         if (result.Recommendations.Any())
         {
-            logger.LogInformation($"\n--- RECOMMENDATIONS ({result.Recommendations.Count}) ---");
+            _logger.LogInformation($"\n--- RECOMMENDATIONS ({result.Recommendations.Count}) ---");
             foreach (var rec in result.Recommendations)
             {
-                logger.LogInformation($"  • [{rec.Priority}] {rec.Action}");
+                _logger.LogInformation($"  • [{rec.Priority}] {rec.Action}");
             }
         }
     }
 }
-

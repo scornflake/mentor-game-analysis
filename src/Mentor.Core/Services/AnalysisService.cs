@@ -1,14 +1,15 @@
 using System.Text.Json;
 using Mentor.Core.Models;
-using OpenAI.Chat;
+using Microsoft.Extensions.AI;
+using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Mentor.Core.Services;
 
 public class AnalysisService : IAnalysisService
 {
-    private readonly ChatClient _chatClient;
+    private readonly IChatClient _chatClient;
 
-    public AnalysisService(ChatClient chatClient)
+    public AnalysisService(IChatClient chatClient)
     {
         _chatClient = chatClient;
     }
@@ -23,69 +24,42 @@ public class AnalysisService : IAnalysisService
         }
 
         // Build the chat messages with image content
-        var systemMessage = ChatMessage.CreateSystemMessage(
+        var systemMessage = new ChatMessage(ChatRole.System,
             "You are an expert game advisor. Analyze the provided screenshot and provide actionable recommendations. " +
             "Return your response as JSON with the following structure: " +
             "{ \"analysis\": \"detailed analysis\", \"summary\": \"brief summary\", " +
             "\"recommendations\": [{ \"priority\": \"High|Medium|Low\", \"action\": \"what to do\", " +
             "\"reasoning\": \"why\", \"context\": \"relevant context\" }], \"confidence\": 0.0-1.0 }");
-        
-        var userMessage = ChatMessage.CreateUserMessage(
-            ChatMessageContentPart.CreateTextPart(request.Prompt),
-            ChatMessageContentPart.CreateImagePart(BinaryData.FromBytes(request.ImageData), "image/png"));
+
+        var memoryStream = new ReadOnlyMemory<byte>(request.ImageData);
+        var userImage = new DataContent(memoryStream, "image/png");
+        List<AIContent> content = new List<AIContent> { new TextContent(request.Prompt), userImage };
+        var userMessage = new ChatMessage(ChatRole.User, content);
 
         var messages = new List<ChatMessage> { systemMessage, userMessage };
 
         // Call the LLM
-        var completion = await _chatClient.CompleteChatAsync(
-            messages,
-            cancellationToken: cancellationToken);
+        var options = new ChatOptions();
+        var completion = await _chatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken: cancellationToken);
 
         // Parse the response
-        var responseText = completion.Value.Content[0].Text ?? string.Empty;
-        
-        // Try to parse as JSON
-        try
-        {
-            var jsonResponse = JsonSerializer.Deserialize<LLMResponse>(responseText, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+        var jsonResponse = completion.Result;
 
-            if (jsonResponse == null)
-            {
-                throw new InvalidOperationException("Failed to parse LLM response");
-            }
-
-            return new Recommendation
-            {
-                Analysis = jsonResponse.Analysis ?? "No analysis provided",
-                Summary = jsonResponse.Summary ?? "No summary provided",
-                Recommendations = jsonResponse.Recommendations?.Select(r => new RecommendationItem
-                {
-                    Priority = ParsePriority(r.Priority),
-                    Action = r.Action ?? string.Empty,
-                    Reasoning = r.Reasoning ?? string.Empty,
-                    Context = r.Context ?? string.Empty
-                }).ToList() ?? [],
-                Confidence = jsonResponse.Confidence,
-                GeneratedAt = DateTime.UtcNow,
-                ProviderUsed = "openai"
-            };
-        }
-        catch (JsonException)
+        return new Recommendation
         {
-            // If JSON parsing fails, return the raw response
-            return new Recommendation
+            Analysis = jsonResponse.Analysis ?? "No analysis provided",
+            Summary = jsonResponse.Summary ?? "No summary provided",
+            Recommendations = jsonResponse.Recommendations?.Select(r => new RecommendationItem
             {
-                Analysis = responseText,
-                Summary = "Response parsing failed",
-                Recommendations = [],
-                Confidence = 0.5,
-                GeneratedAt = DateTime.UtcNow,
-                ProviderUsed = "openai"
-            };
-        }
+                Priority = ParsePriority(r.Priority),
+                Action = r.Action ?? string.Empty,
+                Reasoning = r.Reasoning ?? string.Empty,
+                Context = r.Context ?? string.Empty
+            }).ToList() ?? [],
+            Confidence = jsonResponse.Confidence,
+            GeneratedAt = DateTime.UtcNow,
+            ProviderUsed = "openai"
+        };
     }
 
     private static Priority ParsePriority(string? priority)
@@ -100,20 +74,7 @@ public class AnalysisService : IAnalysisService
     }
 
     // Internal class for deserializing LLM response
-    private class LLMResponse
-    {
-        public string? Analysis { get; set; }
-        public string? Summary { get; set; }
-        public List<LLMRecommendation>? Recommendations { get; set; }
-        public double Confidence { get; set; }
-    }
+    private record LLMResponse(string Analysis, string Summary, List<LLMRecommendation> Recommendations, double Confidence);
 
-    private class LLMRecommendation
-    {
-        public string? Priority { get; set; }
-        public string? Action { get; set; }
-        public string? Reasoning { get; set; }
-        public string? Context { get; set; }
-    }
+    private record LLMRecommendation(string Priority, string Action, string Reasoning, string Context);
 }
-
