@@ -6,5 +6,6 @@ public class OpenAIConfiguration
     public string Model { get; set; } = "sonar";
     public string BaseUrl { get; set; } = "https://api.perplexity.ai";
     public int Timeout { get; set; } = 60;
+    public bool IsLocal { get; set; } = false;
 }
 

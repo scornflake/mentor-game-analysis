@@ -69,14 +69,24 @@ public class Program
         Console.WriteLine();
         Console.WriteLine("Configuration:");
         Console.WriteLine("  API keys can be set in appsettings.Development.json or via environment variables:");
-        Console.WriteLine("  LLM__OpenAI__ApiKey=your-api-key");
+        Console.WriteLine("  LLM__Providers__openai__ApiKey=your-api-key");
+        Console.WriteLine("  LLM__Providers__local__ApiKey=your-api-key (not needed for local LLMs)");
     }
 
     private static ServiceProvider ConfigureServices()
     {
+        // Determine base path for configuration files
+        var currentDir = Directory.GetCurrentDirectory();
+        var executableDir = AppContext.BaseDirectory;
+        
+        // Check if appsettings.json exists in current directory, otherwise fallback to executable directory
+        var basePath = File.Exists(Path.Combine(currentDir, "appsettings.json"))
+            ? currentDir
+            : executableDir;
+
         // Build configuration
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
+            .SetBasePath(basePath)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables()

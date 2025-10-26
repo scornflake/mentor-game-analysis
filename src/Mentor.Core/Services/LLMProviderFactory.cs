@@ -17,26 +17,35 @@ public class LLMProviderFactory : ILLMProviderFactory
 
     public ChatClient GetProvider(string providerName)
     {
-        return providerName.ToLowerInvariant() switch
-        {
-            "openai" => CreateOpenAIClient(),
-            _ => throw new ArgumentException($"Unknown provider: {providerName}", nameof(providerName))
-        };
-    }
-
-    private ChatClient CreateOpenAIClient()
-    {
-        var config = _configuration.OpenAI;
+        var normalizedProviderName = providerName.ToLowerInvariant();
         
-        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        // Look up the configuration for the specified provider
+        if (!_configuration.Providers.TryGetValue(normalizedProviderName, out var config))
         {
-            throw new InvalidOperationException(
-                "OpenAI-compatible API key is not configured. " +
-                "Set it in appsettings.json or via environment variable LLM__OpenAI__ApiKey");
+            throw new ArgumentException(
+                $"Provider '{providerName}' is not configured. " +
+                $"Add configuration under LLM:Providers:{providerName} in appsettings.json",
+                nameof(providerName));
         }
 
-        // Using OpenAI ChatClient with custom endpoint (e.g., Perplexity is OpenAI-compatible)
-        var credential = new ApiKeyCredential(config.ApiKey);
+        return CreateOpenAICompatibleClient(config, providerName);
+    }
+
+    private ChatClient CreateOpenAICompatibleClient(OpenAIConfiguration config, string providerName)
+    {
+        // For non-local LLMs, API key is required
+        if (!config.IsLocal && string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            throw new InvalidOperationException(
+                $"API key for provider '{providerName}' is not configured. " +
+                $"Set it in appsettings.json under LLM:Providers:{providerName}:ApiKey " +
+                $"or via environment variable LLM__Providers__{providerName}__ApiKey");
+        }
+
+        // Using OpenAI ChatClient with custom endpoint (works with any OpenAI-compatible API)
+        // For local LLMs, use a dummy API key if none is provided
+        var apiKey = string.IsNullOrWhiteSpace(config.ApiKey) ? "not-needed" : config.ApiKey;
+        var credential = new ApiKeyCredential(apiKey);
         var options = new OpenAIClientOptions
         {
             Endpoint = new Uri(config.BaseUrl)

@@ -57,12 +57,15 @@ public class AnalysisServiceIntegrationTests
 
         var config = new LLMConfiguration
         {
-            OpenAI = new OpenAIConfiguration
+            Providers = new Dictionary<string, OpenAIConfiguration>
             {
-                ApiKey = apiKey,
-                Model = "sonar",
-                BaseUrl = "https://api.perplexity.ai",
-                Timeout = 60
+                ["openai"] = new OpenAIConfiguration
+                {
+                    ApiKey = apiKey,
+                    Model = "sonar",
+                    BaseUrl = "https://api.perplexity.ai",
+                    Timeout = 60
+                }
             }
         };
 
