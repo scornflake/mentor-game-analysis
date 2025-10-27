@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:MentorUI.ViewModels"
+        xmlns:models="using:Mentor.Core.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
@@ -65,7 +66,6 @@
                 <!-- Analyze Button -->
                 <Button Content="Analyze Screenshot"
                        Command="{Binding AnalyzeCommand}"
-                       IsEnabled="{Binding !IsAnalyzing}"
                        HorizontalAlignment="Stretch"
                        HorizontalContentAlignment="Center"
                        FontSize="16"
@@ -157,13 +157,13 @@
                     </StackPanel>
 
                     <!-- Recommendations -->
-                    <StackPanel Spacing="8">
+                    <!-- <StackPanel Spacing="8">
                         <TextBlock Text="Recommendations" 
                                   FontSize="16" 
                                   FontWeight="Bold"/>
                         <ItemsControl ItemsSource="{Binding Result.Recommendations}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="models:RecommendationItem">
                                     <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                                            BorderBrush="{DynamicResource SystemControlHighlightBaseMediumLowBrush}"
                                            BorderThickness="1"
@@ -199,8 +199,8 @@
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
+                        </ItemsControl> -->
+                    <!-- </StackPanel> -->
                 </StackPanel>
             </ScrollViewer>
         </Border>

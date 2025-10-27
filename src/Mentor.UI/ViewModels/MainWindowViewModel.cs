@@ -15,7 +15,7 @@ public partial class MainWindowViewModel : ObservableObject
     private string? _imagePath;
 
     [ObservableProperty]
-    private string _prompt = "What should I do next?";
+    private string _prompt = "How can I make this weapon do more damage against ...";
 
     [ObservableProperty]
     private string _selectedProvider = "perplexity";
@@ -74,7 +74,9 @@ public partial class MainWindowViewModel : ObservableObject
             };
 
             // Perform analysis
-            Result = await _analysisService.AnalyzeAsync(request);
+            // Result = await _analysisService.AnalyzeAsync(request);
+
+            Result = MakeUpFakeData();
         }
         catch (Exception ex)
         {
@@ -84,6 +86,20 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsAnalyzing = false;
         }
+    }
+
+    private Recommendation MakeUpFakeData()
+    {
+        var recommendation = new Recommendation
+        {
+            Analysis = "The screenshot shows a character build focused on high critical damage and status effects. " +
+                       "However, the build lacks survivability and elemental damage types that could enhance overall performance.",
+            Summary = "Optimize your build by balancing offense with defense and incorporating elemental damage.",
+            Confidence = 0.85,
+            GeneratedAt = DateTime.UtcNow,
+            ProviderUsed = SelectedProvider
+        };
+        return recommendation;
     }
 
     private bool CanAnalyze()
