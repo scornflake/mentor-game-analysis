@@ -1,0 +1,57 @@
+using Windows.Storage.Pickers;
+
+namespace Mentor.Uno;
+
+public sealed partial class MainPage : Page
+{
+    public MainPageViewModel ViewModel { get; }
+
+    public MainPage()
+    {
+        this.InitializeComponent();
+        ViewModel = App.GetService<MainPageViewModel>();
+        this.DataContext = ViewModel;
+        
+        // Add converters to page resources
+        this.Resources["NullToVisibilityConverter"] = new NullToVisibilityConverter();
+        this.Resources["InverseNullToVisibilityConverter"] = new InverseNullToVisibilityConverter();
+        this.Resources["StringToBoolConverter"] = new StringToBoolConverter();
+        this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
+    }
+
+    private async void OnBrowseClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            
+            // Initialize the picker with the window handle for WinUI
+            var window = (Application.Current as App)?.MainWindow;
+            if (window != null)
+            {
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            }
+
+            // Set file type filters
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".bmp");
+            picker.FileTypeFilter.Add(".gif");
+            picker.ViewMode = PickerViewMode.Thumbnail;
+            picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+
+            var file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                ViewModel.ImagePath = file.Path;
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.ErrorMessage = $"Error selecting file: {ex.Message}";
+        }
+    }
+}
+

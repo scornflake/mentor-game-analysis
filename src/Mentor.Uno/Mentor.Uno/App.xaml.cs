@@ -1,0 +1,196 @@
+using System;
+using Mentor.Core.Configuration;
+using Mentor.Core.Interfaces;
+using Mentor.Core.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Uno.Resizetizer;
+
+namespace Mentor.Uno;
+
+public partial class App : Application
+{
+    private IHost? _host;
+    
+    /// <summary>
+    /// Initializes the singleton application object. This is the first line of authored code
+    /// executed, and as such is the logical equivalent of main() or WinMain().
+    /// </summary>
+    public App()
+    {
+        this.InitializeComponent();
+        
+        // Build the host with services
+        _host = BuildHost();
+    }
+    
+    private static IHost BuildHost()
+    {
+        return Host.CreateDefaultBuilder()
+            .ConfigureAppConfiguration((context, config) =>
+            {
+                // Determine base path for configuration files
+                var basePath = AppContext.BaseDirectory;
+                
+                config.SetBasePath(basePath)
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+                    .AddEnvironmentVariables();
+            })
+            .ConfigureServices((context, services) =>
+            {
+                // Register configuration
+                services.Configure<LLMConfiguration>(context.Configuration.GetSection("LLM"));
+                services.Configure<BraveSearchConfiguration>(context.Configuration.GetSection("BraveSearch"));
+
+                // Register core services
+                services.AddHttpClient();
+                services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
+                services.AddTransient<IAnalysisService, AnalysisService>();
+                services.AddTransient<IWebsearch, Websearch>();
+                services.AddTransient<ILLMClient>(sp =>
+                {
+                    var factory = sp.GetRequiredService<ILLMProviderFactory>();
+                    return factory.GetProvider("perplexity");
+                });
+                
+                // Register ViewModels
+                services.AddTransient<MainPageViewModel>();
+            })
+            .ConfigureLogging((context, logging) =>
+            {
+                logging.ClearProviders();
+                var logger = new LoggerConfiguration()
+                    .MinimumLevel.Debug()
+                    .WriteTo.Console()
+                    .CreateLogger();
+                logging.AddSerilog(logger);
+            })
+            .Build();
+    }
+    
+    public static T GetService<T>() where T : class
+    {
+        return ((App)Current)._host?.Services.GetRequiredService<T>() 
+            ?? throw new InvalidOperationException("Service not found");
+    }
+
+    public Window? MainWindow { get; private set; }
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        MainWindow = new Window();
+#if DEBUG
+        MainWindow.UseStudio();
+#endif
+
+
+        // Do not repeat app initialization when the Window already has content,
+        // just ensure that the window is active
+        if (MainWindow.Content is not Frame rootFrame)
+        {
+            // Create a Frame to act as the navigation context and navigate to the first page
+            rootFrame = new Frame();
+
+            // Place the frame in the current Window
+            MainWindow.Content = rootFrame;
+
+            rootFrame.NavigationFailed += OnNavigationFailed;
+        }
+
+        if (rootFrame.Content == null)
+        {
+            // When the navigation stack isn't restored navigate to the first page,
+            // configuring the new page by passing required information as a navigation
+            // parameter
+            rootFrame.Navigate(typeof(MainPage), args.Arguments);
+        }
+
+        MainWindow.SetWindowIcon();
+        // Ensure the current window is active
+        MainWindow.Activate();
+    }
+
+    /// <summary>
+    /// Invoked when Navigation to a certain page fails
+    /// </summary>
+    /// <param name="sender">The Frame which failed navigation</param>
+    /// <param name="e">Details about the navigation failure</param>
+    void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
+    {
+        throw new InvalidOperationException($"Failed to load {e.SourcePageType.FullName}: {e.Exception}");
+    }
+
+    /// <summary>
+    /// Configures global Uno Platform logging
+    /// </summary>
+    public static void InitializeLogging()
+    {
+#if DEBUG
+        // Logging is disabled by default for release builds, as it incurs a significant
+        // initialization cost from Microsoft.Extensions.Logging setup. If startup performance
+        // is a concern for your application, keep this disabled. If you're running on the web or
+        // desktop targets, you can use URL or command line parameters to enable it.
+        //
+        // For more performance documentation: https://platform.uno/docs/articles/Uno-UI-Performance.html
+
+        var factory = LoggerFactory.Create(builder =>
+        {
+#if __WASM__
+            builder.AddProvider(new global::Uno.Extensions.Logging.WebAssembly.WebAssemblyConsoleLoggerProvider());
+#elif __IOS__
+            builder.AddProvider(new global::Uno.Extensions.Logging.OSLogLoggerProvider());
+
+            // Log to the Visual Studio Debug console
+            builder.AddConsole();
+#else
+            builder.AddConsole();
+#endif
+
+            // Exclude logs below this level
+            builder.SetMinimumLevel(LogLevel.Information);
+
+            // Default filters for Uno Platform namespaces
+            builder.AddFilter("Uno", LogLevel.Warning);
+            builder.AddFilter("Windows", LogLevel.Warning);
+            builder.AddFilter("Microsoft", LogLevel.Warning);
+
+            // Generic Xaml events
+            // builder.AddFilter("Microsoft.UI.Xaml", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.VisualStateGroup", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.StateTriggerBase", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.UIElement", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.FrameworkElement", LogLevel.Trace );
+
+            // Layouter specific messages
+            // builder.AddFilter("Microsoft.UI.Xaml.Controls", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.Controls.Layouter", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.Controls.Panel", LogLevel.Debug );
+
+            // builder.AddFilter("Windows.Storage", LogLevel.Debug );
+
+            // Binding related messages
+            // builder.AddFilter("Microsoft.UI.Xaml.Data", LogLevel.Debug );
+            // builder.AddFilter("Microsoft.UI.Xaml.Data", LogLevel.Debug );
+
+            // Binder memory references tracking
+            // builder.AddFilter("Uno.UI.DataBinding.BinderReferenceHolder", LogLevel.Debug );
+
+            // DevServer and HotReload related
+            // builder.AddFilter("Uno.UI.RemoteControl", LogLevel.Information);
+
+            // Debug JS interop
+            // builder.AddFilter("Uno.Foundation.WebAssemblyRuntime", LogLevel.Debug );
+        });
+
+        global::Uno.Extensions.LogExtensionPoint.AmbientLoggerFactory = factory;
+
+#if HAS_UNO
+        global::Uno.UI.Adapter.Microsoft.Extensions.Logging.LoggingAdapter.Initialize();
+#endif
+#endif
+    }
+}
