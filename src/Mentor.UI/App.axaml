@@ -1,0 +1,14 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:MentorUI.Converters"
+             x:Class="MentorUI.App"
+             RequestedThemeVariant="Default">
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+    
+    <Application.Resources>
+        <converters:PriorityColorConverter x:Key="PriorityColorConverter"/>
+    </Application.Resources>
+</Application>
+
