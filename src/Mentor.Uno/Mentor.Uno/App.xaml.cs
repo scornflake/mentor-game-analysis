@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Uno.Resizetizer;
+using Mentor.Uno.Platforms;
 
 namespace Mentor.Uno;
 
@@ -112,6 +113,9 @@ public partial class App : Application
         MainWindow.SetWindowIcon();
         // Ensure the current window is active
         MainWindow.Activate();
+        
+        // Configure macOS menu bar after window activation (runtime check inside)
+        MacOSExtensions.ConfigureMacOSMenu();
     }
 
     /// <summary>
