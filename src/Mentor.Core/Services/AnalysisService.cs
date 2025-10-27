@@ -48,6 +48,8 @@ public class AnalysisService : IAnalysisService
 
         var messages = new List<ChatMessage> { systemMessage, userMessage };
 
+        // Tavily MCP: https://mcp.tavily.com/mcp/?tavilyApiKey=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
+        
         // Call the LLM
         [Description("Tool to perform web searches")]
         string SearchTheWeb(string query)
@@ -56,13 +58,14 @@ public class AnalysisService : IAnalysisService
             return _websearch.Search(query, SearchOutputFormat.Summary, 5).ConfigureAwait(false).GetAwaiter().GetResult();
         }
         
-        IList<AITool> tools = [ AIFunctionFactory.Create(SearchTheWeb) ]; 
-        var options = new ChatOptions()
+        IList<AITool> tools = [ AIFunctionFactory.Create(SearchTheWeb) ];
+        var options = new ChatOptions
         {
-            ToolMode = ChatToolMode.RequireAny, 
+            AllowMultipleToolCalls = true
         };
         if (_llmClient.Configuration.UseWebSearchTool)
         {
+            options.ToolMode = ChatToolMode.RequireAny;
             options.Tools = tools;
         }
 
