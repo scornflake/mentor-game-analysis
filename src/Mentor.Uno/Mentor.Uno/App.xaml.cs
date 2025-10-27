@@ -2,6 +2,7 @@ using System;
 using Mentor.Core.Configuration;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Services;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,22 +45,24 @@ public partial class App : Application
             .ConfigureServices((context, services) =>
             {
                 // Register configuration
-                services.Configure<LLMConfiguration>(context.Configuration.GetSection("LLM"));
-                services.Configure<BraveSearchConfiguration>(context.Configuration.GetSection("BraveSearch"));
+                services.Configure<ProviderImplementationsConfiguration>(context.Configuration);
+
+                // Register Realm repository
+                services.AddRealmConfigurationRepository();
 
                 // Register core services
                 services.AddHttpClient();
+                services.AddSingleton<IToolFactory, ToolFactory>();
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
-                services.AddTransient<IAnalysisService, AnalysisService>();
-                services.AddTransient<IWebsearch, Websearch>();
-                services.AddTransient<ILLMClient>(sp =>
-                {
-                    var factory = sp.GetRequiredService<ILLMProviderFactory>();
-                    return factory.GetProvider("perplexity");
-                });
+                services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
                 
                 // Register ViewModels
                 services.AddTransient<MainPageViewModel>();
+                
+                // Seed defaults on startup
+                var serviceProvider = services.BuildServiceProvider();
+                var repo = serviceProvider.GetRequiredService<IConfigurationRepository>();
+                repo.SeedDefaultsAsync().Wait();
             })
             .ConfigureLogging((context, logging) =>
             {

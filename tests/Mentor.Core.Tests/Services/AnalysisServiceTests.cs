@@ -1,6 +1,7 @@
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -14,7 +15,7 @@ public class AnalysisServiceTests
 
     public AnalysisServiceTests(ITestOutputHelper output)
     {
-        var webSearch = new Mock<IWebsearch>();
+        var webSearch = new Mock<IWebSearchTool>();
         var mockChatClient = new Mock<IChatClient>();
         var mockLLMClient = new Mock<ILLMClient>();
         mockLLMClient.Setup(x => x.ChatClient).Returns(mockChatClient.Object);

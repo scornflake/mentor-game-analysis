@@ -1,24 +1,27 @@
 using System.Text;
 using System.Text.Json;
-using Mentor.Core.Configuration;
-using Mentor.Core.Interfaces;
+using Mentor.Core.Data;
 using Mentor.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Mentor.Core.Services;
+namespace Mentor.Core.Tools;
 
-public class Websearch : IWebsearch
+public class BraveWebSearch : IWebSearchTool
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<Websearch> _logger;
-    private readonly BraveSearchConfiguration _config;
+    private readonly ILogger<BraveWebSearch> _logger;
+    private RealWebtoolToolConfiguration _config = new RealWebtoolToolConfiguration();
 
-    public Websearch(IHttpClientFactory httpClientFactory, IOptions<BraveSearchConfiguration> config, ILogger<Websearch> logger)
+    public BraveWebSearch(IHttpClientFactory httpClientFactory, ILogger<BraveWebSearch> logger)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _logger = logger;
-        _config = config?.Value ?? throw new ArgumentNullException(nameof(config));
+    }
+
+    public void Configure(RealWebtoolToolConfiguration configuration)
+    {
+        _config = configuration;
     }
 
     public async Task<string> Search(string query, SearchOutputFormat format, int maxResults = 5)
@@ -66,6 +69,7 @@ public class Websearch : IWebsearch
             _ => throw new ArgumentException($"Unknown format: {format}", nameof(format))
         };
     }
+
 
     private void LogResults(string query, List<SearchResult> results)
     {

@@ -3,7 +3,7 @@ using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
-using Microsoft.Extensions.AI;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,14 +20,18 @@ public class AnalysisServiceIntegrationTests
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AnalysisServiceIntegrationTests> _logger;
+    private readonly Mock<IToolFactory> _toolFactoryMock;
 
     public AnalysisServiceIntegrationTests(ITestOutputHelper testOutputHelper)
     {
-        var webSearch = new Mock<IWebsearch>();
+        var webSearch = new Mock<IWebSearchTool>();
+        _toolFactoryMock = new Mock<IToolFactory>();
         var services = TestHelpers.CreateTestServices(testOutputHelper);
         services.AddWebSearchTool(webSearch.Object);
+        services.AddSingleton<IToolFactory, ToolFactory>();
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<AnalysisServiceIntegrationTests>>();
+        
     }
 
     private  byte[] LoadTestImage(string filename)
@@ -55,24 +59,31 @@ public class AnalysisServiceIntegrationTests
             throw new InvalidOperationException("API key not available for integration test");
         }
 
-        var config = new LLMConfiguration
+        var implConfig = new ProviderImplementationsConfiguration
         {
-            Providers = new Dictionary<string, OpenAIConfiguration>
+            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
             {
-                ["perplexity"] = new OpenAIConfiguration
+                ["perplexity"] = new ProviderImplementationDetails
                 {
-                    ApiKey = apiKey,
-                    Model = "sonar",
-                    BaseUrl = "https://api.perplexity.ai",
-                    Timeout = 60
+                    DefaultBaseUrl = "https://api.perplexity.ai",
+                    DefaultModel = "sonar"
                 }
             }
         };
 
-        var options = Options.Create(config);
-
+        var options = Options.Create(implConfig);
         var factory = new LLMProviderFactory(options, _serviceProvider);
-        return factory.GetProvider("perplexity");
+
+        var providerConfig = new ProviderConfiguration
+        {
+            ProviderType = "perplexity",
+            ApiKey = apiKey,
+            Model = "sonar",
+            BaseUrl = "https://api.perplexity.ai",
+            Timeout = 60
+        };
+
+        return factory.GetProvider(providerConfig);
     }
 
     [RequiresOpenAIKeyFact]
@@ -83,8 +94,8 @@ public class AnalysisServiceIntegrationTests
         
         var llmClient = CreateLLMClient();
         var service = new AnalysisService(llmClient, 
-            _serviceProvider.GetRequiredService<IWebsearch>(),
-            _serviceProvider.GetRequiredService<ILogger<AnalysisService>>()
+            _serviceProvider.GetRequiredService<ILogger<AnalysisService>>(),
+            _serviceProvider.GetRequiredService<IToolFactory>()
             );
         var imageData = LoadTestImage("acceltra prime rad build.png");
         

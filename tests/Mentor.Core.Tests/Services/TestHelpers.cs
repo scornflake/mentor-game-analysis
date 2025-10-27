@@ -1,6 +1,7 @@
 using Mentor.Core.Interfaces;
 using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -9,16 +10,16 @@ using Xunit.Abstractions;
 namespace Mentor.Core.Tests.Services;
 
 public static class TestServicesExtensions {
-    public static IServiceCollection AddWebSearchTool(this IServiceCollection services, IWebsearch? tool = null)
+    public static IServiceCollection AddWebSearchTool(this IServiceCollection services, IWebSearchTool? tool = null)
     {
         if(tool != null)
         {
-            services.AddSingleton<IWebsearch>(tool);
+            services.AddSingleton<IWebSearchTool>(tool);
         }
         else
         {
             services.AddHttpClient();
-            services.AddSingleton<IWebsearch, Websearch>();
+            services.AddSingleton<IWebSearchTool, BraveWebSearch>();
         }
         return services;
     }

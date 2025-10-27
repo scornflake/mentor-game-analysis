@@ -4,63 +4,160 @@ using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
 using Mentor.Core.Interfaces;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Mentor.Core.Services;
 
 public class LLMProviderFactory : ILLMProviderFactory
 {
-    private readonly LLMConfiguration _configuration;
+    private readonly ProviderImplementationsConfiguration? _implementationsConfiguration;
     private readonly IServiceProvider _serviceProvider;
 
-    public LLMProviderFactory(IOptions<LLMConfiguration> configuration, IServiceProvider serviceProvider)
+    public LLMProviderFactory(IOptions<ProviderImplementationsConfiguration> configuration, IServiceProvider serviceProvider)
     {
-        _configuration = configuration.Value;
+        _implementationsConfiguration = configuration.Value;
         _serviceProvider = serviceProvider;
     }
 
-    public ILLMClient GetProvider(string providerName)
+    public IAnalysisService GetAnalysisService(ILLMClient llmClient)
     {
-        var normalizedProviderName = providerName.ToLowerInvariant();
-        
-        // Look up the configuration for the specified provider
-        if (!_configuration.Providers.TryGetValue(normalizedProviderName, out var config))
-        {
-            throw new ArgumentException(
-                $"Provider '{providerName}' is not configured. " +
-                $"Add configuration under LLM:Providers:{providerName} in appsettings.json",
-                nameof(providerName));
-        }
-
-        var chatClient = CreateOpenAICompatibleClient(config, providerName);
-        return new LLMClient(config, chatClient);
+        // make an AnalaysisService based on the name
+        var analysisLogging = _serviceProvider.GetRequiredService<ILogger<AnalysisService>>();
+        var toolFactory = _serviceProvider.GetRequiredService<IToolFactory>();
+        var analysisService = new AnalysisService(llmClient, analysisLogging, toolFactory);
+        return analysisService;
     }
 
-    private IChatClient CreateOpenAICompatibleClient(OpenAIConfiguration config, string providerName)
+    public ILLMClient GetProvider(ProviderConfiguration config)
     {
-        // For providers that require an API key, ensure it's configured
-        if (config.IsApiKeyPresent && string.IsNullOrWhiteSpace(config.ApiKey))
+        if (config == null)
         {
-            throw new InvalidOperationException(
-                $"API key for provider '{providerName}' is not configured. " +
-                $"Set it in appsettings.json under LLM:Providers:{providerName}:ApiKey " +
-                $"or via environment variable LLM__Providers__{providerName}__ApiKey");
+            throw new ArgumentNullException(nameof(config));
         }
 
-        // Using OpenAI ChatClient with custom endpoint (works with any OpenAI-compatible API)
-        // For providers that don't require an API key, use a dummy value if none is provided
-        var apiKey = string.IsNullOrWhiteSpace(config.ApiKey) ? "not-needed" : config.ApiKey;
-        var credential = new ApiKeyCredential(apiKey);
+        if (string.IsNullOrWhiteSpace(config.ProviderType))
+        {
+            throw new ArgumentException("ProviderType must be specified", nameof(config));
+        }
+
+        var normalizedProviderType = config.ProviderType.ToLowerInvariant();
+
+        // Get implementation details from configuration
+        ProviderImplementationDetails? implementationDetails = null;
+        if (_implementationsConfiguration?.ProviderImplementations != null)
+        {
+            _implementationsConfiguration.ProviderImplementations.TryGetValue(
+                normalizedProviderType, out implementationDetails);
+        }
+
+        if (implementationDetails == null)
+        {
+            throw new ArgumentException(
+                $"Provider type '{config.ProviderType}' is not supported. " +
+                $"Add configuration under ProviderImplementations:{config.ProviderType} in appsettings.json",
+                nameof(config));
+        }
+
+        // Apply defaults if not specified
+        var baseUrl = string.IsNullOrWhiteSpace(config.BaseUrl) 
+            ? implementationDetails.DefaultBaseUrl 
+            : config.BaseUrl;
+        var model = string.IsNullOrWhiteSpace(config.Model)
+            ? implementationDetails.DefaultModel
+            : config.Model;
+
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new ArgumentException("BaseUrl must be specified either in config or as a default", nameof(config));
+        }
+
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            throw new ArgumentException("Model must be specified either in config or as a default", nameof(config));
+        }
+
+        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            throw new InvalidOperationException(
+                $"API key for provider '{config.ProviderType}' is required. " +
+                $"Provide it via the ApiKey property in ProviderConfiguration.");
+        }
+
+        // Create OpenAIConfiguration for compatibility with existing client creation
+        var openAIConfig = new OpenAIConfiguration
+        {
+            ApiKey = config.ApiKey,
+            Model = model,
+            BaseUrl = baseUrl,
+            Timeout = config.Timeout
+        };
+
+        // Instantiate the appropriate client based on provider type
+        var chatClient = normalizedProviderType switch
+        {
+            "openai" => CreateOpenAIClient(openAIConfig),
+            "perplexity" => CreatePerplexityClient(openAIConfig),
+            _ => throw new ArgumentException(
+                $"Provider type '{config.ProviderType}' does not have an implementation.",
+                nameof(config))
+        };
+
+        return new LLMClient(openAIConfig, chatClient);
+    }
+
+    private IChatClient CreateOpenAIClient(OpenAIConfiguration config)
+    {
+        // OpenAI requires an API key
+        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            throw new InvalidOperationException(
+                "API key for OpenAI provider is required.");
+        }
+
+        var credential = new ApiKeyCredential(config.ApiKey);
         
         var options = new OpenAIClientOptions
         {
             Endpoint = new Uri(config.BaseUrl),
         };
         
-        // first make the actual OpenAI ChatClient
+        // Create OpenAI ChatClient
         var openAIClient = new ChatClient(config.Model, credential, options);
         
-        // wrap it to add logging, function invocation, and other middleware
+        // Wrap with middleware
+        var newClient = openAIClient.AsIChatClient()
+            .AsBuilder()
+            .UseLogging()
+            .UseFunctionInvocation()
+            .Build(_serviceProvider);
+        
+        return newClient;
+    }
+
+    private IChatClient CreatePerplexityClient(OpenAIConfiguration config)
+    {
+        // Perplexity requires an API key
+        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            throw new InvalidOperationException(
+                "API key for Perplexity provider is required.");
+        }
+
+        var credential = new ApiKeyCredential(config.ApiKey);
+        
+        var options = new OpenAIClientOptions
+        {
+            Endpoint = new Uri(config.BaseUrl),
+        };
+        
+        // Perplexity uses OpenAI-compatible API
+        var openAIClient = new ChatClient(config.Model, credential, options);
+        
+        // Wrap with middleware
         var newClient = openAIClient.AsIChatClient()
             .AsBuilder()
             .UseLogging()

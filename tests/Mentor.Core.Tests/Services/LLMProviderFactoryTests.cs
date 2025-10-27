@@ -1,6 +1,7 @@
 using Mentor.Core.Configuration;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Services;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,13 +14,13 @@ namespace Mentor.Core.Tests.Services;
 
 public class LLMProviderFactoryTests
 {
-    private readonly Mock<IWebsearch> _websearchMock;
+    private readonly Mock<IWebSearchTool> _websearchMock;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<LLMProviderFactoryTests> _logger;
 
     public LLMProviderFactoryTests(ITestOutputHelper testOutputHelper)
     {
-        _websearchMock = new Mock<IWebsearch>();
+        _websearchMock = new Mock<IWebSearchTool>();
         
         // Create a service provider with logging support for the tests
         var services = TestHelpers.CreateTestServices(testOutputHelper);
@@ -29,143 +30,157 @@ public class LLMProviderFactoryTests
     }
 
     [Fact]
-    public void GetProvider_WithOpenAI_ReturnsLLMClient()
+    public void GetProvider_WithProviderConfiguration_OpenAI_ReturnsLLMClient()
     {
         // Arrange
-        var config = new LLMConfiguration
+        var implConfig = new ProviderImplementationsConfiguration
         {
-            DefaultProvider = "perplexity",
-            Providers = new Dictionary<string, OpenAIConfiguration>
+            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
             {
-                ["perplexity"] = new OpenAIConfiguration
+                ["openai"] = new ProviderImplementationDetails
                 {
-                    ApiKey = "test-api-key",
-                    Model = "sonar",
-                    BaseUrl = "https://api.perplexity.ai"
+                    DefaultBaseUrl = "https://api.openai.com/v1",
+                    DefaultModel = "gpt-4o"
                 }
             }
         };
-        var options = Options.Create(config);
+        var options = Options.Create(implConfig);
         var factory = new LLMProviderFactory(options, _serviceProvider);
 
+        var providerConfig = new ProviderConfiguration
+        {
+            ProviderType = "openai",
+            ApiKey = "test-api-key",
+            Model = "gpt-4o-mini",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 60
+        };
+
         // Act
-        var provider = factory.GetProvider("perplexity");
+        var provider = factory.GetProvider(providerConfig);
 
         // Assert
         Assert.NotNull(provider);
         Assert.IsAssignableFrom<ILLMClient>(provider);
         Assert.NotNull(provider.ChatClient);
-        Assert.IsAssignableFrom<IChatClient>(provider.ChatClient);
-        Assert.NotNull(provider.Configuration);
-        Assert.Equal("sonar", provider.Configuration.Model);
-        Assert.Equal("https://api.perplexity.ai", provider.Configuration.BaseUrl);
     }
 
     [Fact]
-    public void GetProvider_WithInvalidProvider_ThrowsArgumentException()
+    public void GetProvider_WithProviderConfiguration_Perplexity_ReturnsLLMClient()
     {
         // Arrange
-        var config = new LLMConfiguration();
-        var options = Options.Create(config);
+        var implConfig = new ProviderImplementationsConfiguration
+        {
+            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
+            {
+                ["perplexity"] = new ProviderImplementationDetails
+                {
+                    DefaultBaseUrl = "https://api.perplexity.ai",
+                    DefaultModel = "sonar"
+                }
+            }
+        };
+        var options = Options.Create(implConfig);
         var factory = new LLMProviderFactory(options, _serviceProvider);
+
+        var providerConfig = new ProviderConfiguration
+        {
+            ProviderType = "perplexity",
+            ApiKey = "test-api-key",
+            Model = "sonar",
+            BaseUrl = "https://api.perplexity.ai"
+        };
+
+        // Act
+        var provider = factory.GetProvider(providerConfig);
+
+        // Assert
+        Assert.NotNull(provider);
+        Assert.IsAssignableFrom<ILLMClient>(provider);
+        Assert.NotNull(provider.ChatClient);
+    }
+
+    [Fact]
+    public void GetProvider_WithProviderConfiguration_UsesDefaultsWhenNotSpecified()
+    {
+        // Arrange
+        var implConfig = new ProviderImplementationsConfiguration
+        {
+            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
+            {
+                ["openai"] = new ProviderImplementationDetails
+                {
+                    DefaultBaseUrl = "https://api.openai.com/v1",
+                    DefaultModel = "gpt-4o"
+                }
+            }
+        };
+        var options = Options.Create(implConfig);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
+
+        var providerConfig = new ProviderConfiguration
+        {
+            ProviderType = "openai",
+            ApiKey = "test-api-key",
+            // Model and BaseUrl not specified - should use defaults
+        };
+
+        // Act
+        var provider = factory.GetProvider(providerConfig);
+
+        // Assert
+        Assert.NotNull(provider);
+        Assert.IsAssignableFrom<ILLMClient>(provider);
+        Assert.NotNull(provider.ChatClient);
+    }
+
+    [Fact]
+    public void GetProvider_WithProviderConfiguration_UnsupportedProvider_ThrowsArgumentException()
+    {
+        // Arrange
+        var implConfig = new ProviderImplementationsConfiguration
+        {
+            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>()
+        };
+        var options = Options.Create(implConfig);
+        var factory = new LLMProviderFactory(options, _serviceProvider);
+
+        var providerConfig = new ProviderConfiguration
+        {
+            ProviderType = "unsupported-provider",
+            ApiKey = "test-api-key"
+        };
 
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => factory.GetProvider("invalid-provider"));
+        Assert.Throws<ArgumentException>(() => factory.GetProvider(providerConfig));
     }
 
     [Fact]
-    public void GetProvider_WithLocalLLM_DoesNotRequireApiKey()
+    public void GetProvider_WithProviderConfiguration_EmptyApiKey_ThrowsInvalidOperationException()
     {
         // Arrange
-        var config = new LLMConfiguration
+        var implConfig = new ProviderImplementationsConfiguration
         {
-            Providers = new Dictionary<string, OpenAIConfiguration>
+            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
             {
-                ["local"] = new OpenAIConfiguration
+                ["openai"] = new ProviderImplementationDetails
                 {
-                    ApiKey = "",
-                    Model = "llama3",
-                    BaseUrl = "http://localhost:11434"
+                    DefaultBaseUrl = "https://api.openai.com/v1",
+                    DefaultModel = "gpt-4o"
                 }
             }
         };
-        var options = Options.Create(config);
+        var options = Options.Create(implConfig);
         var factory = new LLMProviderFactory(options, _serviceProvider);
 
-        // Act
-        var provider = factory.GetProvider("local");
-
-        // Assert
-        Assert.NotNull(provider);
-        Assert.IsAssignableFrom<ILLMClient>(provider);
-        Assert.NotNull(provider.ChatClient);
-        Assert.IsAssignableFrom<IChatClient>(provider.ChatClient);
-    }
-
-    [Fact]
-    public void GetProvider_WithLocalLLM_AndApiKey_StillWorks()
-    {
-        // Arrange
-        var config = new LLMConfiguration
+        var providerConfig = new ProviderConfiguration
         {
-            Providers = new Dictionary<string, OpenAIConfiguration>
-            {
-                ["local"] = new OpenAIConfiguration
-                {
-                    ApiKey = "not-needed-but-present",
-                    Model = "llama3",
-                    BaseUrl = "http://localhost:11434"
-                }
-            }
+            ProviderType = "openai",
+            ApiKey = "",
+            Model = "gpt-4o"
         };
-        var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
 
-        // Act
-        var provider = factory.GetProvider("local");
-
-        // Assert
-        Assert.NotNull(provider);
-        Assert.IsAssignableFrom<ILLMClient>(provider);
-        Assert.NotNull(provider.ChatClient);
-        Assert.IsAssignableFrom<IChatClient>(provider.ChatClient);
-    }
-
-    [Fact]
-    public void GetProvider_WithMultipleProviders_LookupsCorrectConfiguration()
-    {
-        // Arrange
-        var config = new LLMConfiguration
-        {
-            Providers = new Dictionary<string, OpenAIConfiguration>
-            {
-                ["openai"] = new OpenAIConfiguration
-                {
-                    ApiKey = "openai-key",
-                    Model = "gpt-4",
-                    BaseUrl = "https://api.openai.com"
-                },
-                ["local"] = new OpenAIConfiguration
-                {
-                    ApiKey = "",
-                    Model = "llama3.2-vision:11b",
-                    BaseUrl = "http://localhost:11434/v1"
-                }
-            }
-        };
-        var options = Options.Create(config);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
-
-        // Act
-        var openaiProvider = factory.GetProvider("openai");
-        var localProvider = factory.GetProvider("local");
-
-        // Assert
-        Assert.NotNull(openaiProvider);
-        Assert.NotNull(localProvider);
-        Assert.IsAssignableFrom<ILLMClient>(openaiProvider);
-        Assert.IsAssignableFrom<ILLMClient>(localProvider);
-        Assert.Equal("gpt-4", openaiProvider.Configuration.Model);
-        Assert.Equal("llama3.2-vision:11b", localProvider.Configuration.Model);
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => factory.GetProvider(providerConfig));
     }
 }

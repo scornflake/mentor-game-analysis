@@ -1,29 +1,34 @@
 using System.ComponentModel;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
+using Mentor.Core.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
-namespace Mentor.Core.Services;
+namespace Mentor.Core.Tools;
 
 public class AnalysisService : IAnalysisService
 {
     private readonly ILLMClient _llmClient;
-    private readonly IWebsearch _websearch;
+    private IWebSearchTool? _webSearchTool;
     private readonly ILogger<AnalysisService> _logger;
+    private readonly IToolFactory _toolFactory;
 
-    public AnalysisService(ILLMClient llmClient, IWebsearch websearch, ILogger<AnalysisService> logger)
+    public AnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory)
     {
         _llmClient = llmClient ?? throw new ArgumentNullException(nameof(llmClient));
-        _websearch = websearch;
         _logger = logger;
+        _toolFactory = toolFactory;
     }
 
     public async Task<Recommendation> AnalyzeAsync(
         AnalysisRequest request,
         CancellationToken cancellationToken = default)
     {
+        // this provider currently only supports Brave
+        _webSearchTool = await _toolFactory.GetToolAsync(KnownSearchTools.Brave);
+
         if (request.ImageData == null || request.ImageData.Length == 0)
         {
             throw new ArgumentException("Image data is required", nameof(request));
@@ -55,7 +60,7 @@ public class AnalysisService : IAnalysisService
         string SearchTheWeb(string query)
         {
             _logger.LogInformation("Performing web search for query: {Query}", query);
-            return _websearch.Search(query, SearchOutputFormat.Summary, 5).ConfigureAwait(false).GetAwaiter().GetResult();
+            return _webSearchTool.Search(query, SearchOutputFormat.Summary, 5).ConfigureAwait(false).GetAwaiter().GetResult();
         }
         
         IList<AITool> tools = [ AIFunctionFactory.Create(SearchTheWeb) ];

@@ -1,10 +1,12 @@
 using System.Net;
 using System.Text;
 using Mentor.Core.Configuration;
+using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -14,11 +16,11 @@ using Xunit.Abstractions;
 
 namespace Mentor.Core.Tests.Services;
 
-public class WebsearchTests
+public class BraveWebSearchTests
 {
     private readonly ITestOutputHelper _testOutputHelper;
 
-    public WebsearchTests(ITestOutputHelper testOutputHelper)
+    public BraveWebSearchTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
     }
@@ -70,14 +72,16 @@ public class WebsearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("test query", SearchOutputFormat.Snippets, 5);
@@ -108,14 +112,16 @@ public class WebsearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("test query", SearchOutputFormat.Structured, 5);
@@ -150,14 +156,16 @@ public class WebsearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("test query", SearchOutputFormat.Summary, 5);
@@ -186,14 +194,16 @@ public class WebsearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("test query", SearchOutputFormat.Structured, 2);
@@ -217,14 +227,16 @@ public class WebsearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("test query", SearchOutputFormat.Snippets, 5);
@@ -238,14 +250,16 @@ public class WebsearchTests
     {
         // Arrange
         var mockFactory = CreateMockHttpClientFactory("Error", HttpStatusCode.Unauthorized);
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "invalid-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
@@ -258,14 +272,16 @@ public class WebsearchTests
     {
         // Arrange
         var mockFactory = CreateMockHttpClientFactory("{}");
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
@@ -278,14 +294,16 @@ public class WebsearchTests
     {
         // Arrange
         var mockFactory = CreateMockHttpClientFactory("{}");
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = "test-key",
-            BaseUrl = "https://api.test.com"
-        });
+            BaseUrl = "https://api.test.com",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(mockFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
@@ -313,14 +331,16 @@ public class WebsearchIntegrationTests
         var httpClientFactory = new Mock<IHttpClientFactory>();
         httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = apiKey,
-            BaseUrl = "https://api.search.brave.com/res/v1"
-        });
+            BaseUrl = "https://api.search.brave.com/res/v1",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(httpClientFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(httpClientFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("C# programming", SearchOutputFormat.Snippets, 3);
@@ -341,14 +361,16 @@ public class WebsearchIntegrationTests
         var httpClientFactory = new Mock<IHttpClientFactory>();
         httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = apiKey,
-            BaseUrl = "https://api.search.brave.com/res/v1"
-        });
+            BaseUrl = "https://api.search.brave.com/res/v1",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(httpClientFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(httpClientFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("dotnet 8", SearchOutputFormat.Structured, 2);
@@ -369,14 +391,16 @@ public class WebsearchIntegrationTests
         var httpClientFactory = new Mock<IHttpClientFactory>();
         httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        var config = Options.Create(new BraveSearchConfiguration
+        var config = new RealWebtoolToolConfiguration
         {
             ApiKey = apiKey,
-            BaseUrl = "https://api.search.brave.com/res/v1"
-        });
+            BaseUrl = "https://api.search.brave.com/res/v1",
+            Timeout = 30
+        };
 
-        var logger = NullLogger<Websearch>.Instance;
-        var service = new Websearch(httpClientFactory.Object, config, logger);
+        var logger = NullLogger<BraveWebSearch>.Instance;
+        var service = new BraveWebSearch(httpClientFactory.Object, logger);
+        service.Configure(config);
 
         // Act
         var result = await service.Search("xUnit testing framework", SearchOutputFormat.Summary, 3);
