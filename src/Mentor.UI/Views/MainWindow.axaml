@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
         x:Class="MentorUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="Mentor - Game Screenshot Analysis"
+        Title="Mentor - Game Analysis"
         Width="900" Height="700"
         MinWidth="700" MinHeight="500">
 
