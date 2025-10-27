@@ -11,23 +11,17 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IAnalysisService _analysisService;
     private readonly ILLMProviderFactory _providerFactory;
 
-    [ObservableProperty]
-    private string? _imagePath;
+    [ObservableProperty] private string? _imagePath;
 
-    [ObservableProperty]
-    private string _prompt = "How can I make this weapon do more damage against ...";
+    [ObservableProperty] private string _prompt = "How can I make this weapon do more damage against ...";
 
-    [ObservableProperty]
-    private string _selectedProvider = "perplexity";
+    [ObservableProperty] private string _selectedProvider = "perplexity";
 
-    [ObservableProperty]
-    private bool _isAnalyzing;
+    [ObservableProperty] private bool _isAnalyzing;
 
-    [ObservableProperty]
-    private Recommendation? _result;
+    [ObservableProperty] private Recommendation? _result;
 
-    [ObservableProperty]
-    private string? _errorMessage;
+    [ObservableProperty] private string? _errorMessage;
 
     public ObservableCollection<string> Providers { get; } = new()
     {
@@ -74,9 +68,9 @@ public partial class MainWindowViewModel : ObservableObject
             };
 
             // Perform analysis
-            // Result = await _analysisService.AnalyzeAsync(request);
+            Result = await _analysisService.AnalyzeAsync(request);
 
-            Result = MakeUpFakeData();
+            // Result = MakeUpFakeData();
         }
         catch (Exception ex)
         {
@@ -90,6 +84,16 @@ public partial class MainWindowViewModel : ObservableObject
 
     private Recommendation MakeUpFakeData()
     {
+        var recommendations = new List<RecommendationItem>();
+        recommendations.Add(new RecommendationItem
+            {
+                Priority = Priority.High,
+                Action = "Increase your character's elemental damage by equipping weapons and artifacts that boost specific elemental types.",
+                Reasoning = "Elemental damage can exploit enemy weaknesses and significantly increase overall damage output.",
+                Context = "Your current build focuses heavily on physical damage, missing out on potential elemental advantages",
+            }
+        );
+
         var recommendation = new Recommendation
         {
             Analysis = "The screenshot shows a character build focused on high critical damage and status effects. " +
@@ -97,7 +101,8 @@ public partial class MainWindowViewModel : ObservableObject
             Summary = "Optimize your build by balancing offense with defense and incorporating elemental damage.",
             Confidence = 0.85,
             GeneratedAt = DateTime.UtcNow,
-            ProviderUsed = SelectedProvider
+            ProviderUsed = SelectedProvider,
+            Recommendations = recommendations
         };
         return recommendation;
     }
@@ -125,4 +130,3 @@ public partial class MainWindowViewModel : ObservableObject
         await Task.CompletedTask;
     }
 }
-

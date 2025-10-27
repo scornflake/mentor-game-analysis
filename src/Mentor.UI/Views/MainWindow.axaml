@@ -110,17 +110,17 @@
 
                     <!-- Metadata -->
                     <StackPanel Spacing="5">
+                    <TextBlock>
+                        <Run Text="Provider: " FontWeight="SemiBold"/>
+                        <Run Text="{Binding Result.ProviderUsed}"/>
+                    </TextBlock>
+                    <TextBlock>
+                        <Run Text="Confidence: " FontWeight="SemiBold"/>
+                        <Run Text="{Binding Result.Confidence, StringFormat=P0}"/>
+                    </TextBlock>
                         <TextBlock>
-                            <Run Text="Provider: " FontWeight="SemiBold"/>
-                            <Run Text="{Binding Result.ProviderUsed}"/>
-                        </TextBlock>
-                        <TextBlock>
-                            <Run Text="Confidence: " FontWeight="SemiBold"/>
-                            <Run Text="{Binding Result.Confidence, StringFormat=P0}"/>
-                        </TextBlock>
-                        <TextBlock>
-                            <Run Text="Generated: " FontWeight="SemiBold"/>
-                            <Run Text="{Binding Result.GeneratedAt, StringFormat=u}"/>
+                            <Run Text="Generated: " FontWeight="SemiBold" />
+                            <Run Text="{Binding Result.GeneratedAtFormatted}" />
                         </TextBlock>
                     </StackPanel>
 
@@ -128,36 +128,36 @@
 
                     <!-- Summary -->
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Summary" 
-                                  FontSize="16" 
+                        <TextBlock Text="Summary"
+                                  FontSize="16"
                                   FontWeight="Bold"/>
                         <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                                BorderBrush="{DynamicResource SystemControlHighlightBaseMediumLowBrush}"
                                BorderThickness="1"
                                CornerRadius="4"
                                Padding="15">
-                            <TextBlock Text="{Binding Result.Summary}" 
+                            <TextBlock Text="{Binding Result.Summary}"
                                       TextWrapping="Wrap"/>
                         </Border>
                     </StackPanel>
 
                     <!-- Analysis -->
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Detailed Analysis" 
-                                  FontSize="16" 
+                        <TextBlock Text="Detailed Analysis"
+                                  FontSize="16"
                                   FontWeight="Bold"/>
                         <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                                BorderBrush="{DynamicResource SystemControlHighlightBaseMediumLowBrush}"
                                BorderThickness="1"
                                CornerRadius="4"
                                Padding="15">
-                            <TextBlock Text="{Binding Result.Analysis}" 
+                            <TextBlock Text="{Binding Result.Analysis}"
                                       TextWrapping="Wrap"/>
                         </Border>
                     </StackPanel>
 
                     <!-- Recommendations -->
-                    <!-- <StackPanel Spacing="8">
+                     <StackPanel Spacing="8">
                         <TextBlock Text="Recommendations" 
                                   FontSize="16" 
                                   FontWeight="Bold"/>
@@ -199,8 +199,8 @@
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                        </ItemsControl> -->
-                    <!-- </StackPanel> -->
+                        </ItemsControl> 
+                     </StackPanel> 
                 </StackPanel>
             </ScrollViewer>
         </Border>

@@ -8,5 +8,7 @@ public class Recommendation
     public double Confidence { get; set; }
     public DateTime GeneratedAt { get; set; }
     public string ProviderUsed { get; set; } = string.Empty;
+    
+    public string GeneratedAtFormatted => GeneratedAt.ToUniversalTime().ToString("u") ?? "";
 }
 
