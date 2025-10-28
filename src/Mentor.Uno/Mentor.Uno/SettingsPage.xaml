@@ -1,0 +1,188 @@
+<Page x:Class="Mentor.Uno.SettingsPage"
+      x:Name="PageRoot"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="using:Mentor.Uno"
+      xmlns:vm="using:Mentor.Uno.ViewModels"
+      Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Save Status Message -->
+    <Border Grid.Row="0" 
+            Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+            Padding="12,8"
+            Margin="20,10,20,0"
+            CornerRadius="4"
+            Visibility="{x:Bind ViewModel.IsSaveStatusVisible, Mode=OneWay}">
+      <TextBlock Text="{x:Bind ViewModel.SaveStatusMessage, Mode=OneWay}"
+                 Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                 FontWeight="SemiBold"
+                 HorizontalAlignment="Center"/>
+    </Border>
+
+    <!-- Settings Content -->
+    <ScrollViewer Grid.Row="1" Padding="20">
+      <StackPanel Spacing="32">
+        
+        <!-- Header with Back Button -->
+        <Grid>
+          <Button Content="← Back" 
+                  Click="OnBackClick"
+                  Style="{StaticResource TextBlockButtonStyle}"
+                  HorizontalAlignment="Left"/>
+          <TextBlock Text="Settings" 
+                     Style="{StaticResource TitleTextBlockStyle}"
+                     HorizontalAlignment="Center"/>
+        </Grid>
+
+        <!-- LLM Providers Section -->
+        <StackPanel Spacing="16">
+          <Grid>
+            <TextBlock Text="LLM Providers" 
+                       Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Button Content="+ Add Provider"
+                    Command="{x:Bind ViewModel.AddProviderCommand}"
+                    HorizontalAlignment="Right"
+                    Style="{StaticResource AccentButtonStyle}"/>
+          </Grid>
+
+          <ItemsRepeater ItemsSource="{x:Bind ViewModel.Providers, Mode=OneWay}">
+            <ItemsRepeater.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProviderViewModel">
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="12">
+                      <!-- Name and Active Status -->
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBox Header="Name" 
+                                 Text="{x:Bind Name, Mode=TwoWay}"
+                                 Width="200"/>
+                        <CheckBox Content="Active" 
+                                  IsChecked="{x:Bind IsActive, Mode=TwoWay}"
+                                  VerticalAlignment="Bottom"/>
+                      </StackPanel>
+
+                      <!-- Provider Type and Model -->
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBox Header="Provider Type" 
+                                 Text="{x:Bind ProviderType, Mode=TwoWay}"
+                                 Width="200"/>
+                        <TextBox Header="Model" 
+                                 Text="{x:Bind Model, Mode=TwoWay}"
+                                 Width="200"/>
+                      </StackPanel>
+
+                      <!-- Base URL -->
+                      <TextBox Header="Base URL" 
+                               Text="{x:Bind BaseUrl, Mode=TwoWay}"
+                               Width="420"/>
+
+                      <!-- API Key and Timeout -->
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <PasswordBox Header="API Key" 
+                                     Password="{x:Bind ApiKey, Mode=TwoWay}"
+                                     Width="300"/>
+                        <TextBox Header="Timeout (seconds)" 
+                                 Text="{x:Bind Timeout, Mode=TwoWay}"
+                                 Width="120"
+                                 InputScope="Number"/>
+                      </StackPanel>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Content="Delete"
+                            Command="{Binding ElementName=PageRoot, Path=DataContext.DeleteProviderCommand}"
+                            CommandParameter="{x:Bind}"
+                            VerticalAlignment="Top"
+                            Style="{StaticResource TextBlockButtonStyle}"
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+          </ItemsRepeater>
+        </StackPanel>
+
+        <!-- Web Search Tools Section -->
+        <StackPanel Spacing="16">
+          <Grid>
+            <TextBlock Text="Web Search Tools" 
+                       Style="{StaticResource SubtitleTextBlockStyle}"/>
+            <Button Content="+ Add Tool"
+                    Command="{x:Bind ViewModel.AddToolCommand}"
+                    HorizontalAlignment="Right"
+                    Style="{StaticResource AccentButtonStyle}"/>
+          </Grid>
+
+          <ItemsRepeater ItemsSource="{x:Bind ViewModel.Tools, Mode=OneWay}">
+            <ItemsRepeater.ItemTemplate>
+              <DataTemplate x:DataType="vm:ToolViewModel">
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="12">
+                      <!-- Tool Name -->
+                      <TextBox Header="Tool Name" 
+                               Text="{x:Bind ToolName, Mode=TwoWay}"
+                               Width="300"/>
+
+                      <!-- Base URL -->
+                      <TextBox Header="Base URL" 
+                               Text="{x:Bind BaseUrl, Mode=TwoWay}"
+                               Width="420"/>
+
+                      <!-- API Key and Timeout -->
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <PasswordBox Header="API Key" 
+                                     Password="{x:Bind ApiKey, Mode=TwoWay}"
+                                     Width="300"/>
+                        <TextBox Header="Timeout (seconds)" 
+                                 Text="{x:Bind Timeout, Mode=TwoWay}"
+                                 Width="120"
+                                 InputScope="Number"/>
+                      </StackPanel>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Content="Delete"
+                            Command="{Binding ElementName=PageRoot, Path=DataContext.DeleteToolCommand}"
+                            CommandParameter="{x:Bind}"
+                            VerticalAlignment="Top"
+                            Style="{StaticResource TextBlockButtonStyle}"
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+          </ItemsRepeater>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</Page>
+
