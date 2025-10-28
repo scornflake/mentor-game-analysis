@@ -20,7 +20,7 @@ public interface IWebSearchTool
     Task<string> Search(string query, SearchOutputFormat format, int maxResults = 5);
     Task<IList<SearchResult>> SearchStructured(string query, int maxResults = 5);
 
-    void Configure(RealWebtoolToolConfiguration configuration);
+    void Configure(ToolConfigurationEntity configuration);
 }
 
 public class KnownSearchTools

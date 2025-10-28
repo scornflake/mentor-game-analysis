@@ -11,7 +11,7 @@ public partial class ToolViewModel : ObservableObject
     [ObservableProperty] private string _baseUrl = string.Empty;
     [ObservableProperty] private int _timeout = 30;
 
-    public ToolViewModel(RealWebtoolToolConfiguration config)
+    public ToolViewModel(ToolConfigurationEntity config)
     {
         _id = config.Id;
         _toolName = config.ToolName;
@@ -27,9 +27,9 @@ public partial class ToolViewModel : ObservableObject
         _timeout = 30;
     }
 
-    public RealWebtoolToolConfiguration ToConfiguration()
+    public ToolConfigurationEntity ToConfiguration()
     {
-        return new RealWebtoolToolConfiguration
+        return new ToolConfigurationEntity
         {
             Id = Id,
             ToolName = ToolName,

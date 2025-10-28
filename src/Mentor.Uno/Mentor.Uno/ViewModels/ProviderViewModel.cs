@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Mentor.Core.Configuration;
+using Mentor.Core.Data;
 
 namespace Mentor.Uno.ViewModels;
 
@@ -13,7 +13,7 @@ public partial class ProviderViewModel : ObservableObject
     [ObservableProperty] private string _baseUrl = string.Empty;
     [ObservableProperty] private int _timeout = 60;
 
-    public ProviderViewModel(ProviderConfiguration config)
+    public ProviderViewModel(ProviderConfigurationEntity config)
     {
         _id = config.Id;
         _name = config.Name;
@@ -33,10 +33,12 @@ public partial class ProviderViewModel : ObservableObject
         _timeout = 60;
     }
 
-    public ProviderConfiguration ToConfiguration()
+    public ProviderConfigurationEntity ToConfiguration()
     {
-        return new ProviderConfiguration
+        return new ProviderConfigurationEntity
         {
+            Id = Id,
+            Name = Name,
             ProviderType = ProviderType,
             ApiKey = ApiKey,
             Model = Model,

@@ -1,11 +1,10 @@
-using Realms;
+using LiteDB;
 
 namespace Mentor.Core.Data;
 
-public partial class RealmProviderConfiguration : IRealmObject
+public class ProviderConfigurationEntity
 {
-    [PrimaryKey]
-    [MapTo("_id")]
+    [BsonId]
     public string Id { get; set; } = Guid.NewGuid().ToString();
     
     public string Name { get; set; } = string.Empty;

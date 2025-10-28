@@ -204,3 +204,6 @@ FodyWeavers.xsd
 # Development configuration with secrets
 appsettings.Development.json
 
+# Distribution builds
+dist/
+

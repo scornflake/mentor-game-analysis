@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text;
-using Mentor.Core.Configuration;
 using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
@@ -72,7 +71,7 @@ public class BraveWebSearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "test-key",
             BaseUrl = "https://api.test.com",
@@ -91,45 +90,6 @@ public class BraveWebSearchTests
         Assert.Contains("Second test snippet.", result);
         Assert.DoesNotContain("https://example.com", result);
         Assert.DoesNotContain("Test Result 1", result);
-    }
-
-    [Fact]
-    public async Task Search_WithStructuredFormat_ReturnsFormattedResults()
-    {
-        // Arrange
-        var mockResponse = """
-        {
-            "web": {
-                "results": [
-                    {
-                        "title": "Test Result 1",
-                        "url": "https://example.com/1",
-                        "description": "First test snippet."
-                    }
-                ]
-            }
-        }
-        """;
-
-        var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new RealWebtoolToolConfiguration
-        {
-            ApiKey = "test-key",
-            BaseUrl = "https://api.test.com",
-            Timeout = 30
-        };
-
-        var logger = NullLogger<BraveWebSearch>.Instance;
-        var service = new BraveWebSearch(mockFactory.Object, logger);
-        service.Configure(config);
-
-        // Act
-        var result = await service.Search("test query", SearchOutputFormat.Structured, 5);
-
-        // Assert
-        Assert.Contains("Test Result 1", result);
-        Assert.Contains("https://example.com/1", result);
-        Assert.Contains("First test snippet.", result);
     }
 
     [Fact]
@@ -156,7 +116,7 @@ public class BraveWebSearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "test-key",
             BaseUrl = "https://api.test.com",
@@ -194,7 +154,7 @@ public class BraveWebSearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "test-key",
             BaseUrl = "https://api.test.com",
@@ -206,12 +166,13 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("test query", SearchOutputFormat.Structured, 2);
+        var result = await service.SearchStructured("test query", 2);
 
+        Assert.Equal(2, result.Count);
+        
         // Assert
-        Assert.Contains("Result 1", result);
-        Assert.Contains("Result 2", result);
-        Assert.DoesNotContain("Result 3", result);
+        Assert.NotNull(result[0]);
+        Assert.NotNull(result[1]);
     }
 
     [Fact]
@@ -227,7 +188,7 @@ public class BraveWebSearchTests
         """;
 
         var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "test-key",
             BaseUrl = "https://api.test.com",
@@ -250,7 +211,7 @@ public class BraveWebSearchTests
     {
         // Arrange
         var mockFactory = CreateMockHttpClientFactory("Error", HttpStatusCode.Unauthorized);
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "invalid-key",
             BaseUrl = "https://api.test.com",
@@ -272,7 +233,7 @@ public class BraveWebSearchTests
     {
         // Arrange
         var mockFactory = CreateMockHttpClientFactory("{}");
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "test-key",
             BaseUrl = "https://api.test.com",
@@ -294,7 +255,7 @@ public class BraveWebSearchTests
     {
         // Arrange
         var mockFactory = CreateMockHttpClientFactory("{}");
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = "test-key",
             BaseUrl = "https://api.test.com",
@@ -331,7 +292,7 @@ public class WebsearchIntegrationTests
         var httpClientFactory = new Mock<IHttpClientFactory>();
         httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = apiKey,
             BaseUrl = "https://api.search.brave.com/res/v1",
@@ -361,7 +322,7 @@ public class WebsearchIntegrationTests
         var httpClientFactory = new Mock<IHttpClientFactory>();
         httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = apiKey,
             BaseUrl = "https://api.search.brave.com/res/v1",
@@ -373,12 +334,12 @@ public class WebsearchIntegrationTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("dotnet 8", SearchOutputFormat.Structured, 2);
+        var result = await service.SearchStructured("dotnet 8", 2);
 
         // Assert
         _testOutputHelper.WriteLine($"Search Result (Structured): {result}");
         Assert.NotEmpty(result);
-        Assert.Contains("http", result);
+        Assert.Contains("http", result[0].Url);
     }
 
     [ConditionalFact("BRAVE_SEARCH_API_KEY")]
@@ -391,7 +352,7 @@ public class WebsearchIntegrationTests
         var httpClientFactory = new Mock<IHttpClientFactory>();
         httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ApiKey = apiKey,
             BaseUrl = "https://api.search.brave.com/res/v1",

@@ -1,4 +1,4 @@
-using Mentor.Core.Configuration;
+using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Services;
 using Mentor.Core.Tools;
@@ -30,11 +30,11 @@ public class LLMProviderFactoryTests
     }
 
     [Fact]
-    public void GetProvider_WithProviderConfiguration_OpenAI_ReturnsLLMClient()
+    public void GetProvider_WithProviderConfigurationEntity_OpenAI_ReturnsLLMClient()
     {
         var factory = new LLMProviderFactory(_serviceProvider);
 
-        var providerConfig = new ProviderConfiguration
+        var providerConfig = new ProviderConfigurationEntity
         {
             ProviderType = "openai",
             ApiKey = "test-api-key",
@@ -53,11 +53,11 @@ public class LLMProviderFactoryTests
     }
 
     [Fact]
-    public void GetProvider_WithProviderConfiguration_Perplexity_ReturnsLLMClient()
+    public void GetProvider_WithProviderConfigurationEntity_Perplexity_ReturnsLLMClient()
     {
         var factory = new LLMProviderFactory(_serviceProvider);
 
-        var providerConfig = new ProviderConfiguration
+        var providerConfig = new ProviderConfigurationEntity
         {
             ProviderType = "perplexity",
             ApiKey = "test-api-key",
@@ -75,11 +75,11 @@ public class LLMProviderFactoryTests
     }
 
     [Fact]
-    public void GetProvider_WithProviderConfiguration_UnsupportedProvider_ThrowsArgumentException()
+    public void GetProvider_WithProviderConfigurationEntity_UnsupportedProvider_ThrowsArgumentException()
     {
         var factory = new LLMProviderFactory(_serviceProvider);
 
-        var providerConfig = new ProviderConfiguration
+        var providerConfig = new ProviderConfigurationEntity
         {
             ProviderType = "unsupported-provider",
             ApiKey = "test-api-key"
@@ -90,11 +90,11 @@ public class LLMProviderFactoryTests
     }
 
     [Fact]
-    public void GetProvider_WithProviderConfiguration_EmptyApiKey_ThrowsInvalidOperationException()
+    public void GetProvider_WithProviderConfigurationEntity_EmptyApiKey_ThrowsInvalidOperationException()
     {
         var factory = new LLMProviderFactory(_serviceProvider);
 
-        var providerConfig = new ProviderConfiguration
+        var providerConfig = new ProviderConfigurationEntity
         {
             ProviderType = "perplexity",
             ApiKey = "",

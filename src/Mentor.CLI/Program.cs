@@ -1,5 +1,4 @@
-﻿using Mentor.Core.Configuration;
-using Mentor.Core.Data;
+﻿using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
@@ -15,8 +14,8 @@ namespace Mentor.CLI;
 
 public class Program
 {
-    private static ILogger<Program> _logger;
-    private static ServiceProvider _serviceProvider;
+    private static ILogger<Program> _logger = null!;
+    private static ServiceProvider _serviceProvider = null!;
 
     public static int Main(string[] args)
     {
@@ -223,7 +222,7 @@ public class Program
             return 1;
         }
 
-        var config = new ProviderConfiguration
+        var config = new ProviderConfigurationEntity
         {
             ProviderType = options["--provider-type"],
             ApiKey = option,
@@ -340,7 +339,7 @@ public class Program
 
         options.TryGetValue("--apikey", out var apikey);
 
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ToolName = name,
             ApiKey = apikey ?? string.Empty,
@@ -492,7 +491,7 @@ public class Program
 
         var services = new ServiceCollection();
         
-        services.AddRealmConfigurationRepository();
+        services.AddConfigurationRepository();
         
         services.AddHttpClient();
         services.AddLogging(sp =>
@@ -510,7 +509,7 @@ public class Program
         ServiceProvider serviceProvider, 
         string imagePath, 
         string prompt,
-        ProviderConfiguration provider)
+        ProviderConfigurationEntity provider)
     {
         try
         {

@@ -11,7 +11,7 @@ public class BraveWebSearch : IWebSearchTool
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<BraveWebSearch> _logger;
-    private RealWebtoolToolConfiguration _config = new RealWebtoolToolConfiguration();
+    private ToolConfigurationEntity _config = new ToolConfigurationEntity();
 
     public BraveWebSearch(IHttpClientFactory httpClientFactory, ILogger<BraveWebSearch> logger)
     {
@@ -19,7 +19,7 @@ public class BraveWebSearch : IWebSearchTool
         _logger = logger;
     }
 
-    public void Configure(RealWebtoolToolConfiguration configuration)
+    public void Configure(ToolConfigurationEntity configuration)
     {
         _config = configuration;
     }

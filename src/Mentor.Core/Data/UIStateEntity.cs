@@ -1,13 +1,13 @@
-using Realms;
+using LiteDB;
 
 namespace Mentor.Core.Data;
 
-public partial class RealmUIState : IRealmObject
+public class UIStateEntity
 {
-    [PrimaryKey]
-    [MapTo("_id")]
-    public string Id { get; set; } = "ui_state_singleton";
+    [BsonId]
+    public ObjectId Id { get; set; } = ObjectId.NewObjectId();
     
+    public string Name { get; init; } = "default";
     public string? LastImagePath { get; set; }
     public string? LastPrompt { get; set; }
     public string? LastProvider { get; set; }

@@ -1,4 +1,4 @@
-using Mentor.Core.Configuration;
+using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
@@ -61,7 +61,7 @@ public class AnalysisServiceIntegrationTests
 
         var factory = new LLMProviderFactory(_serviceProvider);
 
-        var providerConfig = new ProviderConfiguration
+        var providerConfig = new ProviderConfigurationEntity
         {
             ProviderType = "perplexity",
             ApiKey = apiKey,

@@ -1,0 +1,309 @@
+using LiteDB;
+using Mentor.Core.Data;
+using Mentor.Core.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace Mentor.Core.Services;
+
+public static class ConfigurationRepositoryExtensions
+{
+    public static IServiceCollection AddConfigurationRepository(this IServiceCollection services)
+    {
+        services.AddSingleton<IConfigurationRepository>(sp =>
+        {
+            // Use a consistent database path
+            var dbPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Mentor",
+                "mentor.db"
+            );
+
+            var dbDir = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(dbDir) && !Directory.Exists(dbDir))
+            {
+                Directory.CreateDirectory(dbDir);
+            }
+
+            var logger = sp.GetRequiredService<ILogger<ConfigurationRepository>>();
+            logger.LogInformation($"Using database path: {dbPath}");
+
+            return new ConfigurationRepository(dbPath);
+        });
+
+        return services;
+    }
+}
+
+public class ConfigurationRepository : IConfigurationRepository, IDisposable
+{
+    private readonly LiteDatabase _database;
+
+    public ConfigurationRepository(string? databasePath = null)
+    {
+        var path = databasePath ?? "mentor.db";
+        _database = new LiteDatabase(path);
+    }
+
+    public Task<ProviderConfigurationEntity?> GetProviderByNameAsync(string name)
+    {
+        var collection = _database.GetCollection<ProviderConfigurationEntity>("providers");
+        var entity = collection.FindOne(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(entity)!;
+    }
+
+    public Task<IList<ProviderConfigurationEntity>> GetAllProvidersAsync()
+    {
+        var collection = _database.GetCollection<ProviderConfigurationEntity>("providers");
+        var entities = collection.FindAll().ToList();
+        return Task.FromResult<IList<ProviderConfigurationEntity>>(entities);
+    }
+
+    public Task SaveProviderAsync(ProviderConfigurationEntity config)
+    {
+        // Must have a name field - or throw
+        var name = config.Name;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Provider name cannot be null or empty.");
+        }
+
+        var collection = _database.GetCollection<ProviderConfigurationEntity>("providers");
+        collection.EnsureIndex(x => x.Id);
+
+        var existingProvider = collection.FindOne(p => p.Id.Equals(config.Id, StringComparison.OrdinalIgnoreCase));
+
+        if (existingProvider != null)
+        {
+            // Update existing provider
+            // If config.Name is different, check that the new name is unique
+            if (!string.IsNullOrEmpty(config.Name) && !config.Name.Equals(existingProvider.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                var duplicateName = collection.FindOne(p =>
+                    p.Name.Equals(config.Name, StringComparison.OrdinalIgnoreCase) && p.Id != existingProvider.Id);
+
+                if (duplicateName != null)
+                {
+                    throw new InvalidOperationException($"A provider with the name '{config.Name}' already exists.");
+                }
+
+                existingProvider.Name = config.Name;
+            }
+
+            existingProvider.ProviderType = config.ProviderType;
+            existingProvider.ApiKey = config.ApiKey;
+            existingProvider.Model = config.Model;
+            existingProvider.BaseUrl = config.BaseUrl;
+            existingProvider.Timeout = config.Timeout;
+
+            collection.Update(existingProvider);
+        }
+        else
+        {
+            // Creating new provider - check name is unique
+            var duplicateName = collection.FindOne(p =>
+                p.Name.Equals(config.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (duplicateName != null)
+            {
+                throw new InvalidOperationException($"A provider with the name '{name}' already exists.");
+            }
+
+            // Create new
+            var newProvider = new ProviderConfigurationEntity
+            {
+                Id = string.IsNullOrEmpty(config.Id) ? Guid.NewGuid().ToString() : config.Id,
+                Name = name,
+                ProviderType = config.ProviderType,
+                ApiKey = config.ApiKey,
+                Model = config.Model,
+                BaseUrl = config.BaseUrl,
+                Timeout = config.Timeout,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            collection.Insert(newProvider);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteProviderAsync(string id)
+    {
+        var collection = _database.GetCollection<ProviderConfigurationEntity>("providers");
+        var provider = collection.FindOne(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+        if (provider != null)
+        {
+            collection.Delete(provider.Id);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<ToolConfigurationEntity?> GetToolByNameAsync(string toolName)
+    {
+        var collection = _database.GetCollection<ToolConfigurationEntity>("tools");
+        var tool = collection.FindOne(t => t.ToolName.Equals(toolName, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<ToolConfigurationEntity?>(tool);
+    }
+
+    public Task<IList<ToolConfigurationEntity>> GetAllToolsAsync()
+    {
+        var collection = _database.GetCollection<ToolConfigurationEntity>("tools");
+        var tools = collection.FindAll().ToList();
+        return Task.FromResult<IList<ToolConfigurationEntity>>(tools);
+    }
+
+    public Task SaveToolAsync(ToolConfigurationEntity config)
+    {
+        var collection = _database.GetCollection<ToolConfigurationEntity>("tools");
+        collection.EnsureIndex(x => x.Id);
+        var existingTool = collection.FindOne(t => t.Id.Equals(config.Id, StringComparison.OrdinalIgnoreCase));
+
+        if (existingTool != null)
+        {
+            // Update existing
+            existingTool.ApiKey = config.ApiKey;
+            existingTool.BaseUrl = config.BaseUrl;
+            existingTool.Timeout = config.Timeout;
+            collection.Update(existingTool);
+        }
+        else
+        {
+            collection.Insert(config);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteToolAsync(string id)
+    {
+        var collection = _database.GetCollection<ToolConfigurationEntity>("tools");
+        var tool = collection.FindOne(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+        if (tool != null)
+        {
+            collection.Delete(tool.Id);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task SeedDefaultsAsync()
+    {
+        var providerCollection = _database.GetCollection<ProviderConfigurationEntity>("providers");
+        var toolCollection = _database.GetCollection<ToolConfigurationEntity>("tools");
+
+        // Check if database is empty
+        var hasProviders = providerCollection.Count() > 0;
+        var hasTools = toolCollection.Count() > 0;
+
+        if (hasProviders && hasTools)
+        {
+            return Task.CompletedTask; // Already seeded
+        }
+
+        // Seed providers if empty
+        if (!hasProviders)
+        {
+            // Seed Perplexity provider
+            var perplexityProvider = new ProviderConfigurationEntity
+            {
+                Name = "Perplexity",
+                ProviderType = "perplexity",
+                Model = "sonar",
+                BaseUrl = "https://api.perplexity.ai",
+                ApiKey = string.Empty,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            providerCollection.Insert(perplexityProvider);
+
+            // Seed Local LLM provider
+            var localProvider = new ProviderConfigurationEntity
+            {
+                Name = "Local LLM",
+                ProviderType = "openai",
+                Model = "google/gemma-3-27b",
+                BaseUrl = "http://localhost:1234/v1",
+                ApiKey = string.Empty,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            providerCollection.Insert(localProvider);
+        }
+
+        // Seed tools if empty
+        if (!hasTools)
+        {
+            var braveTool = new ToolConfigurationEntity
+            {
+                ToolName = "Brave",
+                ApiKey = string.Empty,
+                BaseUrl = "https://api.search.brave.com/res/v1/web/search",
+                Timeout = 30,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            toolCollection.Insert(braveTool);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<(string? ImagePath, string? Prompt, string? Provider)> GetUIStateAsync()
+    {
+        var collection = _database.GetCollection<UIStateEntity>("uistate");
+        var uiState = collection.FindOne(u => u.Name.Equals("default"));
+
+        if (uiState == null)
+        {
+            return Task.FromResult<(string?, string?, string?)>((null, null, null));
+        }
+
+        return Task.FromResult((uiState.LastImagePath, uiState.LastPrompt, uiState.LastProvider));
+    }
+
+    public Task SaveUIStateAsync(string? imagePath, string? prompt, string? provider)
+    {
+        var collection = _database.GetCollection<UIStateEntity>("uistate");
+        collection.EnsureIndex(x => x.Name);
+        var existingState = collection.FindOne(u => u.Name.Equals("default"));
+
+        if (existingState != null)
+        {
+            // Update existing state
+            existingState.LastImagePath = imagePath;
+            existingState.LastPrompt = prompt;
+            existingState.LastProvider = provider;
+            existingState.UpdatedAt = DateTimeOffset.UtcNow;
+            collection.Update(existingState);
+        }
+        else
+        {
+            // Create new state
+            var newState = new UIStateEntity
+            {
+                Name = "default",
+                LastImagePath = imagePath,
+                LastPrompt = prompt,
+                LastProvider = provider,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            collection.Insert(newState);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<IList<string>> GetAvailableProviderTypesAsync()
+    {
+        return Task.FromResult<IList<string>>(new List<string>
+        {
+            "openai",
+            "perplexity"
+        });
+    }
+
+    public void Dispose()
+    {
+        _database.Dispose();
+    }
+}

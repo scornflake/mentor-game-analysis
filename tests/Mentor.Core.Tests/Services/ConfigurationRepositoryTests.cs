@@ -1,19 +1,18 @@
-using Mentor.Core.Configuration;
 using Mentor.Core.Data;
 using Mentor.Core.Services;
 
 namespace Mentor.Core.Tests.Services;
 
-public class RealmConfigurationRepositoryTests : IDisposable
+public class ConfigurationRepositoryTests : IDisposable
 {
     private readonly string _testDatabasePath;
-    private readonly RealmConfigurationRepository _repository;
+    private readonly ConfigurationRepository _repository;
 
-    public RealmConfigurationRepositoryTests()
+    public ConfigurationRepositoryTests()
     {
         // Use a unique database file for each test
-        _testDatabasePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.realm");
-        _repository = new RealmConfigurationRepository(_testDatabasePath);
+        _testDatabasePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.db");
+        _repository = new ConfigurationRepository(_testDatabasePath);
     }
 
     [Fact]
@@ -57,8 +56,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveProviderAsync_WithNewProvider_CreatesProvider()
     {
         // Arrange
-        var config = new ProviderConfiguration
+        var config = new ProviderConfigurationEntity
         {
+            Name = "OpenAI",
             ProviderType = "openai",
             ApiKey = "test-key",
             Model = "gpt-4o",
@@ -81,8 +81,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveProviderAsync_WithExistingProvider_UpdatesProvider()
     {
         // Arrange
-        var initialConfig = new ProviderConfiguration
+        var initialConfig = new ProviderConfigurationEntity
         {
+            Name = "OpenAI",
             ProviderType = "openai",
             ApiKey = "initial-key",
             Model = "gpt-4",
@@ -90,9 +91,11 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Timeout = 60
         };
         await _repository.SaveProviderAsync(initialConfig);
+        var saved = await _repository.GetProviderByNameAsync("OpenAI");
 
-        var updatedConfig = new ProviderConfiguration
+        var updatedConfig = new ProviderConfigurationEntity
         {
+            Id = saved!.Id,
             Name = "OpenAI",
             ProviderType = "openai",
             ApiKey = "updated-key",
@@ -116,8 +119,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveProviderAsync_WithSameName_UpdatesExisting()
     {
         // Arrange
-        var config1 = new ProviderConfiguration
+        var config1 = new ProviderConfigurationEntity
         {
+            Name = "TestProvider",
             ProviderType = "openai",
             ApiKey = "test-key-1",
             Model = "gpt-4",
@@ -125,9 +129,12 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Timeout = 60
         };
         await _repository.SaveProviderAsync(config1);
+        var saved = await _repository.GetProviderByNameAsync("TestProvider");
 
-        var config2 = new ProviderConfiguration
+        var config2 = new ProviderConfigurationEntity
         {
+            Id = saved!.Id,
+            Name = "TestProvider",
             ProviderType = "perplexity",
             ApiKey = "test-key-2",
             Model = "sonar",
@@ -152,8 +159,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveProviderAsync_UpdateWithSameName_Succeeds()
     {
         // Arrange
-        var config1 = new ProviderConfiguration
+        var config1 = new ProviderConfigurationEntity
         {
+            Name = "TestProvider",
             ProviderType = "openai",
             ApiKey = "test-key-1",
             Model = "gpt-4",
@@ -161,9 +169,11 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Timeout = 60
         };
         await _repository.SaveProviderAsync(config1);
+        var saved = await _repository.GetProviderByNameAsync("TestProvider");
 
-        var config2 = new ProviderConfiguration
+        var config2 = new ProviderConfigurationEntity
         {
+            Id = saved!.Id,
             Name = "TestProvider",
             ProviderType = "openai",
             ApiKey = "updated-key",
@@ -186,8 +196,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveProviderAsync_RenameToExistingName_ThrowsInvalidOperationException()
     {
         // Arrange
-        var config1 = new ProviderConfiguration
+        var config1 = new ProviderConfigurationEntity
         {
+            Name = "Provider1",
             ProviderType = "openai",
             ApiKey = "test-key-1",
             Model = "gpt-4",
@@ -196,8 +207,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
         };
         await _repository.SaveProviderAsync(config1);
 
-        var config2 = new ProviderConfiguration
+        var config2 = new ProviderConfigurationEntity
         {
+            Name = "Provider2",
             ProviderType = "perplexity",
             ApiKey = "test-key-2",
             Model = "sonar",
@@ -205,13 +217,14 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Timeout = 60
         };
         await _repository.SaveProviderAsync(config2);
+        var saved2 = await _repository.GetProviderByNameAsync("Provider2");
 
         // Try to rename Provider2 to Provider1
-        config2.Name = "Provider1";
+        saved2!.Name = "Provider1";
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _repository.SaveProviderAsync(config2));
+            async () => await _repository.SaveProviderAsync(saved2));
     }
 
     [Fact]
@@ -219,17 +232,19 @@ public class RealmConfigurationRepositoryTests : IDisposable
     {
         // Arrange
         await _repository.SeedDefaultsAsync();
-        var config = new ProviderConfiguration
+        var config = new ProviderConfigurationEntity
         {
+            Name = "OpenAI",
             ProviderType = "openai",
             ApiKey = "test-key",
             Model = "gpt-4o",
             BaseUrl = "https://api.openai.com/v1"
         };
         await _repository.SaveProviderAsync(config);
+        var saved = await _repository.GetProviderByNameAsync("OpenAI");
 
         // Act
-        await _repository.DeleteProviderAsync("OpenAI");
+        await _repository.DeleteProviderAsync(saved!.Id);
         var deletedProvider = await _repository.GetProviderByNameAsync("OpenAI");
 
         // Assert
@@ -241,8 +256,9 @@ public class RealmConfigurationRepositoryTests : IDisposable
     {
         // Arrange
         await _repository.SeedDefaultsAsync();
-        var config = new ProviderConfiguration
+        var config = new ProviderConfigurationEntity
         {
+            Name = "OpenAI",
             ProviderType = "openai",
             ApiKey = "test-key",
             Model = "gpt-4o",
@@ -278,7 +294,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveToolAsync_WithNewTool_CreatesTool()
     {
         // Arrange
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ToolName = "TestSearch",
             ApiKey = "test-api-key",
@@ -302,7 +318,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
     public async Task SaveToolAsync_WithExistingTool_UpdatesTool()
     {
         // Arrange
-        var initialConfig = new RealWebtoolToolConfiguration
+        var initialConfig = new ToolConfigurationEntity
         {
             ToolName = "TestSearch",
             ApiKey = "initial-key",
@@ -310,9 +326,11 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Timeout = 30
         };
         await _repository.SaveToolAsync(initialConfig);
+        var saved = await _repository.GetToolByNameAsync("TestSearch");
 
-        var updatedConfig = new RealWebtoolToolConfiguration
+        var updatedConfig = new ToolConfigurationEntity
         {
+            Id = saved!.Id,
             ToolName = "TestSearch",
             ApiKey = "updated-key",
             BaseUrl = "https://api.updated.com",
@@ -335,7 +353,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
     {
         // Arrange
         await _repository.SeedDefaultsAsync();
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ToolName = "TestSearch",
             ApiKey = "test-key",
@@ -343,9 +361,10 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Timeout = 30
         };
         await _repository.SaveToolAsync(config);
+        var saved = await _repository.GetToolByNameAsync("TestSearch");
 
         // Act
-        await _repository.DeleteToolAsync("TestSearch");
+        await _repository.DeleteToolAsync(saved!.Id);
         var deletedTool = await _repository.GetToolByNameAsync("TestSearch");
 
         // Assert
@@ -357,7 +376,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
     {
         // Arrange
         await _repository.SeedDefaultsAsync();
-        var config = new RealWebtoolToolConfiguration
+        var config = new ToolConfigurationEntity
         {
             ToolName = "TestSearch",
             ApiKey = "test-key",

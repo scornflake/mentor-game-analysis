@@ -44,8 +44,8 @@ public partial class App : Application
             })
             .ConfigureServices((context, services) =>
             {
-                // Register Realm repository
-                services.AddRealmConfigurationRepository();
+                // Register configuration repository
+                services.AddConfigurationRepository();
 
                 // Register core services
                 services.AddHttpClient();

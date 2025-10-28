@@ -1,4 +1,3 @@
-using Mentor.Core.Configuration;
 using Mentor.Core.Data;
 
 namespace Mentor.Core.Interfaces;
@@ -8,17 +7,17 @@ public interface IConfigurationRepository
     /// <summary>
     /// Gets a provider configuration by name
     /// </summary>
-    Task<ProviderConfiguration?> GetProviderByNameAsync(string name);
+    Task<ProviderConfigurationEntity?> GetProviderByNameAsync(string name);
     
     /// <summary>
     /// Gets all provider configurations
     /// </summary>
-    Task<IList<ProviderConfiguration>> GetAllProvidersAsync();
+    Task<IList<ProviderConfigurationEntity>> GetAllProvidersAsync();
     
     /// <summary>
     /// Saves a provider configuration
     /// </summary>
-    Task SaveProviderAsync(ProviderConfiguration config);
+    Task SaveProviderAsync(ProviderConfigurationEntity config);
     
     /// <summary>
     /// Deletes a provider configuration by name
@@ -34,17 +33,17 @@ public interface IConfigurationRepository
     /// <summary>
     /// Gets a tool configuration by name
     /// </summary>
-    Task<RealWebtoolToolConfiguration?> GetToolByNameAsync(string toolName);
+    Task<ToolConfigurationEntity?> GetToolByNameAsync(string toolName);
     
     /// <summary>
     /// Gets all tool configurations
     /// </summary>
-    Task<IList<RealWebtoolToolConfiguration>> GetAllToolsAsync();
+    Task<IList<ToolConfigurationEntity>> GetAllToolsAsync();
     
     /// <summary>
     /// Saves a tool configuration
     /// </summary>
-    Task SaveToolAsync(RealWebtoolToolConfiguration config);
+    Task SaveToolAsync(ToolConfigurationEntity config);
     
     /// <summary>
     /// Deletes a tool configuration by name

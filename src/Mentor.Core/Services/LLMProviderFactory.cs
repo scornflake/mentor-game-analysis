@@ -1,4 +1,3 @@
-using Mentor.Core.Configuration;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
@@ -8,6 +7,7 @@ using Mentor.Core.Tools;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Mentor.Core.Data;
 
 namespace Mentor.Core.Services;
 
@@ -50,7 +50,7 @@ public class LLMProviderFactory : ILLMProviderFactory
         }
     }
 
-    public ILLMClient GetProvider(ProviderConfiguration config)
+    public ILLMClient GetProvider(ProviderConfigurationEntity config)
     {
         if (config == null)
         {
@@ -90,7 +90,7 @@ public class LLMProviderFactory : ILLMProviderFactory
         return new LLMClient(config, chatClient);
     }
 
-    private IChatClient CreateOpenAIClient(ProviderConfiguration config)
+    private IChatClient CreateOpenAIClient(ProviderConfigurationEntity config)
     {
         var options = new OpenAIClientOptions
         {
@@ -112,7 +112,7 @@ public class LLMProviderFactory : ILLMProviderFactory
         return newClient;
     }
 
-    private IChatClient CreatePerplexityClient(ProviderConfiguration config)
+    private IChatClient CreatePerplexityClient(ProviderConfigurationEntity config)
     {
         // Perplexity requires an API key
         if (string.IsNullOrWhiteSpace(config.ApiKey))

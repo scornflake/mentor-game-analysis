@@ -16,6 +16,7 @@ public sealed partial class MainPage : Page
         this.Resources["NullToVisibilityConverter"] = new NullToVisibilityConverter();
         this.Resources["InverseNullToVisibilityConverter"] = new InverseNullToVisibilityConverter();
         this.Resources["StringToBoolConverter"] = new StringToBoolConverter();
+        this.Resources["StringToVisibilityConverter"] = new StringToVisibilityConverter();
         this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
     }
 

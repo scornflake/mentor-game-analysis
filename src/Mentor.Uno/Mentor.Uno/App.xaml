@@ -12,6 +12,7 @@
 
       <!-- Converters -->
       <local:StringToBoolConverter x:Key="StringToBoolConverter"/>
+      <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
       <local:PriorityToBrushConverter x:Key="PriorityToBrushConverter"/>
       <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
       <local:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter"/>

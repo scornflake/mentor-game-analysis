@@ -6,6 +6,7 @@ using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Tools;
 using Mentor.Uno.Messages;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Mentor.Uno;
 
@@ -17,6 +18,8 @@ public partial class MainPageViewModel : ObservableObject
     private readonly ILogger<MainPageViewModel> _logger;
     [ObservableProperty] private string? _imagePath;
 
+    [ObservableProperty] private BitmapImage? _imageSource;
+
     [ObservableProperty] private string _prompt = "How can I make this weapon do more damage against ...";
 
     [ObservableProperty] private string _selectedProvider = string.Empty;
@@ -26,6 +29,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] private Recommendation? _result;
 
     [ObservableProperty] private string? _errorMessage;
+    
     private bool _systemIsLoaded = false;
 
     public ObservableCollection<string> Providers { get; } = new();
@@ -223,6 +227,26 @@ public partial class MainPageViewModel : ObservableObject
     {
         AnalyzeCommand.NotifyCanExecuteChanged();
         _ = SaveUIStateAsync();
+        
+        // Update the image source
+        if (!string.IsNullOrEmpty(value) && File.Exists(value))
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.UriSource = new Uri(value, UriKind.Absolute);
+                ImageSource = bitmap;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading image: {ImagePath}", value);
+                ImageSource = null;
+            }
+        }
+        else
+        {
+            ImageSource = null;
+        }
     }
 
     partial void OnIsAnalyzingChanged(bool value)

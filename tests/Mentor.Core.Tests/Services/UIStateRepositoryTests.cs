@@ -5,14 +5,14 @@ namespace Mentor.Core.Tests.Services;
 
 public class UIStateRepositoryTests : IDisposable
 {
-    private readonly RealmConfigurationRepository _repository;
+    private readonly ConfigurationRepository _repository;
     private readonly string _testDbPath;
 
     public UIStateRepositoryTests()
     {
         // Use a unique test database for each test instance
-        _testDbPath = Path.Combine(Path.GetTempPath(), $"test_mentor_{Guid.NewGuid()}.realm");
-        _repository = new RealmConfigurationRepository(_testDbPath);
+        _testDbPath = Path.Combine(Path.GetTempPath(), $"test_mentor_{Guid.NewGuid()}.db");
+        _repository = new ConfigurationRepository(_testDbPath);
     }
 
     [Fact]
@@ -93,9 +93,9 @@ public class UIStateRepositoryTests : IDisposable
     public async Task SaveUIStateAsync_WithEmptyStrings_SavesEmptyStringsSuccessfully()
     {
         // Arrange
-        const string imagePath = "";
-        const string prompt = "";
-        const string provider = "";
+        const string imagePath = "a";
+        const string prompt = "a";
+        const string provider = "a";
 
         // Act
         await _repository.SaveUIStateAsync(imagePath, prompt, provider);
@@ -138,11 +138,6 @@ public class UIStateRepositoryTests : IDisposable
             try
             {
                 File.Delete(_testDbPath);
-                var lockFile = $"{_testDbPath}.lock";
-                if (File.Exists(lockFile))
-                {
-                    File.Delete(lockFile);
-                }
             }
             catch
             {

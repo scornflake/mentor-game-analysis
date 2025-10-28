@@ -5,15 +5,15 @@
       xmlns:models="using:Mentor.Core.Models"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
   
-  <ScrollViewer>
-    <Grid Margin="20">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="*"/>
-      </Grid.RowDefinitions>
+  <Grid Margin="20">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
 
-      <!-- Input Section -->
-      <StackPanel Grid.Row="0" Spacing="16" Margin="0,0,0,20">
+    <!-- Input Section -->
+    <ScrollViewer Grid.Column="0" MaxWidth="400" Margin="0,0,20,0">
+      <StackPanel Spacing="16">
         <Grid>
           <TextBlock Text="Screenshot Analysis" 
                      Style="{StaticResource TitleTextBlockStyle}"
@@ -54,6 +54,17 @@
                    TextWrapping="Wrap"/>
         </StackPanel>
 
+        <!-- Image Preview -->
+        <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Visibility="{x:Bind ViewModel.ImageSource, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+          <Image Source="{x:Bind ViewModel.ImageSource, Mode=OneWay}"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"/>
+        </Border>
+
         <!-- Provider Selection -->
         <StackPanel Spacing="8">
           <TextBlock Text="LLM Provider:" FontWeight="SemiBold"/>
@@ -83,9 +94,10 @@
                  Severity="Error"
                  Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"/>
       </StackPanel>
+    </ScrollViewer>
 
-      <!-- Results Section -->
-      <ScrollViewer Grid.Row="1" Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+    <!-- Results Section -->
+    <ScrollViewer Grid.Column="1" Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
         <StackPanel Spacing="16">
           <TextBlock Text="Analysis Results" 
                      Style="{StaticResource TitleTextBlockStyle}"/>
@@ -177,20 +189,19 @@
         </StackPanel>
       </ScrollViewer>
 
-      <!-- Empty State -->
-      <StackPanel Grid.Row="1"
-                  VerticalAlignment="Center"
-                  HorizontalAlignment="Center"
-                  Spacing="10"
-                  Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource InverseNullToVisibilityConverter}}">
-        <TextBlock Text="No analysis results yet" 
-                   Style="{StaticResource SubtitleTextBlockStyle}"
-                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                   HorizontalAlignment="Center"/>
-        <TextBlock Text="Select an image and click 'Analyze Screenshot' to begin" 
-                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                   HorizontalAlignment="Center"/>
-      </StackPanel>
-    </Grid>
-  </ScrollViewer>
+    <!-- Empty State -->
+    <StackPanel Grid.Column="1"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Spacing="10"
+                Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource InverseNullToVisibilityConverter}}">
+      <TextBlock Text="No analysis results yet" 
+                 Style="{StaticResource SubtitleTextBlockStyle}"
+                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                 HorizontalAlignment="Center"/>
+      <TextBlock Text="Select an image and click 'Analyze Screenshot' to begin" 
+                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
+  </Grid>
 </Page>

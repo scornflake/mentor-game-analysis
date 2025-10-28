@@ -1,11 +1,10 @@
-using Realms;
+using LiteDB;
 
 namespace Mentor.Core.Data;
 
-public partial class RealWebtoolToolConfiguration: IRealmObject
+public class ToolConfigurationEntity
 {
-    [PrimaryKey]
-    [MapTo("_id")]
+    [BsonId]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     public string ToolName { get; set; } = string.Empty;
@@ -15,3 +14,4 @@ public partial class RealWebtoolToolConfiguration: IRealmObject
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
+

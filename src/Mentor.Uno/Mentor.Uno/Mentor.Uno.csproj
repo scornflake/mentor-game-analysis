@@ -4,18 +4,21 @@
 
     <OutputType>Exe</OutputType>
     <UnoSingleProject>true</UnoSingleProject>
+    
+    <!-- Assembly/Executable name -->
+    <AssemblyName>Mentor</AssemblyName>
 
     <!-- Display name -->
-    <ApplicationTitle>Mentor.Uno</ApplicationTitle>
+    <ApplicationTitle>Mentor - Game Analysis</ApplicationTitle>
     <!-- App Identifier -->
     <ApplicationId>com.mentor.uno</ApplicationId>
     <!-- Versions -->
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
     <!-- Package Publisher -->
-    <ApplicationPublisher>Mentor.Uno</ApplicationPublisher>
+    <ApplicationPublisher>Neil CLayton</ApplicationPublisher>
     <!-- Package Description -->
-    <Description>Mentor.Uno powered by Uno Platform.</Description>
+    <Description>Mentor - Game Analysis</Description>
     <!--
       If you encounter this error message:
 
@@ -46,12 +49,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="appsettings.Development.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="appsettings.json" />
   </ItemGroup>
 
 </Project>

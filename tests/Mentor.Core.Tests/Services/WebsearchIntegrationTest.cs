@@ -1,4 +1,3 @@
-using Mentor.Core.Configuration;
 using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
@@ -16,7 +15,7 @@ public class WebsearchIntegrationTest
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<WebsearchIntegrationTest> _logger;
-    private readonly RealWebtoolToolConfiguration _config;
+    private readonly ToolConfigurationEntity _config;
 
     public WebsearchIntegrationTest(ITestOutputHelper testOutputHelper)
     {
@@ -39,7 +38,7 @@ public class WebsearchIntegrationTest
         
         var apiKey = braveSection["ApiKey"];
         Assert.False(string.IsNullOrEmpty(apiKey), "Brave API key is not configured");
-        _config = new RealWebtoolToolConfiguration
+        _config = new ToolConfigurationEntity
         {
             ApiKey = apiKey,
             BaseUrl = "https://api.search.brave.com/res/v1",
@@ -99,8 +98,10 @@ public class WebsearchIntegrationTest
         var websearch = _serviceProvider.GetRequiredService<IWebSearchTool>();
         websearch.Configure(_config);
         
-        var results = await websearch.Search("What is the capital of New Zealand?", SearchOutputFormat.Structured);
+        var results = await websearch.SearchStructured("What is the capital of New Zealand?", maxResults: 1);
         _logger.LogInformation("Web search results: {Results}", results);
         Assert.NotNull(results);
+        Assert.Single(results);
+        Assert.Contains("Wellington", results[0].Description);
     }
 }
