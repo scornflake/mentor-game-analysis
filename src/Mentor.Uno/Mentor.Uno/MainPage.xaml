@@ -14,8 +14,15 @@
 
       <!-- Input Section -->
       <StackPanel Grid.Row="0" Spacing="16" Margin="0,0,0,20">
-        <TextBlock Text="Screenshot Analysis" 
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+        <Grid>
+          <TextBlock Text="Screenshot Analysis" 
+                     Style="{StaticResource TitleTextBlockStyle}"
+                     HorizontalAlignment="Left"/>
+          <Button Content="⚙ Settings" 
+                  Click="OnSettingsClick"
+                  HorizontalAlignment="Right"
+                  Style="{StaticResource TextBlockButtonStyle}"/>
+        </Grid>
 
         <!-- Image Selection -->
         <StackPanel Spacing="8">

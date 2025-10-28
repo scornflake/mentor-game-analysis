@@ -2,13 +2,13 @@ using Mentor.Core.Configuration;
 
 namespace Mentor.Core.Tests.Configuration;
 
-public class OpenAIConfigurationTests
+public class AiConfigurationTests
 {
     [Fact]
     public void ShouldUseWebSearchTool_WhenNotSet_DefaultsToTrueForLocalhost()
     {
         // Arrange
-        var config = new OpenAIConfiguration
+        var config = new AIConfiguration
         {
             BaseUrl = "http://localhost:1234/v1",
             UseWebSearchTool = true
@@ -22,7 +22,7 @@ public class OpenAIConfigurationTests
     public void ShouldUseWebSearchTool_WhenNotSet_DefaultsToFalseForOpenAI()
     {
         // Arrange
-        var config = new OpenAIConfiguration
+        var config = new AIConfiguration
         {
             BaseUrl = "https://api.openai.com"
         };
@@ -35,7 +35,7 @@ public class OpenAIConfigurationTests
     public void ShouldUseWebSearchTool_WhenNotSet_DefaultsToFalseForPerplexity()
     {
         // Arrange
-        var config = new OpenAIConfiguration(); // Uses default Perplexity URL
+        var config = new AIConfiguration(); // Uses default Perplexity URL
         
         // Act & Assert
         Assert.False(config.UseWebSearchTool);
@@ -45,7 +45,7 @@ public class OpenAIConfigurationTests
     public void ShouldUseWebSearchTool_WhenExplicitlySetToTrue_ReturnsTrue()
     {
         // Arrange
-        var config = new OpenAIConfiguration
+        var config = new AIConfiguration
         {
             BaseUrl = "https://api.openai.com",
             UseWebSearchTool = true

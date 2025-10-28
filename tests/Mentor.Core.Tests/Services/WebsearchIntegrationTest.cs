@@ -35,11 +35,15 @@ public class WebsearchIntegrationTest
 
         // Create configuration from settings
         var braveSection = configuration.GetSection("BraveSearch");
+        Assert.NotNull(braveSection);
+        
+        var apiKey = braveSection["ApiKey"];
+        Assert.False(string.IsNullOrEmpty(apiKey), "Brave API key is not configured");
         _config = new RealWebtoolToolConfiguration
         {
-            ApiKey = braveSection["ApiKey"] ?? string.Empty,
-            BaseUrl = braveSection["BaseUrl"] ?? "https://api.search.brave.com/res/v1",
-            Timeout = int.TryParse(braveSection["Timeout"], out var timeout) ? timeout : 30
+            ApiKey = apiKey,
+            BaseUrl = "https://api.search.brave.com/res/v1",
+            Timeout = 30
         };
 
         _serviceProvider = services.BuildServiceProvider();

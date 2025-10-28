@@ -209,7 +209,7 @@ public class Program
                           provider.BaseUrl == activeProvider.BaseUrl;
             
             var activeMarker = isActive ? " [ACTIVE]" : "";
-            Console.WriteLine($"Provider: {GetProviderName(provider)}{activeMarker}");
+            Console.WriteLine($"Provider: {provider.Name}{activeMarker}");
             Console.WriteLine($"  Type: {provider.ProviderType}");
             Console.WriteLine($"  Model: {provider.Model}");
             Console.WriteLine($"  Base URL: {provider.BaseUrl}");
@@ -231,7 +231,7 @@ public class Program
             return 1;
         }
 
-        if (!options.ContainsKey("--apikey"))
+        if (!options.TryGetValue("--apikey", out var option))
         {
             Console.WriteLine("Error: --apikey is required");
             return 1;
@@ -240,7 +240,7 @@ public class Program
         var config = new ProviderConfiguration
         {
             ProviderType = options["--provider-type"],
-            ApiKey = options["--apikey"],
+            ApiKey = option,
             Model = options.GetValueOrDefault("--model", string.Empty),
             BaseUrl = options.GetValueOrDefault("--base-url", string.Empty),
             Timeout = int.TryParse(options.GetValueOrDefault("--timeout", "60"), out var timeout) ? timeout : 60
@@ -263,25 +263,29 @@ public class Program
         var options = ParseOptions(args);
 
         // Partial update - only update provided fields
-        if (options.ContainsKey("--provider-type"))
+        if (options.TryGetValue("--provider-type", out var option))
         {
-            existing.ProviderType = options["--provider-type"];
+            existing.ProviderType = option;
         }
-        if (options.ContainsKey("--apikey"))
+        if (options.TryGetValue("--apikey", out var option1))
         {
-            existing.ApiKey = options["--apikey"];
+            existing.ApiKey = option1;
         }
-        if (options.ContainsKey("--model"))
+        if (options.TryGetValue("--model", out var option2))
         {
-            existing.Model = options["--model"];
+            existing.Model = option2;
         }
-        if (options.ContainsKey("--base-url"))
+        if (options.TryGetValue("--name", out var option3))
         {
-            existing.BaseUrl = options["--base-url"];
+            existing.Name = option3;
         }
-        if (options.ContainsKey("--timeout"))
+        if (options.TryGetValue("--base-url", out var option4))
         {
-            if (int.TryParse(options["--timeout"], out var timeout))
+            existing.BaseUrl = option4;
+        }
+        if (options.TryGetValue("--timeout", out var option5))
+        {
+            if (int.TryParse(option5, out var timeout))
             {
                 existing.Timeout = timeout;
             }
@@ -344,7 +348,7 @@ public class Program
     {
         var options = ParseOptions(args);
 
-        if (!options.ContainsKey("--apikey"))
+        if (!options.TryGetValue("--apikey", out var option))
         {
             Console.WriteLine("Error: --apikey is required");
             return 1;
@@ -353,7 +357,7 @@ public class Program
         var config = new RealWebtoolToolConfiguration
         {
             ToolName = name,
-            ApiKey = options["--apikey"],
+            ApiKey = option,
             BaseUrl = options.GetValueOrDefault("--url", string.Empty),
             Timeout = int.TryParse(options.GetValueOrDefault("--timeout", "30"), out var timeout) ? timeout : 30
         };
@@ -378,8 +382,8 @@ public class Program
         var updated = new RealWebtoolToolConfiguration
         {
             ToolName = existing.ToolName,
-            ApiKey = options.ContainsKey("--apikey") ? options["--apikey"] : existing.ApiKey,
-            BaseUrl = options.ContainsKey("--url") ? options["--url"] : existing.BaseUrl,
+            ApiKey = options.TryGetValue("--apikey", out var option) ? option : existing.ApiKey,
+            BaseUrl = options.TryGetValue("--url", out var option1) ? option1 : existing.BaseUrl,
             Timeout = options.ContainsKey("--timeout") && int.TryParse(options["--timeout"], out var timeout) 
                 ? timeout 
                 : existing.Timeout
@@ -497,24 +501,6 @@ public class Program
         return apiKey.Substring(0, 4) + "****" + apiKey.Substring(apiKey.Length - 4);
     }
 
-    private static string GetProviderName(ProviderConfiguration provider)
-    {
-        // Try to infer a friendly name from the configuration
-        if (provider.BaseUrl.Contains("localhost"))
-        {
-            return "Local LLM";
-        }
-        if (provider.BaseUrl.Contains("perplexity"))
-        {
-            return "Perplexity";
-        }
-        if (provider.BaseUrl.Contains("openai"))
-        {
-            return "OpenAI";
-        }
-        return $"{provider.ProviderType} ({provider.BaseUrl})";
-    }
-
     private static ServiceProvider ConfigureServices()
     {
         var currentDir = Directory.GetCurrentDirectory();
@@ -537,7 +523,6 @@ public class Program
 
         var services = new ServiceCollection();
         
-        services.Configure<ProviderImplementationsConfiguration>(configuration);
         services.AddRealmConfigurationRepository();
         
         services.AddHttpClient();

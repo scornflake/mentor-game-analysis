@@ -6,7 +6,7 @@ namespace Mentor.Core.Interfaces;
 
 public interface ILLMClient
 {
-    public OpenAIConfiguration Configuration { get; }
+    public ProviderConfiguration Configuration { get; }
     public IChatClient ChatClient { get; }
 }
 

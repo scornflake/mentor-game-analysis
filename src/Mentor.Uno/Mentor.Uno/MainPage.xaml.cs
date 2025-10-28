@@ -19,6 +19,11 @@ public sealed partial class MainPage : Page
         this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
     }
 
+    private void OnSettingsClick(object sender, RoutedEventArgs e)
+    {
+        Frame.Navigate(typeof(SettingsPage));
+    }
+
     private async void OnBrowseClick(object sender, RoutedEventArgs e)
     {
         try

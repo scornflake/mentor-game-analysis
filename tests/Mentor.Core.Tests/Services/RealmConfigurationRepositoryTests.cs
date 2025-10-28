@@ -32,7 +32,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
         Assert.Equal("sonar", perplexity.Model);
         Assert.Equal("https://api.perplexity.ai", perplexity.BaseUrl);
         
-        var local = allProviders.FirstOrDefault(p => p.BaseUrl == "http://localhost:1234");
+        var local = allProviders.FirstOrDefault(p => p.BaseUrl == "http://localhost:1234/v1");
         Assert.NotNull(local);
         Assert.Equal("openai", local.ProviderType);
         Assert.Equal("google/gemma-3-27b", local.Model);
@@ -64,7 +64,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
 
         // Assert
         Assert.NotNull(activeProvider);
-        Assert.Equal("http://localhost:1234", activeProvider.BaseUrl);
+        Assert.Equal("http://localhost:1234/v1", activeProvider.BaseUrl);
     }
 
     [Fact]
@@ -107,6 +107,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
 
         var updatedConfig = new ProviderConfiguration
         {
+            Name = "OpenAI",
             ProviderType = "openai",
             ApiKey = "updated-key",
             Model = "gpt-4o",

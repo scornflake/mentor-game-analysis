@@ -24,17 +24,37 @@ public class BraveWebSearch : IWebSearchTool
         _config = configuration;
     }
 
-    public async Task<string> Search(string query, SearchOutputFormat format, int maxResults = 5)
+    private string FormQuery(string userPrompt)
+    {
+        var query = userPrompt;
+        query += ". do not include videos or images in the results.";
+        query += ". Prefer recent results (within the last year) where possible.";
+        return query;
+    }
+    
+    public async Task<IList<SearchResult>> SearchStructured(string query, int maxResults = 5)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
             throw new ArgumentException("Query cannot be null or empty", nameof(query));
         }
 
-        _logger.LogInformation("Searching for {query} using format: {format}", query, format);
-        query += ". do not include videos or images in the results.";
-        query += ". Prefer recent results (within the last year) where possible.";
+        query = FormQuery(query);
+        _logger.LogInformation("Searching for {query} using format 'structured'", query);
         
+        var searchResponse = await ExecuteSearch(query, maxResults);
+        if (searchResponse?.Web?.Results == null || searchResponse.Web.Results.Count == 0)
+        {
+            return new List<SearchResult>();
+        }
+
+        var results = searchResponse.Web.Results.Take(maxResults).ToList();
+        LogResults(query, results);
+        return results;
+    }
+
+    private async Task<BraveSearchResponse?> ExecuteSearch(string query, int maxResults)
+    {
         var httpClient = _httpClientFactory.CreateClient();
         httpClient.Timeout = TimeSpan.FromSeconds(_config.Timeout);
 
@@ -52,24 +72,41 @@ public class BraveWebSearch : IWebSearchTool
 
         var responseContent = await response.Content.ReadAsStringAsync();
         var searchResponse = JsonSerializer.Deserialize<BraveSearchResponse>(responseContent);
+        return searchResponse;
+    }
 
-        if (searchResponse?.Web?.Results == null || searchResponse.Web.Results.Count == 0)
+
+    public async Task<string> Search(string query, SearchOutputFormat format, int maxResults = 5)
+    {
+        if (format == SearchOutputFormat.Structured)
+        {
+            throw new NotSupportedException("Use the 'structured' method call to return structured results.");
+        }
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            throw new ArgumentException("Query cannot be null or empty", nameof(query));
+        }
+
+        query = FormQuery(query);
+        _logger.LogInformation("Searching for {query} using format: {format}", query, format);
+
+        var responseContent = await ExecuteSearch(query, maxResults);
+        var results = responseContent?.Web?.Results;
+        if (results == null || results.Count == 0)
         {
             return "No results found for the given query.";
         }
 
-        var results = searchResponse.Web.Results.Take(maxResults).ToList();
+        results = results.Take(maxResults).ToList();
         LogResults(query, results);
 
         return format switch
         {
             SearchOutputFormat.Snippets => FormatAsSnippets(results),
-            SearchOutputFormat.Structured => FormatAsStructured(results),
             SearchOutputFormat.Summary => FormatAsSummary(query, results),
             _ => throw new ArgumentException($"Unknown format: {format}", nameof(format))
         };
     }
-
 
     private void LogResults(string query, List<SearchResult> results)
     {
@@ -91,26 +128,6 @@ public class BraveWebSearch : IWebSearchTool
             if (!string.IsNullOrWhiteSpace(result.Description))
             {
                 sb.AppendLine(result.Description);
-            }
-        }
-        return sb.ToString().TrimEnd();
-    }
-
-    private static string FormatAsStructured(List<SearchResult> results)
-    {
-        var sb = new StringBuilder();
-        for (int i = 0; i < results.Count; i++)
-        {
-            var result = results[i];
-            sb.AppendLine($"[{i + 1}] {result.Title}");
-            sb.AppendLine($"URL: {result.Url}");
-            if (!string.IsNullOrWhiteSpace(result.Description))
-            {
-                sb.AppendLine($"Description: {result.Description}");
-            }
-            if (i < results.Count - 1)
-            {
-                sb.AppendLine();
             }
         }
         return sb.ToString().TrimEnd();
@@ -148,17 +165,5 @@ public class BraveWebSearch : IWebSearchTool
     {
         [System.Text.Json.Serialization.JsonPropertyName("results")]
         public List<SearchResult> Results { get; set; } = new();
-    }
-
-    private class SearchResult
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("title")]
-        public string Title { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonPropertyName("url")]
-        public string Url { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonPropertyName("description")]
-        public string Description { get; set; } = string.Empty;
     }
 }

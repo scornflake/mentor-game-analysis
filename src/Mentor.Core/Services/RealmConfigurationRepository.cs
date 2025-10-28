@@ -107,6 +107,7 @@ public class RealmConfigurationRepository : IConfigurationRepository
             if (existingProvider != null)
             {
                 // Update existing
+                existingProvider.Name = config.Name;
                 existingProvider.ProviderType = config.ProviderType;
                 existingProvider.ApiKey = config.ApiKey;
                 existingProvider.Model = config.Model;
@@ -246,7 +247,7 @@ public class RealmConfigurationRepository : IConfigurationRepository
                     Name = "Local LLM",
                     ProviderType = "openai",
                     Model = "google/gemma-3-27b",
-                    BaseUrl = "http://localhost:1234",
+                    BaseUrl = "http://localhost:1234/v1",
                     ApiKey = string.Empty,
                     IsActive = true,
                     CreatedAt = DateTimeOffset.UtcNow
@@ -277,6 +278,7 @@ public class RealmConfigurationRepository : IConfigurationRepository
     {
         return new ProviderConfiguration
         {
+            Name = realmConfig.Name,
             ProviderType = realmConfig.ProviderType,
             ApiKey = realmConfig.ApiKey,
             Model = realmConfig.Model,

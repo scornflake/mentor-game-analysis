@@ -59,20 +59,7 @@ public class AnalysisServiceIntegrationTests
             throw new InvalidOperationException("API key not available for integration test");
         }
 
-        var implConfig = new ProviderImplementationsConfiguration
-        {
-            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
-            {
-                ["perplexity"] = new ProviderImplementationDetails
-                {
-                    DefaultBaseUrl = "https://api.perplexity.ai",
-                    DefaultModel = "sonar"
-                }
-            }
-        };
-
-        var options = Options.Create(implConfig);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
+        var factory = new LLMProviderFactory(_serviceProvider);
 
         var providerConfig = new ProviderConfiguration
         {
@@ -93,8 +80,8 @@ public class AnalysisServiceIntegrationTests
         _logger.LogInformation("=== Starting Real API Test: AnalyzeAsync_WithRealImage_ReturnsValidRecommendation ===");
         
         var llmClient = CreateLLMClient();
-        var service = new AnalysisService(llmClient, 
-            _serviceProvider.GetRequiredService<ILogger<AnalysisService>>(),
+        var service = new PerplexityAnalysisService(llmClient, 
+            _serviceProvider.GetRequiredService<ILogger<PerplexityAnalysisService>>(),
             _serviceProvider.GetRequiredService<IToolFactory>()
             );
         var imageData = LoadTestImage("acceltra prime rad build.png");

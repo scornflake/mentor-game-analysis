@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Tools;
+using Mentor.Uno.Messages;
 
 namespace Mentor.Uno;
 
@@ -11,6 +13,7 @@ public partial class MainPageViewModel : ObservableObject
 {
     private readonly ILLMProviderFactory _providerFactory;
     private readonly IConfigurationRepository _configurationRepository;
+    private readonly IMessenger _messenger;
 
     [ObservableProperty] private string? _imagePath;
 
@@ -26,10 +29,17 @@ public partial class MainPageViewModel : ObservableObject
 
     public ObservableCollection<string> Providers { get; } = new();
 
-    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository)
+    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger)
     {
         _providerFactory = providerFactory;
         _configurationRepository = configurationRepository;
+        _messenger = messenger;
+        
+        // Subscribe to providers changed message
+        _messenger.Register<ProvidersChangedMessage>(this, (r, m) =>
+        {
+            _ = ReloadProvidersAsync();
+        });
         
         // Load providers asynchronously
         _ = InitializeProvidersAsync();
@@ -37,8 +47,37 @@ public partial class MainPageViewModel : ObservableObject
     
     private async Task InitializeProvidersAsync()
     {
+        await LoadProvidersAsync();
+    }
+
+    private async Task ReloadProvidersAsync()
+    {
+        var currentSelection = SelectedProvider;
+        await LoadProvidersAsync();
+        
+        // Try to maintain selection if provider still exists
+        if (!string.IsNullOrEmpty(currentSelection) && Providers.Contains(currentSelection))
+        {
+            SelectedProvider = currentSelection;
+        }
+        else if (Providers.Any())
+        {
+            // Select first available if current selection no longer exists
+            SelectedProvider = Providers.First();
+        }
+        else
+        {
+            // Clear selection if no providers available
+            SelectedProvider = string.Empty;
+        }
+    }
+
+    private async Task LoadProvidersAsync()
+    {
         try
         {
+            Providers.Clear();
+            
             // Load all available providers from the repository
             var providers = await _configurationRepository.GetAllProvidersAsync();
             
@@ -49,16 +88,19 @@ public partial class MainPageViewModel : ObservableObject
                 Providers.Add(providerName);
             }
             
-            // Get the active provider and set it as selected
-            var activeProvider = await _configurationRepository.GetActiveProviderAsync();
-            if (activeProvider != null)
+            // Get the active provider and set it as selected (only on initial load)
+            if (string.IsNullOrEmpty(SelectedProvider))
             {
-                SelectedProvider = GetProviderName(activeProvider);
-            }
-            else if (Providers.Any())
-            {
-                // If no active provider, select the first one
-                SelectedProvider = Providers.First();
+                var activeProvider = await _configurationRepository.GetActiveProviderAsync();
+                if (activeProvider != null)
+                {
+                    SelectedProvider = GetProviderName(activeProvider);
+                }
+                else if (Providers.Any())
+                {
+                    // If no active provider, select the first one
+                    SelectedProvider = Providers.First();
+                }
             }
         }
         catch (Exception ex)

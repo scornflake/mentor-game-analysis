@@ -44,9 +44,6 @@ public partial class App : Application
             })
             .ConfigureServices((context, services) =>
             {
-                // Register configuration
-                services.Configure<ProviderImplementationsConfiguration>(context.Configuration);
-
                 // Register Realm repository
                 services.AddRealmConfigurationRepository();
 
@@ -56,8 +53,12 @@ public partial class App : Application
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
                 
+                // Register messaging
+                services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
+                
                 // Register ViewModels
                 services.AddTransient<MainPageViewModel>();
+                services.AddTransient<SettingsPageViewModel>();
                 
                 // Seed defaults on startup
                 var serviceProvider = services.BuildServiceProvider();

@@ -32,20 +32,7 @@ public class LLMProviderFactoryTests
     [Fact]
     public void GetProvider_WithProviderConfiguration_OpenAI_ReturnsLLMClient()
     {
-        // Arrange
-        var implConfig = new ProviderImplementationsConfiguration
-        {
-            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
-            {
-                ["openai"] = new ProviderImplementationDetails
-                {
-                    DefaultBaseUrl = "https://api.openai.com/v1",
-                    DefaultModel = "gpt-4o"
-                }
-            }
-        };
-        var options = Options.Create(implConfig);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
+        var factory = new LLMProviderFactory(_serviceProvider);
 
         var providerConfig = new ProviderConfiguration
         {
@@ -68,20 +55,7 @@ public class LLMProviderFactoryTests
     [Fact]
     public void GetProvider_WithProviderConfiguration_Perplexity_ReturnsLLMClient()
     {
-        // Arrange
-        var implConfig = new ProviderImplementationsConfiguration
-        {
-            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
-            {
-                ["perplexity"] = new ProviderImplementationDetails
-                {
-                    DefaultBaseUrl = "https://api.perplexity.ai",
-                    DefaultModel = "sonar"
-                }
-            }
-        };
-        var options = Options.Create(implConfig);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
+        var factory = new LLMProviderFactory(_serviceProvider);
 
         var providerConfig = new ProviderConfiguration
         {
@@ -101,49 +75,9 @@ public class LLMProviderFactoryTests
     }
 
     [Fact]
-    public void GetProvider_WithProviderConfiguration_UsesDefaultsWhenNotSpecified()
-    {
-        // Arrange
-        var implConfig = new ProviderImplementationsConfiguration
-        {
-            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
-            {
-                ["openai"] = new ProviderImplementationDetails
-                {
-                    DefaultBaseUrl = "https://api.openai.com/v1",
-                    DefaultModel = "gpt-4o"
-                }
-            }
-        };
-        var options = Options.Create(implConfig);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
-
-        var providerConfig = new ProviderConfiguration
-        {
-            ProviderType = "openai",
-            ApiKey = "test-api-key",
-            // Model and BaseUrl not specified - should use defaults
-        };
-
-        // Act
-        var provider = factory.GetProvider(providerConfig);
-
-        // Assert
-        Assert.NotNull(provider);
-        Assert.IsAssignableFrom<ILLMClient>(provider);
-        Assert.NotNull(provider.ChatClient);
-    }
-
-    [Fact]
     public void GetProvider_WithProviderConfiguration_UnsupportedProvider_ThrowsArgumentException()
     {
-        // Arrange
-        var implConfig = new ProviderImplementationsConfiguration
-        {
-            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>()
-        };
-        var options = Options.Create(implConfig);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
+        var factory = new LLMProviderFactory(_serviceProvider);
 
         var providerConfig = new ProviderConfiguration
         {
@@ -158,29 +92,16 @@ public class LLMProviderFactoryTests
     [Fact]
     public void GetProvider_WithProviderConfiguration_EmptyApiKey_ThrowsInvalidOperationException()
     {
-        // Arrange
-        var implConfig = new ProviderImplementationsConfiguration
-        {
-            ProviderImplementations = new Dictionary<string, ProviderImplementationDetails>
-            {
-                ["openai"] = new ProviderImplementationDetails
-                {
-                    DefaultBaseUrl = "https://api.openai.com/v1",
-                    DefaultModel = "gpt-4o"
-                }
-            }
-        };
-        var options = Options.Create(implConfig);
-        var factory = new LLMProviderFactory(options, _serviceProvider);
+        var factory = new LLMProviderFactory(_serviceProvider);
 
         var providerConfig = new ProviderConfiguration
         {
-            ProviderType = "openai",
+            ProviderType = "perplexity",
             ApiKey = "",
-            Model = "gpt-4o"
+            Model = "sonar"
         };
 
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => factory.GetProvider(providerConfig));
+        Assert.Throws<ArgumentException>(() => factory.GetProvider(providerConfig));
     }
 }

@@ -1,6 +1,6 @@
 namespace Mentor.Core.Configuration;
 
-public class OpenAIConfiguration
+public class AIConfiguration
 {
     public string ApiKey { get; set; } = string.Empty;
     public string Model { get; set; } = "sonar";

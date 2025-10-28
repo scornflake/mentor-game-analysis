@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
@@ -8,12 +7,11 @@ using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Mentor.Core.Tools;
 
-public class AnalysisService : IAnalysisService
+public abstract class AnalysisService : IAnalysisService
 {
-    private readonly ILLMClient _llmClient;
-    private IWebSearchTool? _webSearchTool;
-    private readonly ILogger<AnalysisService> _logger;
-    private readonly IToolFactory _toolFactory;
+    internal readonly ILLMClient _llmClient;
+    internal readonly ILogger<AnalysisService> _logger;
+    internal readonly IToolFactory _toolFactory;
 
     public AnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory)
     {
@@ -21,59 +19,42 @@ public class AnalysisService : IAnalysisService
         _logger = logger;
         _toolFactory = toolFactory;
     }
-
-    public async Task<Recommendation> AnalyzeAsync(
-        AnalysisRequest request,
-        CancellationToken cancellationToken = default)
+    
+    protected virtual ChatMessage GetSystemPrompt()
     {
-        // this provider currently only supports Brave
-        _webSearchTool = await _toolFactory.GetToolAsync(KnownSearchTools.Brave);
-
-        if (request.ImageData == null || request.ImageData.Length == 0)
-        {
-            throw new ArgumentException("Image data is required", nameof(request));
-        }
-
-        // Build the chat messages with image content
         var systemMessage = new ChatMessage(ChatRole.System,
             "You are an expert game advisor. Analyze the provided screenshot and provide actionable recommendations. " +
             "Backup your analysis with relevant web search results when necessary. " +
             "Backup your recommendations using web search results");
-        
-        // should not be required as we request a structured response
-        // "Return your response as JSON with the following structure: " +
-        //     "{ \"analysis\": \"detailed analysis\", \"summary\": \"brief summary\", " +
-        //     "\"recommendations\": [{ \"priority\": \"High|Medium|Low\", \"action\": \"what to do\", " +
-        //     "\"reasoning\": \"why\", \"context\": \"relevant context\" }], \"confidence\": 0.0-1.0 }");
+        return systemMessage;
+    }
 
-        var memoryStream = new ReadOnlyMemory<byte>(request.ImageData);
-        var userImage = new DataContent(memoryStream, "image/png");
-        List<AIContent> content = new List<AIContent> { new TextContent(request.Prompt), userImage };
-        var userMessage = new ChatMessage(ChatRole.User, content);
+    protected virtual TextContent GetUserPrompt(AnalysisRequest request)
+    {
+        return new TextContent(request.Prompt);
+    }
 
-        var messages = new List<ChatMessage> { systemMessage, userMessage };
+    protected virtual ChatMessage GetUserMessages(AnalysisRequest request)
+    {
+        var content = new List<AIContent> { GetUserPrompt(request), request.GetImageAsReadOnlyMemory() };
+        return new ChatMessage(ChatRole.User, content);
+    }
 
-        // Tavily MCP: https://mcp.tavily.com/mcp/?tavilyApiKey=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
-        
-        // Call the LLM
-        [Description("Tool to perform web searches")]
-        string SearchTheWeb(string query)
-        {
-            _logger.LogInformation("Performing web search for query: {Query}", query);
-            return _webSearchTool.Search(query, SearchOutputFormat.Summary, 5).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-        
-        IList<AITool> tools = [ AIFunctionFactory.Create(SearchTheWeb) ];
-        var options = new ChatOptions
-        {
-            AllowMultipleToolCalls = true
-        };
-        if (_llmClient.Configuration.UseWebSearchTool)
-        {
-            options.ToolMode = ChatToolMode.RequireAny;
-            options.Tools = tools;
-        }
+    public virtual Task<Recommendation> AnalyzeAsync(
+        AnalysisRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 
+    protected virtual async Task<ChatOptions> CreateAIOptions()
+    {
+        await Task.CompletedTask;
+        return new ChatOptions();
+    }
+
+    protected virtual async Task<Recommendation> ExecuteAndParse(List<ChatMessage> messages, ChatOptions options, CancellationToken cancellationToken)
+    {
         var completion = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken: cancellationToken);
 
         // Parse the response
@@ -92,8 +73,14 @@ public class AnalysisService : IAnalysisService
             }).ToList() ?? [],
             Confidence = jsonResponse.Confidence,
             GeneratedAt = DateTime.UtcNow,
-            ProviderUsed = "openai"
+            ProviderUsed = _llmClient.Configuration.Name
         };
+    }
+
+    internal virtual async Task<IList<AITool>> SetupTools()
+    {
+        await Task.CompletedTask;
+        return [];
     }
 
     private static Priority ParsePriority(string? priority)
@@ -107,7 +94,6 @@ public class AnalysisService : IAnalysisService
         };
     }
 
-    // Internal class for deserializing LLM response
     private record LLMResponse(string Analysis, string Summary, List<LLMRecommendation> Recommendations, double Confidence);
 
     private record LLMRecommendation(string Priority, string Action, string Reasoning, string Context);
