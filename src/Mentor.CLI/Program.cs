@@ -74,7 +74,6 @@ public class Program
         Console.WriteLine("  provider create <name>                 Create a new provider");
         Console.WriteLine("  provider update <name>                 Update a provider");
         Console.WriteLine("  provider delete <name>                 Delete a provider");
-        Console.WriteLine("  provider activate <name>               Set a provider as active");
         Console.WriteLine();
         Console.WriteLine("  tool list                              List all search tools");
         Console.WriteLine("  tool create <name>                     Create a new tool");
@@ -132,13 +131,6 @@ public class Program
                     return 1;
                 }
                 return await DeleteProvider(repository, args[1]);
-            case "activate":
-                if (args.Length < 2)
-                {
-                    Console.WriteLine("Error: Provider activate requires a name");
-                    return 1;
-                }
-                return await ActivateProvider(repository, args[1]);
             default:
                 Console.WriteLine($"Unknown provider action: {action}");
                 return 1;
@@ -191,7 +183,6 @@ public class Program
     {
         await repository.SeedDefaultsAsync();
         var providers = await repository.GetAllProvidersAsync();
-        var activeProvider = await repository.GetActiveProviderAsync();
 
         if (!providers.Any())
         {
@@ -204,12 +195,7 @@ public class Program
 
         foreach (var provider in providers)
         {
-            var isActive = activeProvider != null && 
-                          provider.ProviderType == activeProvider.ProviderType &&
-                          provider.BaseUrl == activeProvider.BaseUrl;
-            
-            var activeMarker = isActive ? " [ACTIVE]" : "";
-            Console.WriteLine($"Provider: {provider.Name}{activeMarker}");
+            Console.WriteLine($"Provider: {provider.Name}");
             Console.WriteLine($"  Type: {provider.ProviderType}");
             Console.WriteLine($"  Model: {provider.Model}");
             Console.WriteLine($"  Base URL: {provider.BaseUrl}");
@@ -246,7 +232,7 @@ public class Program
             Timeout = int.TryParse(options.GetValueOrDefault("--timeout", "60"), out var timeout) ? timeout : 60
         };
 
-        await repository.SaveProviderAsync(name, config);
+        await repository.SaveProviderAsync(config);
         Console.WriteLine($"Provider '{name}' created successfully.");
         return 0;
     }
@@ -291,33 +277,24 @@ public class Program
             }
         }
 
-        await repository.SaveProviderAsync(name, existing);
+        await repository.SaveProviderAsync(existing);
         Console.WriteLine($"Provider '{name}' updated successfully.");
         return 0;
     }
 
     private static async Task<int> DeleteProvider(IConfigurationRepository repository, string name)
     {
-        await repository.DeleteProviderAsync(name);
+        var provider = await repository.GetProviderByNameAsync(name);
+        if (provider == null)
+        {
+            Console.WriteLine($"Error: Provider '{name}' not found");
+            return 1;
+        }
+        await repository.DeleteProviderAsync(provider.Id);
         Console.WriteLine($"Provider '{name}' deleted successfully.");
         return 0;
     }
-
-    private static async Task<int> ActivateProvider(IConfigurationRepository repository, string name)
-    {
-        try
-        {
-            await repository.SetActiveProviderAsync(name);
-            Console.WriteLine($"Provider '{name}' activated successfully.");
-            return 0;
-        }
-        catch (ArgumentException ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-            return 1;
-        }
-    }
-
+    
     private static async Task<int> ListTools(IConfigurationRepository repository)
     {
         await repository.SeedDefaultsAsync();
@@ -348,21 +325,30 @@ public class Program
     {
         var options = ParseOptions(args);
 
-        if (!options.TryGetValue("--apikey", out var option))
+        if (!options.TryGetValue("--url", out var url))
         {
-            Console.WriteLine("Error: --apikey is required");
+            Console.WriteLine("Error: --url is required");
             return 1;
         }
+        
+        // Name must be specified
+        if (!options.TryGetValue("--name", out var option1))  
+        {
+            Console.WriteLine("Error: --name is required");
+            return 1;
+        }
+
+        options.TryGetValue("--apikey", out var apikey);
 
         var config = new RealWebtoolToolConfiguration
         {
             ToolName = name,
-            ApiKey = option,
-            BaseUrl = options.GetValueOrDefault("--url", string.Empty),
+            ApiKey = apikey ?? string.Empty,
+            BaseUrl = url,
             Timeout = int.TryParse(options.GetValueOrDefault("--timeout", "30"), out var timeout) ? timeout : 30
         };
 
-        await repository.SaveToolAsync(name, config);
+        await repository.SaveToolAsync(config);
         Console.WriteLine($"Tool '{name}' created successfully.");
         return 0;
     }
@@ -378,18 +364,14 @@ public class Program
 
         var options = ParseOptions(args);
 
-        // Create a new configuration with updated values
-        var updated = new RealWebtoolToolConfiguration
-        {
-            ToolName = existing.ToolName,
-            ApiKey = options.TryGetValue("--apikey", out var option) ? option : existing.ApiKey,
-            BaseUrl = options.TryGetValue("--url", out var option1) ? option1 : existing.BaseUrl,
-            Timeout = options.ContainsKey("--timeout") && int.TryParse(options["--timeout"], out var timeout) 
-                ? timeout 
-                : existing.Timeout
-        };
-
-        await repository.SaveToolAsync(name, updated);
+        // Update the tool with new values
+        existing.ApiKey = options.TryGetValue("--apikey", out var option) ? option : existing.ApiKey;
+        existing.ToolName = options.TryGetValue("--name", out var option2) ? option2 : existing.ToolName;
+        existing.BaseUrl = options.TryGetValue("--url", out var option1) ? option1 : existing.BaseUrl;
+        existing.Timeout = options.ContainsKey("--timeout") && int.TryParse(options["--timeout"], out var timeout)
+            ? timeout
+            : existing.Timeout;
+        await repository.SaveToolAsync(existing);
         Console.WriteLine($"Tool '{name}' updated successfully.");
         return 0;
     }
@@ -503,19 +485,6 @@ public class Program
 
     private static ServiceProvider ConfigureServices()
     {
-        var currentDir = Directory.GetCurrentDirectory();
-        var executableDir = AppContext.BaseDirectory;
-        
-        var basePath = File.Exists(Path.Combine(currentDir, "appsettings.json"))
-            ? currentDir
-            : executableDir;
-
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(basePath)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables()
-            .Build();
-
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()

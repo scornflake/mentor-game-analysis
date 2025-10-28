@@ -1,14 +1,9 @@
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Mentor.Core.Interfaces;
 using Mentor.Uno.Messages;
 using Mentor.Uno.ViewModels;
+using Microsoft.UI.Dispatching;
 
 namespace Mentor.Uno;
 
@@ -16,47 +11,63 @@ public partial class SettingsPageViewModel : ObservableObject
 {
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMessenger _messenger;
+    private readonly ILogger<SettingsPageViewModel> _logger;
+    private readonly DispatcherQueue _queueAtCreationTime;
     private CancellationTokenSource? _debounceCts;
 
     [ObservableProperty] private string _saveStatusMessage = string.Empty;
     [ObservableProperty] private bool _isSaveStatusVisible;
+    
+    [ObservableProperty] private string _errorMessage = string.Empty;
+    [ObservableProperty] private bool _isErrorVisible;
 
     public ObservableCollection<ProviderViewModel> Providers { get; } = new();
     public ObservableCollection<ToolViewModel> Tools { get; } = new();
+    public ObservableCollection<string> AvailableProviderTypes { get; } = new();
 
-    public SettingsPageViewModel(IConfigurationRepository configurationRepository, IMessenger messenger)
+    public SettingsPageViewModel(IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<SettingsPageViewModel> logger)
     {
         _configurationRepository = configurationRepository;
         _messenger = messenger;
+        _logger = logger;
+        _queueAtCreationTime = DispatcherQueue.GetForCurrentThread();
         
         _ = InitializeAsync();
     }
 
     private async Task InitializeAsync()
     {
+        await LoadAvailableProviderTypesAsync();
         await LoadProvidersAsync();
         await LoadToolsAsync();
+    }
+
+    private async Task LoadAvailableProviderTypesAsync()
+    {
+        var providerTypes = await _configurationRepository.GetAvailableProviderTypesAsync();
+        
+        AvailableProviderTypes.Clear();
+        foreach (var providerType in providerTypes)
+        {
+            AvailableProviderTypes.Add(providerType);
+        }
     }
 
     private async Task LoadProvidersAsync()
     {
         var providers = await _configurationRepository.GetAllProvidersAsync();
-        var activeProvider = await _configurationRepository.GetActiveProviderAsync();
 
         Providers.Clear();
         foreach (var provider in providers)
         {
-            var name = GetProviderName(provider);
-            var providerVm = new ProviderViewModel(name, provider)
-            {
-                IsActive = activeProvider != null && GetProviderName(activeProvider) == name
-            };
+            var providerVm = new ProviderViewModel(provider);
             
             // Subscribe to property changes for auto-save
             providerVm.PropertyChanged += (s, e) =>
             {
                 if (s is ProviderViewModel pvm)
                 {
+                    _logger.LogInformation("Property changed for provider {ProviderName}, scheduling save...", pvm.Name);
                     DebounceAndSaveProvider(pvm);
                 }
             };
@@ -87,22 +98,14 @@ public partial class SettingsPageViewModel : ObservableObject
         }
     }
 
-    private string GetProviderName(Core.Configuration.ProviderConfiguration provider)
+    private void NotifyProvidersChanged()
     {
-        // Try to infer a friendly name from the configuration
-        if (provider.BaseUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Local LLM";
-        }
-        if (provider.BaseUrl.Contains("perplexity", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Perplexity";
-        }
-        if (provider.BaseUrl.Contains("openai", StringComparison.OrdinalIgnoreCase))
-        {
-            return "OpenAI";
-        }
-        return $"{provider.ProviderType} ({provider.BaseUrl})";
+        _queueAtCreationTime.TryEnqueue(() => { _messenger.Send(new ProvidersChangedMessage()); });
+    }
+
+    private void NotifyToolsChanged()
+    {
+        _queueAtCreationTime.TryEnqueue(() => { _messenger.Send(new ToolsChangedMessage()); });
     }
 
     [RelayCommand]
@@ -123,7 +126,7 @@ public partial class SettingsPageViewModel : ObservableObject
         
         // Save immediately
         await SaveProviderAsync(newProvider);
-        _messenger.Send(new ProvidersChangedMessage());
+        NotifyProvidersChanged();
     }
 
     [RelayCommand]
@@ -131,12 +134,20 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         if (provider == null) return;
 
-        await _configurationRepository.DeleteProviderAsync(provider.OriginalName);
-        Providers.Remove(provider);
-        
-        _messenger.Send(new ProvidersChangedMessage());
-        
-        await ShowSaveCompleteAsync();
+        try
+        {
+            await _configurationRepository.DeleteProviderAsync(provider.Id);
+            Providers.Remove(provider);
+            
+            NotifyProvidersChanged();
+            
+            await ShowSaveCompleteAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting provider {ProviderName}: {ErrorMessage}", provider.Name, ex.Message);
+            await ShowErrorAsync($"Failed to delete provider: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -157,7 +168,7 @@ public partial class SettingsPageViewModel : ObservableObject
         
         // Save immediately
         await SaveToolAsync(newTool);
-        _messenger.Send(new ToolsChangedMessage());
+        NotifyToolsChanged();
     }
 
     [RelayCommand]
@@ -165,12 +176,20 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         if (tool == null) return;
 
-        await _configurationRepository.DeleteToolAsync(tool.OriginalToolName);
-        Tools.Remove(tool);
-        
-        _messenger.Send(new ToolsChangedMessage());
-        
-        await ShowSaveCompleteAsync();
+        try
+        {
+            await _configurationRepository.DeleteToolAsync(tool.Id);
+            Tools.Remove(tool);
+            
+            NotifyToolsChanged();
+            
+            await ShowSaveCompleteAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting tool {ToolName}: {ErrorMessage}", tool.ToolName, ex.Message);
+            await ShowErrorAsync($"Failed to delete tool: {ex.Message}");
+        }
     }
 
     private void DebounceAndSaveProvider(ProviderViewModel provider)
@@ -221,24 +240,20 @@ public partial class SettingsPageViewModel : ObservableObject
 
     private async Task SaveProviderAsync(ProviderViewModel provider)
     {
+        _logger.LogInformation("Saving provider {ProviderName}...", provider.Name);
         try
         {
             var config = provider.ToConfiguration();
-            await _configurationRepository.SaveProviderAsync(provider.Name, config);
+            await _configurationRepository.SaveProviderAsync(config);
             
-            // Handle active provider status
-            if (provider.IsActive)
-            {
-                await _configurationRepository.SetActiveProviderAsync(provider.Name);
-            }
-            
-            _messenger.Send(new ProvidersChangedMessage());
+            NotifyProvidersChanged();
             
             await ShowSaveCompleteAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Handle errors silently or log them
+            _logger.LogError(ex, "Error saving provider {ProviderName}: {ErrorMessage}", provider.Name, ex.Message);
+            await ShowErrorAsync($"Failed to save provider: {ex.Message}");
         }
     }
 
@@ -247,27 +262,56 @@ public partial class SettingsPageViewModel : ObservableObject
         try
         {
             var config = tool.ToConfiguration();
-            await _configurationRepository.SaveToolAsync(tool.ToolName, config);
+            await _configurationRepository.SaveToolAsync(config);
             
-            _messenger.Send(new ToolsChangedMessage());
+            NotifyToolsChanged();
             
             await ShowSaveCompleteAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Handle errors silently or log them
+            _logger.LogError(ex, "Error saving tool {ToolName}: {ErrorMessage}", tool.ToolName, ex.Message);
+            await ShowErrorAsync($"Failed to save tool: {ex.Message}");
         }
     }
 
     private async Task ShowSaveCompleteAsync()
     {
-        SaveStatusMessage = "Save complete...";
-        IsSaveStatusVisible = true;
+        // Ensure UI updates happen on the UI thread
+        _queueAtCreationTime.TryEnqueue(() =>
+        {
+            _logger.LogInformation("Showing save complete message...");
+            SaveStatusMessage = "Save complete...";
+            IsSaveStatusVisible = true;
+        });
 
         await Task.Delay(2500);
 
-        IsSaveStatusVisible = false;
-        SaveStatusMessage = string.Empty;
+        _queueAtCreationTime.TryEnqueue(() =>
+        {
+            _logger.LogInformation("Hiding save complete message...");
+            IsSaveStatusVisible = false;
+            SaveStatusMessage = string.Empty;
+        });
+    }
+
+    private async Task ShowErrorAsync(string message)
+    {
+        // Ensure UI updates happen on the UI thread
+        _queueAtCreationTime.TryEnqueue(() =>
+        {
+            _logger.LogInformation("Showing error message: {ErrorMessage}", message);
+            ErrorMessage = message;
+            IsErrorVisible = true;
+        });
+
+        await Task.Delay(5000); // Show errors longer than success messages
+
+        _queueAtCreationTime.TryEnqueue(() =>
+        {
+            _logger.LogInformation("Hiding error message...");
+            IsErrorVisible = false;
+            ErrorMessage = string.Empty;
+        });
     }
 }
-

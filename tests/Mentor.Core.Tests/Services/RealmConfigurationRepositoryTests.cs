@@ -54,20 +54,6 @@ public class RealmConfigurationRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetActiveProviderAsync_WhenSeeded_ReturnsActiveProvider()
-    {
-        // Arrange
-        await _repository.SeedDefaultsAsync();
-
-        // Act
-        var activeProvider = await _repository.GetActiveProviderAsync();
-
-        // Assert
-        Assert.NotNull(activeProvider);
-        Assert.Equal("http://localhost:1234/v1", activeProvider.BaseUrl);
-    }
-
-    [Fact]
     public async Task SaveProviderAsync_WithNewProvider_CreatesProvider()
     {
         // Arrange
@@ -81,7 +67,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
         };
 
         // Act
-        await _repository.SaveProviderAsync("OpenAI", config);
+        await _repository.SaveProviderAsync(config);
         var savedProvider = await _repository.GetProviderByNameAsync("OpenAI");
 
         // Assert
@@ -103,7 +89,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
             BaseUrl = "https://api.openai.com/v1",
             Timeout = 60
         };
-        await _repository.SaveProviderAsync("OpenAI", initialConfig);
+        await _repository.SaveProviderAsync(initialConfig);
 
         var updatedConfig = new ProviderConfiguration
         {
@@ -116,7 +102,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
         };
 
         // Act
-        await _repository.SaveProviderAsync("OpenAI", updatedConfig);
+        await _repository.SaveProviderAsync(updatedConfig);
         var savedProvider = await _repository.GetProviderByNameAsync("OpenAI");
 
         // Assert
@@ -127,38 +113,105 @@ public class RealmConfigurationRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SetActiveProviderAsync_ChangesActiveProvider()
+    public async Task SaveProviderAsync_WithSameName_UpdatesExisting()
     {
         // Arrange
-        await _repository.SeedDefaultsAsync();
-        var config = new ProviderConfiguration
+        var config1 = new ProviderConfiguration
         {
             ProviderType = "openai",
-            ApiKey = "test-key",
-            Model = "gpt-4o",
-            BaseUrl = "https://api.openai.com/v1"
+            ApiKey = "test-key-1",
+            Model = "gpt-4",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 60
         };
-        await _repository.SaveProviderAsync("OpenAI", config);
+        await _repository.SaveProviderAsync(config1);
 
-        // Act
-        await _repository.SetActiveProviderAsync("OpenAI");
-        var activeProvider = await _repository.GetActiveProviderAsync();
+        var config2 = new ProviderConfiguration
+        {
+            ProviderType = "perplexity",
+            ApiKey = "test-key-2",
+            Model = "sonar",
+            BaseUrl = "https://api.perplexity.ai",
+            Timeout = 90
+        };
 
-        // Assert
-        Assert.NotNull(activeProvider);
-        Assert.Equal("gpt-4o", activeProvider.Model);
-        Assert.Equal("https://api.openai.com/v1", activeProvider.BaseUrl);
+        // Act - Save with same name should update, not create duplicate
+        await _repository.SaveProviderAsync(config2);
+        var allProviders = await _repository.GetAllProvidersAsync();
+        var savedProvider = await _repository.GetProviderByNameAsync("TestProvider");
+
+        // Assert - Should have updated the existing provider
+        Assert.NotNull(savedProvider);
+        Assert.Equal("perplexity", savedProvider.ProviderType);
+        Assert.Equal("test-key-2", savedProvider.ApiKey);
+        Assert.Equal("sonar", savedProvider.Model);
+        Assert.Equal(90, savedProvider.Timeout);
     }
 
     [Fact]
-    public async Task SetActiveProviderAsync_WithInvalidName_ThrowsArgumentException()
+    public async Task SaveProviderAsync_UpdateWithSameName_Succeeds()
     {
         // Arrange
-        await _repository.SeedDefaultsAsync();
+        var config1 = new ProviderConfiguration
+        {
+            ProviderType = "openai",
+            ApiKey = "test-key-1",
+            Model = "gpt-4",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 60
+        };
+        await _repository.SaveProviderAsync(config1);
+
+        var config2 = new ProviderConfiguration
+        {
+            Name = "TestProvider",
+            ProviderType = "openai",
+            ApiKey = "updated-key",
+            Model = "gpt-4o",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 90
+        };
+
+        // Act
+        await _repository.SaveProviderAsync(config2);
+        var savedProvider = await _repository.GetProviderByNameAsync("TestProvider");
+
+        // Assert
+        Assert.NotNull(savedProvider);
+        Assert.Equal("updated-key", savedProvider.ApiKey);
+        Assert.Equal("gpt-4o", savedProvider.Model);
+    }
+
+    [Fact]
+    public async Task SaveProviderAsync_RenameToExistingName_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var config1 = new ProviderConfiguration
+        {
+            ProviderType = "openai",
+            ApiKey = "test-key-1",
+            Model = "gpt-4",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 60
+        };
+        await _repository.SaveProviderAsync(config1);
+
+        var config2 = new ProviderConfiguration
+        {
+            ProviderType = "perplexity",
+            ApiKey = "test-key-2",
+            Model = "sonar",
+            BaseUrl = "https://api.perplexity.ai",
+            Timeout = 60
+        };
+        await _repository.SaveProviderAsync(config2);
+
+        // Try to rename Provider2 to Provider1
+        config2.Name = "Provider1";
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(
-            async () => await _repository.SetActiveProviderAsync("NonExistent"));
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _repository.SaveProviderAsync(config2));
     }
 
     [Fact]
@@ -173,7 +226,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Model = "gpt-4o",
             BaseUrl = "https://api.openai.com/v1"
         };
-        await _repository.SaveProviderAsync("OpenAI", config);
+        await _repository.SaveProviderAsync(config);
 
         // Act
         await _repository.DeleteProviderAsync("OpenAI");
@@ -195,7 +248,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
             Model = "gpt-4o",
             BaseUrl = "https://api.openai.com/v1"
         };
-        await _repository.SaveProviderAsync("OpenAI", config);
+        await _repository.SaveProviderAsync(config);
 
         // Act
         var allProviders = await _repository.GetAllProvidersAsync();
@@ -234,7 +287,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
         };
 
         // Act
-        await _repository.SaveToolAsync("TestSearch", config);
+        await _repository.SaveToolAsync(config);
         var savedTool = await _repository.GetToolByNameAsync("TestSearch");
 
         // Assert
@@ -256,7 +309,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
             BaseUrl = "https://api.initial.com",
             Timeout = 30
         };
-        await _repository.SaveToolAsync("TestSearch", initialConfig);
+        await _repository.SaveToolAsync(initialConfig);
 
         var updatedConfig = new RealWebtoolToolConfiguration
         {
@@ -267,7 +320,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
         };
 
         // Act
-        await _repository.SaveToolAsync("TestSearch", updatedConfig);
+        await _repository.SaveToolAsync(updatedConfig);
         var savedTool = await _repository.GetToolByNameAsync("TestSearch");
 
         // Assert
@@ -289,7 +342,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
             BaseUrl = "https://api.test.com",
             Timeout = 30
         };
-        await _repository.SaveToolAsync("TestSearch", config);
+        await _repository.SaveToolAsync(config);
 
         // Act
         await _repository.DeleteToolAsync("TestSearch");
@@ -311,7 +364,7 @@ public class RealmConfigurationRepositoryTests : IDisposable
             BaseUrl = "https://api.test.com",
             Timeout = 30
         };
-        await _repository.SaveToolAsync("TestSearch", config);
+        await _repository.SaveToolAsync(config);
 
         // Act
         var allTools = await _repository.GetAllToolsAsync();
@@ -345,6 +398,19 @@ public class RealmConfigurationRepositoryTests : IDisposable
 
         // Assert
         Assert.Null(tool);
+    }
+
+    [Fact]
+    public async Task GetAvailableProviderTypesAsync_ReturnsExpectedTypes()
+    {
+        // Act
+        var providerTypes = await _repository.GetAvailableProviderTypesAsync();
+
+        // Assert
+        Assert.NotEmpty(providerTypes);
+        Assert.Contains("openai", providerTypes);
+        Assert.Contains("perplexity", providerTypes);
+        Assert.Equal(2, providerTypes.Count);
     }
 
     public void Dispose()

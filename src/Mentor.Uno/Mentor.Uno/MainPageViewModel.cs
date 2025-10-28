@@ -14,7 +14,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly ILLMProviderFactory _providerFactory;
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMessenger _messenger;
-
+    private readonly ILogger<MainPageViewModel> _logger;
     [ObservableProperty] private string? _imagePath;
 
     [ObservableProperty] private string _prompt = "How can I make this weapon do more damage against ...";
@@ -26,15 +26,16 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] private Recommendation? _result;
 
     [ObservableProperty] private string? _errorMessage;
+    private bool _systemIsLoaded = false;
 
     public ObservableCollection<string> Providers { get; } = new();
 
-    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger)
+    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<MainPageViewModel> logger)
     {
         _providerFactory = providerFactory;
         _configurationRepository = configurationRepository;
         _messenger = messenger;
-        
+        _logger = logger;
         // Subscribe to providers changed message
         _messenger.Register<ProvidersChangedMessage>(this, (r, m) =>
         {
@@ -48,6 +49,57 @@ public partial class MainPageViewModel : ObservableObject
     private async Task InitializeProvidersAsync()
     {
         await LoadProvidersAsync();
+        await LoadUIStateAsync();
+        _systemIsLoaded = true;
+    }
+    
+    private async Task LoadUIStateAsync()
+    {
+        _logger.LogInformation("Loading UI state");
+        try
+        {
+            var state = await _configurationRepository.GetUIStateAsync();
+            
+            // Restore image path
+            if (!string.IsNullOrEmpty(state.ImagePath))
+            {
+                ImagePath = state.ImagePath;
+            }
+            
+            // Restore prompt
+            if (!string.IsNullOrEmpty(state.Prompt))
+            {
+                Prompt = state.Prompt;
+            }
+            
+            // Restore provider selection
+            if (!string.IsNullOrEmpty(state.Provider) && Providers.Contains(state.Provider))
+            {
+                SelectedProvider = state.Provider;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't show to user - this is not critical
+            ErrorMessage = $"Error loading saved state: {ex.Message}";
+        }
+    }
+    
+    private async Task SaveUIStateAsync()
+    {
+        if (!_systemIsLoaded)
+        {
+            return;
+        }
+        try
+        {
+            _logger.LogInformation($"Saving UI state: ImagePath={ImagePath}, Prompt={Prompt}, SelectedProvider={SelectedProvider}");
+            await _configurationRepository.SaveUIStateAsync(ImagePath, Prompt, SelectedProvider);
+        }
+        catch
+        {
+            // Silently fail - saving UI state is not critical
+        }
     }
 
     private async Task ReloadProvidersAsync()
@@ -83,48 +135,21 @@ public partial class MainPageViewModel : ObservableObject
             
             foreach (var provider in providers)
             {
-                // Get a friendly name for the provider
-                var providerName = GetProviderName(provider);
-                Providers.Add(providerName);
+                // Use the provider's Name property directly
+                Providers.Add(provider.Name);
             }
             
-            // Get the active provider and set it as selected (only on initial load)
-            if (string.IsNullOrEmpty(SelectedProvider))
+            // SelectedProvider will be loaded from UI state in LoadUIStateAsync
+            // If no provider is set yet and we have providers, select the first one
+            if (string.IsNullOrEmpty(SelectedProvider) && Providers.Any())
             {
-                var activeProvider = await _configurationRepository.GetActiveProviderAsync();
-                if (activeProvider != null)
-                {
-                    SelectedProvider = GetProviderName(activeProvider);
-                }
-                else if (Providers.Any())
-                {
-                    // If no active provider, select the first one
-                    SelectedProvider = Providers.First();
-                }
+                SelectedProvider = Providers.First();
             }
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Error loading providers: {ex.Message}";
         }
-    }
-    
-    private string GetProviderName(Core.Configuration.ProviderConfiguration provider)
-    {
-        // Try to infer a friendly name from the configuration
-        if (provider.BaseUrl.Contains("localhost"))
-        {
-            return "Local LLM";
-        }
-        if (provider.BaseUrl.Contains("perplexity"))
-        {
-            return "Perplexity";
-        }
-        if (provider.BaseUrl.Contains("openai"))
-        {
-            return "OpenAI";
-        }
-        return $"{provider.ProviderType} ({provider.BaseUrl})";
     }
 
     [RelayCommand(CanExecute = nameof(CanAnalyze))]
@@ -197,11 +222,22 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnImagePathChanged(string? value)
     {
         AnalyzeCommand.NotifyCanExecuteChanged();
+        _ = SaveUIStateAsync();
     }
 
     partial void OnIsAnalyzingChanged(bool value)
     {
         AnalyzeCommand.NotifyCanExecuteChanged();
+    }
+    
+    partial void OnPromptChanged(string value)
+    {
+        _ = SaveUIStateAsync();
+    }
+    
+    partial void OnSelectedProviderChanged(string value)
+    {
+        _ = SaveUIStateAsync();
     }
 }
 

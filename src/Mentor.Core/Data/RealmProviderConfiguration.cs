@@ -14,7 +14,6 @@ public partial class RealmProviderConfiguration : IRealmObject
     public string Model { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = string.Empty;
     public int Timeout { get; set; } = 60;
-    public bool IsActive { get; set; } = false;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 

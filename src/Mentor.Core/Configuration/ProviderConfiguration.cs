@@ -2,6 +2,7 @@ namespace Mentor.Core.Configuration;
 
 public class ProviderConfiguration
 {
+    public string Id { get; init; }
     public string Name { get; set; } = string.Empty;
     public string ProviderType { get; set; } = string.Empty; // "openai", "perplexity"
     public string ApiKey { get; set; } = string.Empty;

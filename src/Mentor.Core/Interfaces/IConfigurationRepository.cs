@@ -6,11 +6,6 @@ namespace Mentor.Core.Interfaces;
 public interface IConfigurationRepository
 {
     /// <summary>
-    /// Gets the currently active provider configuration
-    /// </summary>
-    Task<ProviderConfiguration?> GetActiveProviderAsync();
-    
-    /// <summary>
     /// Gets a provider configuration by name
     /// </summary>
     Task<ProviderConfiguration?> GetProviderByNameAsync(string name);
@@ -21,19 +16,14 @@ public interface IConfigurationRepository
     Task<IList<ProviderConfiguration>> GetAllProvidersAsync();
     
     /// <summary>
-    /// Sets the active provider by name
-    /// </summary>
-    Task SetActiveProviderAsync(string name);
-    
-    /// <summary>
     /// Saves a provider configuration
     /// </summary>
-    Task SaveProviderAsync(string name, ProviderConfiguration config);
+    Task SaveProviderAsync(ProviderConfiguration config);
     
     /// <summary>
     /// Deletes a provider configuration by name
     /// </summary>
-    Task DeleteProviderAsync(string name);
+    Task DeleteProviderAsync(string id);
     
     
     /// <summary>
@@ -54,11 +44,26 @@ public interface IConfigurationRepository
     /// <summary>
     /// Saves a tool configuration
     /// </summary>
-    Task SaveToolAsync(string toolName, RealWebtoolToolConfiguration config);
+    Task SaveToolAsync(RealWebtoolToolConfiguration config);
     
     /// <summary>
     /// Deletes a tool configuration by name
     /// </summary>
-    Task DeleteToolAsync(string toolName);
+    Task DeleteToolAsync(string id);
+    
+    /// <summary>
+    /// Gets the saved UI state (last image path, prompt, and provider)
+    /// </summary>
+    Task<(string? ImagePath, string? Prompt, string? Provider)> GetUIStateAsync();
+    
+    /// <summary>
+    /// Saves the UI state (last image path, prompt, and provider)
+    /// </summary>
+    Task SaveUIStateAsync(string? imagePath, string? prompt, string? provider);
+    
+    /// <summary>
+    /// Gets the list of available provider types (e.g., "openai", "perplexity")
+    /// </summary>
+    Task<IList<string>> GetAvailableProviderTypesAsync();
 }
 

@@ -5,8 +5,7 @@ namespace Mentor.Uno.ViewModels;
 
 public partial class ToolViewModel : ObservableObject
 {
-    private readonly string _originalToolName;
-
+    [ObservableProperty] private string _id = string.Empty;
     [ObservableProperty] private string _toolName = string.Empty;
     [ObservableProperty] private string _apiKey = string.Empty;
     [ObservableProperty] private string _baseUrl = string.Empty;
@@ -14,7 +13,7 @@ public partial class ToolViewModel : ObservableObject
 
     public ToolViewModel(RealWebtoolToolConfiguration config)
     {
-        _originalToolName = config.ToolName;
+        _id = config.Id;
         _toolName = config.ToolName;
         _apiKey = config.ApiKey;
         _baseUrl = config.BaseUrl;
@@ -23,18 +22,16 @@ public partial class ToolViewModel : ObservableObject
 
     public ToolViewModel()
     {
-        _originalToolName = "New Tool";
         _toolName = "New Tool";
         _baseUrl = "https://";
         _timeout = 30;
     }
 
-    public string OriginalToolName => _originalToolName;
-
     public RealWebtoolToolConfiguration ToConfiguration()
     {
         return new RealWebtoolToolConfiguration
         {
+            Id = Id,
             ToolName = ToolName,
             ApiKey = ApiKey,
             BaseUrl = BaseUrl,

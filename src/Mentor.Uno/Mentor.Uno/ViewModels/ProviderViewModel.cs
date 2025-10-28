@@ -5,20 +5,18 @@ namespace Mentor.Uno.ViewModels;
 
 public partial class ProviderViewModel : ObservableObject
 {
-    private readonly string _originalName;
-
+    [ObservableProperty] private string _id = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _providerType = string.Empty;
     [ObservableProperty] private string _apiKey = string.Empty;
     [ObservableProperty] private string _model = string.Empty;
     [ObservableProperty] private string _baseUrl = string.Empty;
     [ObservableProperty] private int _timeout = 60;
-    [ObservableProperty] private bool _isActive;
 
-    public ProviderViewModel(string name, ProviderConfiguration config)
+    public ProviderViewModel(ProviderConfiguration config)
     {
-        _originalName = name;
-        _name = name;
+        _id = config.Id;
+        _name = config.Name;
         _providerType = config.ProviderType;
         _apiKey = config.ApiKey;
         _model = config.Model;
@@ -28,14 +26,12 @@ public partial class ProviderViewModel : ObservableObject
 
     public ProviderViewModel()
     {
-        _originalName = "New Provider";
+        _id = "";
         _name = "New Provider";
         _providerType = "openai";
         _baseUrl = "https://api.openai.com";
         _timeout = 60;
     }
-
-    public string OriginalName => _originalName;
 
     public ProviderConfiguration ToConfiguration()
     {

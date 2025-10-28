@@ -4,38 +4,25 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:local="using:Mentor.Uno"
       xmlns:vm="using:Mentor.Uno.ViewModels"
+      xmlns:converters="using:Mentor.Uno.Converters"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
+  <Page.Resources>
+    <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+  </Page.Resources>
+
   <Grid>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/>
-    </Grid.RowDefinitions>
-
-    <!-- Save Status Message -->
-    <Border Grid.Row="0" 
-            Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
-            Padding="12,8"
-            Margin="20,10,20,0"
-            CornerRadius="4"
-            Visibility="{x:Bind ViewModel.IsSaveStatusVisible, Mode=OneWay}">
-      <TextBlock Text="{x:Bind ViewModel.SaveStatusMessage, Mode=OneWay}"
-                 Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                 FontWeight="SemiBold"
-                 HorizontalAlignment="Center"/>
-    </Border>
-
     <!-- Settings Content -->
-    <ScrollViewer Grid.Row="1" Padding="20">
+    <ScrollViewer Padding="20">
       <StackPanel Spacing="32">
-        
+
         <!-- Header with Back Button -->
         <Grid>
-          <Button Content="← Back" 
+          <Button Content="← Back"
                   Click="OnBackClick"
                   Style="{StaticResource TextBlockButtonStyle}"
                   HorizontalAlignment="Left"/>
-          <TextBlock Text="Settings" 
+          <TextBlock Text="Settings"
                      Style="{StaticResource TitleTextBlockStyle}"
                      HorizontalAlignment="Center"/>
         </Grid>
@@ -43,7 +30,7 @@
         <!-- LLM Providers Section -->
         <StackPanel Spacing="16">
           <Grid>
-            <TextBlock Text="LLM Providers" 
+            <TextBlock Text="LLM Providers"
                        Style="{StaticResource SubtitleTextBlockStyle}"/>
             <Button Content="+ Add Provider"
                     Command="{x:Bind ViewModel.AddProviderCommand}"
@@ -67,37 +54,37 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Spacing="12">
-                      <!-- Name and Active Status -->
+                      <!-- Name -->
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBox Header="Name" 
-                                 Text="{x:Bind Name, Mode=TwoWay}"
-                                 Width="200"/>
-                        <CheckBox Content="Active" 
-                                  IsChecked="{x:Bind IsActive, Mode=TwoWay}"
-                                  VerticalAlignment="Bottom"/>
+                      <TextBox Header="Name"
+                               Text="{x:Bind Name, Mode=TwoWay}"
+                               Width="200"/>
                       </StackPanel>
 
                       <!-- Provider Type and Model -->
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBox Header="Provider Type" 
-                                 Text="{x:Bind ProviderType, Mode=TwoWay}"
-                                 Width="200"/>
-                        <TextBox Header="Model" 
+                        <ComboBox Header="Provider Type"
+                                  SelectedItem="{x:Bind ProviderType, Mode=TwoWay}"
+                                  ItemsSource="{Binding ElementName=PageRoot, Path=DataContext.AvailableProviderTypes}"
+                                  Width="200"/>
+                        <TextBox Header="Model"
                                  Text="{x:Bind Model, Mode=TwoWay}"
                                  Width="200"/>
                       </StackPanel>
 
                       <!-- Base URL -->
-                      <TextBox Header="Base URL" 
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                      <TextBox Header="Base URL"
                                Text="{x:Bind BaseUrl, Mode=TwoWay}"
                                Width="420"/>
+                      </StackPanel>
 
                       <!-- API Key and Timeout -->
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <PasswordBox Header="API Key" 
+                        <PasswordBox Header="API Key"
                                      Password="{x:Bind ApiKey, Mode=TwoWay}"
                                      Width="300"/>
-                        <TextBox Header="Timeout (seconds)" 
+                        <TextBox Header="Timeout (seconds)"
                                  Text="{x:Bind Timeout, Mode=TwoWay}"
                                  Width="120"
                                  InputScope="Number"/>
@@ -121,7 +108,7 @@
         <!-- Web Search Tools Section -->
         <StackPanel Spacing="16">
           <Grid>
-            <TextBlock Text="Web Search Tools" 
+            <TextBlock Text="Web Search Tools"
                        Style="{StaticResource SubtitleTextBlockStyle}"/>
             <Button Content="+ Add Tool"
                     Command="{x:Bind ViewModel.AddToolCommand}"
@@ -146,21 +133,21 @@
 
                     <StackPanel Grid.Column="0" Spacing="12">
                       <!-- Tool Name -->
-                      <TextBox Header="Tool Name" 
+                      <TextBox Header="Tool Name"
                                Text="{x:Bind ToolName, Mode=TwoWay}"
                                Width="300"/>
 
                       <!-- Base URL -->
-                      <TextBox Header="Base URL" 
+                      <TextBox Header="Base URL"
                                Text="{x:Bind BaseUrl, Mode=TwoWay}"
                                Width="420"/>
 
                       <!-- API Key and Timeout -->
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <PasswordBox Header="API Key" 
+                        <PasswordBox Header="API Key"
                                      Password="{x:Bind ApiKey, Mode=TwoWay}"
                                      Width="300"/>
-                        <TextBox Header="Timeout (seconds)" 
+                        <TextBox Header="Timeout (seconds)"
                                  Text="{x:Bind Timeout, Mode=TwoWay}"
                                  Width="120"
                                  InputScope="Number"/>
@@ -183,6 +170,54 @@
 
       </StackPanel>
     </ScrollViewer>
+
+    <!-- Save Status Message Overlay (Bottom Right) -->
+    <Border HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="20"
+            Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+            BorderBrush="{ThemeResource SystemFillColorSuccessBrush}"
+            BorderThickness="1"
+            Padding="16,12"
+            CornerRadius="8"
+            Visibility="{x:Bind ViewModel.IsSaveStatusVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+      <Border.Shadow>
+        <ThemeShadow />
+      </Border.Shadow>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <FontIcon Glyph="&#xE73E;" 
+                  FontSize="16"
+                  Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+        <TextBlock Text="{x:Bind ViewModel.SaveStatusMessage, Mode=OneWay}"
+                   Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                   FontWeight="SemiBold"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Error Message Overlay (Bottom Right) -->
+    <Border HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="20"
+            Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
+            BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
+            BorderThickness="1"
+            Padding="16,12"
+            CornerRadius="8"
+            Visibility="{x:Bind ViewModel.IsErrorVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+      <Border.Shadow>
+        <ThemeShadow />
+      </Border.Shadow>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <FontIcon Glyph="&#xE783;" 
+                  FontSize="16"
+                  Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+        <TextBlock Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                   Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                   FontWeight="SemiBold"
+                   MaxWidth="400"
+                   TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
   </Grid>
 </Page>
 
