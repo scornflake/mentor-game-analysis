@@ -244,7 +244,16 @@ public partial class SettingsPageViewModel : ObservableObject
         try
         {
             var config = provider.ToConfiguration();
-            await _configurationRepository.SaveProviderAsync(config);
+            var savedEntity = await _configurationRepository.SaveProviderAsync(config);
+            
+            // Update the ViewModel with the saved entity (especially the ID)
+            provider.Id = savedEntity.Id;
+            provider.Name = savedEntity.Name;
+            provider.ProviderType = savedEntity.ProviderType;
+            provider.ApiKey = savedEntity.ApiKey;
+            provider.Model = savedEntity.Model;
+            provider.BaseUrl = savedEntity.BaseUrl;
+            provider.Timeout = savedEntity.Timeout;
             
             NotifyProvidersChanged();
             
@@ -262,7 +271,14 @@ public partial class SettingsPageViewModel : ObservableObject
         try
         {
             var config = tool.ToConfiguration();
-            await _configurationRepository.SaveToolAsync(config);
+            var savedEntity = await _configurationRepository.SaveToolAsync(config);
+            
+            // Update the ViewModel with the saved entity (especially the ID)
+            tool.Id = savedEntity.Id;
+            tool.ToolName = savedEntity.ToolName;
+            tool.ApiKey = savedEntity.ApiKey;
+            tool.BaseUrl = savedEntity.BaseUrl;
+            tool.Timeout = savedEntity.Timeout;
             
             NotifyToolsChanged();
             

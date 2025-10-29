@@ -7,4 +7,9 @@
   -->
   <ItemGroup>
   </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="Uno.Extensions.Core.WinUI" Version="6.2.3" />
+    <PackageVersion Include="Uno.Extensions.Navigation.Toolkit.WinUI" Version="6.2.3" />
+    <PackageVersion Include="Uno.Extensions.Navigation.WinUI" Version="6.2.3" />
+  </ItemGroup>
 </Project>

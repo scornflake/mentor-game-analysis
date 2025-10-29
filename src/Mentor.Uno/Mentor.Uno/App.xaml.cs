@@ -3,6 +3,7 @@ using Mentor.Core.Configuration;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Services;
 using Mentor.Core.Tools;
+using Mentor.Uno.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Uno.Resizetizer;
 using Mentor.Uno.Platforms;
+using Uno.Extensions.Navigation.Toolkit;
 
 namespace Mentor.Uno;
 
@@ -25,11 +27,9 @@ public partial class App : Application
     {
         this.InitializeComponent();
         
-        // Build the host with services
-        _host = BuildHost();
     }
     
-    private static IHost BuildHost()
+    private IHost BuildHost()
     {
         return Host.CreateDefaultBuilder()
             .ConfigureAppConfiguration((context, config) =>
@@ -39,7 +39,6 @@ public partial class App : Application
                 
                 config.SetBasePath(basePath)
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
                     .AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) =>
@@ -49,6 +48,7 @@ public partial class App : Application
 
                 // Register core services
                 services.AddHttpClient();
+                services.AddSingleton<WindowStateHelper>();
                 services.AddSingleton<IToolFactory, ToolFactory>();
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
@@ -59,11 +59,6 @@ public partial class App : Application
                 // Register ViewModels
                 services.AddTransient<MainPageViewModel>();
                 services.AddTransient<SettingsPageViewModel>();
-                
-                // Seed defaults on startup
-                var serviceProvider = services.BuildServiceProvider();
-                var repo = serviceProvider.GetRequiredService<IConfigurationRepository>();
-                repo.SeedDefaultsAsync().Wait();
             })
             .ConfigureLogging((context, logging) =>
             {
@@ -85,9 +80,72 @@ public partial class App : Application
 
     public Window? MainWindow { get; private set; }
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    protected IApplicationBuilder BuildLikeOther(LaunchActivatedEventArgs args)
     {
+        var builder = this.CreateBuilder(args);
+        builder = builder.UseToolkitNavigation();
+            //.Configure(host => {
+            //    host.ConfigureAppConfiguration((context, config) =>
+            //    {
+            //        // Determine base path for configuration files
+            //        var basePath = AppContext.BaseDirectory;
+
+            //        config.SetBasePath(basePath)
+            //            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            //            .AddEnvironmentVariables();
+            //    })
+            //    .ConfigureServices((context, services) =>
+            //     {
+            //         // Register configuration repository
+            //         services.AddConfigurationRepository();
+
+            //         // Register core services
+            //         services.AddHttpClient();
+            //         services.AddSingleton<IToolFactory, ToolFactory>();
+            //         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
+            //         services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
+
+            //         // Register messaging
+            //         services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
+
+            //         // Register ViewModels
+            //         services.AddTransient<MainPageViewModel>();
+            //         services.AddTransient<SettingsPageViewModel>();
+
+            //         // Seed defaults on startup
+            //         var serviceProvider = services.BuildServiceProvider();
+            //         var repo = serviceProvider.GetRequiredService<IConfigurationRepository>();
+            //         ////repo.SeedDefaultsAsync().Wait();
+            //     })
+            //    .ConfigureLogging((context, logging) =>
+            //    {
+            //        logging.ClearProviders();
+            //        var logger = new LoggerConfiguration()
+            //            .MinimumLevel.Debug()
+            //            .WriteTo.Console()
+            //            .CreateLogger();
+            //        logging.AddSerilog(logger);
+            //    });
+            //});
+        return builder;
+    }
+
+    protected async override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        // Build the host with services
+        _host = BuildHost();
+        //var builder = BuildLikeOther(args);
+
+        //MainWindow = builder.Window;
+        //MainWindow.SetWindowIcon();
+
         MainWindow = new Window();
+        //_host = await builder.NavigateAsync<MainPage>();
+
+        var repo = _host.Services.GetRequiredService<IConfigurationRepository>();
+        await repo.SeedDefaultsAsync();
+
+        
 #if DEBUG
         MainWindow.UseStudio();
 #endif
@@ -114,12 +172,17 @@ public partial class App : Application
             rootFrame.Navigate(typeof(MainPage), args.Arguments);
         }
 
-        MainWindow.SetWindowIcon();
+        // MainWindow.SetWindowIcon();
         // Ensure the current window is active
         MainWindow.Activate();
         
         // Configure macOS menu bar after window activation (runtime check inside)
         MacOSExtensions.ConfigureMacOSMenu();
+        
+        // Restore window state and setup tracking
+        var windowStateHelper = _host.Services.GetRequiredService<WindowStateHelper>();
+        await windowStateHelper.RestoreWindowStateAsync(MainWindow, "MainWindow", repo, defaultWidth: 1280, defaultHeight: 900);
+        windowStateHelper.SetupWindowStateTracking(MainWindow, "MainWindow", repo);
     }
 
     /// <summary>

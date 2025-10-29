@@ -4,27 +4,36 @@
       xmlns:local="using:Mentor.Uno"
       xmlns:models="using:Mentor.Core.Models"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-  
-  <Grid Margin="20">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="Auto"/>
-      <ColumnDefinition Width="*"/>
-    </Grid.ColumnDefinitions>
 
-    <!-- Input Section -->
-    <ScrollViewer Grid.Column="0" MaxWidth="400" Margin="0,0,20,0">
-      <StackPanel Spacing="16">
-        <Grid>
-          <TextBlock Text="Screenshot Analysis" 
-                     Style="{StaticResource TitleTextBlockStyle}"
-                     HorizontalAlignment="Left"/>
-          <Button Content="⚙ Settings" 
-                  Click="OnSettingsClick"
-                  HorizontalAlignment="Right"
-                  Style="{StaticResource TextBlockButtonStyle}"/>
-        </Grid>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
 
-        <!-- Image Selection -->
+    <!-- Fixed Header -->
+    <Grid Grid.Row="0" Padding="20,20,20,12">
+      <TextBlock Text="Game Analysis"
+                 Style="{StaticResource TitleTextBlockStyle}"
+                 HorizontalAlignment="Left"/>
+      <Button Content="⚙ Settings"
+              Click="OnSettingsClick"
+              HorizontalAlignment="Right"
+              Style="{StaticResource TextBlockButtonStyle}"/>
+    </Grid>
+
+    <!-- Main Content Area -->
+    <Grid Grid.Row="1" Padding="20,12,20,20">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- Input Section -->
+      <ScrollViewer Grid.Column="0" MaxWidth="400" Margin="0,0,20,0">
+        <StackPanel Spacing="16">
+
+          <!-- Image Selection -->
         <StackPanel Spacing="8">
           <TextBlock Text="Screenshot Image:" FontWeight="SemiBold"/>
           <Grid>
@@ -32,12 +41,12 @@
               <ColumnDefinition Width="*"/>
               <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" 
+            <TextBox Grid.Column="0"
                      Text="{x:Bind ViewModel.ImagePath, Mode=OneWay}"
                      PlaceholderText="Select an image file..."
                      IsReadOnly="True"
                      Margin="0,0,10,0"/>
-            <Button Grid.Column="1" 
+            <Button Grid.Column="1"
                     Content="Browse..."
                     Click="OnBrowseClick"
                     MinWidth="100"/>
@@ -81,7 +90,7 @@
                 Style="{StaticResource AccentButtonStyle}"/>
 
         <!-- Progress Indicator -->
-        <StackPanel Orientation="Horizontal" 
+        <StackPanel Orientation="Horizontal"
                     Spacing="10"
                     HorizontalAlignment="Center"
                     Visibility="{x:Bind ViewModel.IsAnalyzing, Mode=OneWay}">
@@ -89,17 +98,17 @@
           <TextBlock Text="Analyzing..." FontStyle="Italic"/>
         </StackPanel>
 
-        <!-- Error Message -->
-        <InfoBar IsOpen="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
-                 Severity="Error"
-                 Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"/>
-      </StackPanel>
-    </ScrollViewer>
+          <!-- Error Message -->
+          <InfoBar IsOpen="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
+                   Severity="Error"
+                   Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"/>
+        </StackPanel>
+      </ScrollViewer>
 
-    <!-- Results Section -->
-    <ScrollViewer Grid.Column="1" Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+      <!-- Results Section -->
+      <ScrollViewer Grid.Column="1" Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
         <StackPanel Spacing="16">
-          <TextBlock Text="Analysis Results" 
+          <TextBlock Text="Analysis Results"
                      Style="{StaticResource TitleTextBlockStyle}"/>
 
           <!-- Metadata -->
@@ -161,13 +170,13 @@
                         <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrushConverter}}"
                                 CornerRadius="3"
                                 Padding="8,4">
-                          <TextBlock Text="{x:Bind Priority}" 
+                          <TextBlock Text="{x:Bind Priority}"
                                      Foreground="White"
                                      FontWeight="SemiBold"
                                      FontSize="12"/>
                         </Border>
-                        <TextBlock Text="{x:Bind Action}" 
-                                   FontWeight="SemiBold"
+                        <TextBlock Text="{x:Bind Action}"
+                                   FontWeight="SemiBold" TextWrapping="Wrap"
                                    VerticalAlignment="Center"/>
                       </StackPanel>
                       <StackPanel Spacing="4">
@@ -185,23 +194,24 @@
                 </DataTemplate>
               </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-      </ScrollViewer>
+        </ScrollViewer>
 
-    <!-- Empty State -->
-    <StackPanel Grid.Column="1"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"
-                Spacing="10"
-                Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource InverseNullToVisibilityConverter}}">
-      <TextBlock Text="No analysis results yet" 
-                 Style="{StaticResource SubtitleTextBlockStyle}"
-                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                 HorizontalAlignment="Center"/>
-      <TextBlock Text="Select an image and click 'Analyze Screenshot' to begin" 
-                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                 HorizontalAlignment="Center"/>
-    </StackPanel>
+      <!-- Empty State -->
+      <StackPanel Grid.Column="1"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="10"
+                  Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource InverseNullToVisibilityConverter}}">
+        <TextBlock Text="No analysis results yet"
+                   Style="{StaticResource SubtitleTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="Select an image and click 'Analyze Screenshot' to begin"
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                   HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Grid>
   </Grid>
 </Page>

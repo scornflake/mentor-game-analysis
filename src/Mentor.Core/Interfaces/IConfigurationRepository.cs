@@ -17,7 +17,7 @@ public interface IConfigurationRepository
     /// <summary>
     /// Saves a provider configuration
     /// </summary>
-    Task SaveProviderAsync(ProviderConfigurationEntity config);
+    Task<ProviderConfigurationEntity> SaveProviderAsync(ProviderConfigurationEntity config);
     
     /// <summary>
     /// Deletes a provider configuration by name
@@ -43,7 +43,7 @@ public interface IConfigurationRepository
     /// <summary>
     /// Saves a tool configuration
     /// </summary>
-    Task SaveToolAsync(ToolConfigurationEntity config);
+    Task<ToolConfigurationEntity> SaveToolAsync(ToolConfigurationEntity config);
     
     /// <summary>
     /// Deletes a tool configuration by name
@@ -64,5 +64,15 @@ public interface IConfigurationRepository
     /// Gets the list of available provider types (e.g., "openai", "perplexity")
     /// </summary>
     Task<IList<string>> GetAvailableProviderTypesAsync();
+    
+    /// <summary>
+    /// Gets the saved window state (position and size)
+    /// </summary>
+    Task<WindowStateEntity?> GetWindowStateAsync(string windowName);
+    
+    /// <summary>
+    /// Saves the window state (position and size)
+    /// </summary>
+    Task SaveWindowStateAsync(WindowStateEntity windowState);
 }
 

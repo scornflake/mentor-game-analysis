@@ -1,58 +1,75 @@
 <Project Sdk="Uno.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>net9.0-desktop</TargetFrameworks>
+    <PropertyGroup>
+        <TargetFrameworks>net9.0-desktop</TargetFrameworks>
 
-    <OutputType>Exe</OutputType>
-    <UnoSingleProject>true</UnoSingleProject>
+        <OutputType>Exe</OutputType>
+        <UnoSingleProject>true</UnoSingleProject>
+
+        <!-- Assembly/Executable name -->
+        <AssemblyName>Mentor</AssemblyName>
+        <!--<ApplicationIcon>Assets\Icons\App.ico</ApplicationIcon>-->
+
+        <!-- Display name -->
+        <ApplicationTitle>Mentor - Game Analysis</ApplicationTitle>
+        <!-- App Identifier -->
+        <ApplicationId>com.mentor.uno</ApplicationId>
+        <!-- Versions -->
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <!-- Package Publisher -->
+        <ApplicationPublisher>Neil CLayton</ApplicationPublisher>
+        <!-- Package Description -->
+        <Description>Mentor - Game Analysis</Description>
+        <!--
+          If you encounter this error message:
     
-    <!-- Assembly/Executable name -->
-    <AssemblyName>Mentor</AssemblyName>
+            error NETSDK1148: A referenced assembly was compiled using a newer version of Microsoft.Windows.SDK.NET.dll.
+            Please update to a newer .NET SDK in order to reference this assembly.
+    
+          This means that the two packages below must be aligned with the "build" version number of
+          the "Microsoft.Windows.SDK.BuildTools" package above, and the "revision" version number
+          must be the highest found in https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref.
+        -->
+        <!-- <WindowsSdkPackageVersion>10.0.22621.28</WindowsSdkPackageVersion> -->
 
-    <!-- Display name -->
-    <ApplicationTitle>Mentor - Game Analysis</ApplicationTitle>
-    <!-- App Identifier -->
-    <ApplicationId>com.mentor.uno</ApplicationId>
-    <!-- Versions -->
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-    <ApplicationVersion>1</ApplicationVersion>
-    <!-- Package Publisher -->
-    <ApplicationPublisher>Neil CLayton</ApplicationPublisher>
-    <!-- Package Description -->
-    <Description>Mentor - Game Analysis</Description>
-    <!--
-      If you encounter this error message:
+        <!--
+          UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
+          https://aka.platform.uno/singleproject-features
+        -->
+        <UnoFeatures>
+            Mvvm;
+            SkiaRenderer;
+            Configuration;
+            Hosting;
+            Toolkit;
+            Navigation;
+            Logging;
+        </UnoFeatures>
+    </PropertyGroup>
 
-        error NETSDK1148: A referenced assembly was compiled using a newer version of Microsoft.Windows.SDK.NET.dll.
-        Please update to a newer .NET SDK in order to reference this assembly.
+    <ItemGroup>
+        <ProjectReference Include="../../Mentor.Core/Mentor.Core.csproj" />
+    </ItemGroup>
 
-      This means that the two packages below must be aligned with the "build" version number of
-      the "Microsoft.Windows.SDK.BuildTools" package above, and the "revision" version number
-      must be the highest found in https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref.
-    -->
-    <!-- <WindowsSdkPackageVersion>10.0.22621.28</WindowsSdkPackageVersion> -->
+    <ItemGroup>
+        <EmbeddedResource Remove="appsettings.json" />
+    </ItemGroup>
 
-    <!--
-      UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
-      https://aka.platform.uno/singleproject-features
-    -->
-    <UnoFeatures>
-      Mvvm;
-      SkiaRenderer;
-      Configuration;
-      Hosting;
-      Logging;
-    </UnoFeatures>
-  </PropertyGroup>
+    <ItemGroup>
+      <PackageReference Include="Uno.Extensions.Core.WinUI" />
+      <PackageReference Include="Uno.Extensions.Navigation.Toolkit.WinUI" />
+      <PackageReference Include="Uno.Extensions.Navigation.WinUI" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="../../Mentor.Core/Mentor.Core.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Update="appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-  </ItemGroup>
+    <ItemGroup>
+      <UnoIcon Remove="Assets\Icons\icon.svg" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Remove="appsettings.json" />
-  </ItemGroup>
 
 </Project>

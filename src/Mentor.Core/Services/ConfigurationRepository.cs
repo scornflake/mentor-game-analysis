@@ -59,7 +59,7 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
         return Task.FromResult<IList<ProviderConfigurationEntity>>(entities);
     }
 
-    public Task SaveProviderAsync(ProviderConfigurationEntity config)
+    public Task<ProviderConfigurationEntity> SaveProviderAsync(ProviderConfigurationEntity config)
     {
         // Must have a name field - or throw
         var name = config.Name;
@@ -97,6 +97,9 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingProvider.Timeout = config.Timeout;
 
             collection.Update(existingProvider);
+            
+            // Return the updated entity
+            return Task.FromResult(existingProvider);
         }
         else
         {
@@ -122,9 +125,10 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
                 CreatedAt = DateTimeOffset.UtcNow
             };
             collection.Insert(newProvider);
+            
+            // Return the newly inserted entity
+            return Task.FromResult(newProvider);
         }
-
-        return Task.CompletedTask;
     }
 
     public Task DeleteProviderAsync(string id)
@@ -154,7 +158,7 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
         return Task.FromResult<IList<ToolConfigurationEntity>>(tools);
     }
 
-    public Task SaveToolAsync(ToolConfigurationEntity config)
+    public Task<ToolConfigurationEntity> SaveToolAsync(ToolConfigurationEntity config)
     {
         var collection = _database.GetCollection<ToolConfigurationEntity>("tools");
         collection.EnsureIndex(x => x.Id);
@@ -167,13 +171,29 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingTool.BaseUrl = config.BaseUrl;
             existingTool.Timeout = config.Timeout;
             collection.Update(existingTool);
+            
+            // Return the updated entity
+            return Task.FromResult(existingTool);
         }
         else
         {
+            // Ensure we have an ID
+            if (string.IsNullOrEmpty(config.Id))
+            {
+                config.Id = Guid.NewGuid().ToString();
+            }
+            
+            // Set creation timestamp
+            if (config.CreatedAt == default)
+            {
+                config.CreatedAt = DateTimeOffset.UtcNow;
+            }
+            
             collection.Insert(config);
+            
+            // Return the newly inserted entity
+            return Task.FromResult(config);
         }
-
-        return Task.CompletedTask;
     }
 
     public Task DeleteToolAsync(string id)
@@ -300,6 +320,40 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             "openai",
             "perplexity"
         });
+    }
+
+    public Task<WindowStateEntity?> GetWindowStateAsync(string windowName)
+    {
+        var collection = _database.GetCollection<WindowStateEntity>("windowstate");
+        collection.EnsureIndex(x => x.WindowName);
+        var windowState = collection.FindOne(w => w.WindowName.Equals(windowName, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<WindowStateEntity?>(windowState);
+    }
+
+    public Task SaveWindowStateAsync(WindowStateEntity windowState)
+    {
+        var collection = _database.GetCollection<WindowStateEntity>("windowstate");
+        collection.EnsureIndex(x => x.WindowName);
+        var existingState = collection.FindOne(w => w.WindowName.Equals(windowState.WindowName, StringComparison.OrdinalIgnoreCase));
+
+        if (existingState != null)
+        {
+            // Update existing state
+            existingState.X = windowState.X;
+            existingState.Y = windowState.Y;
+            existingState.Width = windowState.Width;
+            existingState.Height = windowState.Height;
+            existingState.UpdatedAt = DateTimeOffset.UtcNow;
+            collection.Update(existingState);
+        }
+        else
+        {
+            // Create new state
+            windowState.UpdatedAt = DateTimeOffset.UtcNow;
+            collection.Insert(windowState);
+        }
+
+        return Task.CompletedTask;
     }
 
     public void Dispose()

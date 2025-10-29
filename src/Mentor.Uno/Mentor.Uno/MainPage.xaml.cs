@@ -1,9 +1,12 @@
 using Windows.Storage.Pickers;
+using Mentor.Uno.Helpers;
 
 namespace Mentor.Uno;
 
 public sealed partial class MainPage : Page
 {
+    private WindowStateHelper _windowStateHelper;
+
     public MainPageViewModel ViewModel { get; }
 
     public MainPage()
@@ -12,6 +15,8 @@ public sealed partial class MainPage : Page
         ViewModel = App.GetService<MainPageViewModel>();
         this.DataContext = ViewModel;
         
+        _windowStateHelper = new WindowStateHelper(App.GetService<ILogger<WindowStateHelper>>());
+
         // Add converters to page resources
         this.Resources["NullToVisibilityConverter"] = new NullToVisibilityConverter();
         this.Resources["InverseNullToVisibilityConverter"] = new InverseNullToVisibilityConverter();
@@ -20,9 +25,26 @@ public sealed partial class MainPage : Page
         this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
     }
 
-    private void OnSettingsClick(object sender, RoutedEventArgs e)
+    private async void OnSettingsClick(object sender, RoutedEventArgs e)
     {
-        Frame.Navigate(typeof(SettingsPage));
+        // Create a new window for settings
+        var settingsWindow = new Window
+        {
+            Title = "Settings"
+        };
+        
+        // Create the settings page and set it as the window content
+        var settingsPage = new SettingsPage();
+        settingsPage.SetOwnerWindow(settingsWindow);
+        settingsWindow.Content = settingsPage;
+        
+        // Activate (show) the settings window
+        settingsWindow.Activate();
+        
+        // Restore window state and setup tracking
+        var repository = App.GetService<Mentor.Core.Interfaces.IConfigurationRepository>();
+        await _windowStateHelper.RestoreWindowStateAsync(settingsWindow, "SettingsWindow", repository, defaultWidth: 800, defaultHeight: 1000);
+        _windowStateHelper.SetupWindowStateTracking(settingsWindow, "SettingsWindow", repository);
     }
 
     private async void OnBrowseClick(object sender, RoutedEventArgs e)

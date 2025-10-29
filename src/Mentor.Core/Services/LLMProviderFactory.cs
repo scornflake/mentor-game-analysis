@@ -22,7 +22,7 @@ public class LLMProviderFactory : ILLMProviderFactory
 
     public IAnalysisService GetAnalysisService(ILLMClient llmClient)
     {
-        // make an AnalaysisService based on the name
+        // make an AnalysisService based on the name
         var toolFactory = _serviceProvider.GetRequiredService<IToolFactory>();
         var providerName = llmClient.Configuration.ProviderType;
         ValidateProviderName(providerName);
@@ -30,7 +30,7 @@ public class LLMProviderFactory : ILLMProviderFactory
         if (providerName == "openai")
         {
             var analysisLogging = _serviceProvider.GetRequiredService<ILogger<OpenAIAnalysisService>>();
-            analysisLogging.LogInformation("Creating AnalysisService for OpenAI provider.");
+            analysisLogging.LogInformation("Creating AnalysisService for OpenAI provider: {Name}, {Model}", llmClient.Configuration.Name, llmClient.Configuration.Model);
             return new OpenAIAnalysisService(llmClient, analysisLogging, toolFactory);
         }
         else if (providerName == "perplexity")

@@ -12,20 +12,25 @@
   </Page.Resources>
 
   <Grid>
-    <!-- Settings Content -->
-    <ScrollViewer Padding="20">
-      <StackPanel Spacing="32">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
 
-        <!-- Header with Back Button -->
-        <Grid>
-          <Button Content="← Back"
-                  Click="OnBackClick"
-                  Style="{StaticResource TextBlockButtonStyle}"
-                  HorizontalAlignment="Left"/>
-          <TextBlock Text="Settings"
-                     Style="{StaticResource TitleTextBlockStyle}"
-                     HorizontalAlignment="Center"/>
-        </Grid>
+    <!-- Fixed Header with Back Button -->
+    <Grid Grid.Row="0" Padding="20,20,20,12">
+      <Button Content="← Back"
+              Click="OnBackClick"
+              Style="{StaticResource TextBlockButtonStyle}"
+              HorizontalAlignment="Left"/>
+      <TextBlock Text="Settings"
+                 Style="{StaticResource TitleTextBlockStyle}"
+                 HorizontalAlignment="Center"/>
+    </Grid>
+
+    <!-- Scrollable Settings Content -->
+    <ScrollViewer Grid.Row="1" Padding="20,12,20,20">
+      <StackPanel Spacing="32">
 
         <!-- LLM Providers Section -->
         <StackPanel Spacing="16">
@@ -176,7 +181,8 @@
     </ScrollViewer>
 
     <!-- Save Status Message Overlay (Bottom Right) -->
-    <Border HorizontalAlignment="Right"
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Margin="20"
             Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
@@ -199,7 +205,8 @@
     </Border>
 
     <!-- Error Message Overlay (Bottom Right) -->
-    <Border HorizontalAlignment="Right"
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Margin="20"
             Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"

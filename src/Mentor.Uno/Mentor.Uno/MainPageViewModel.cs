@@ -211,6 +211,7 @@ public partial class MainPageViewModel : ObservableObject
         catch (Exception ex)
         {
             ErrorMessage = $"Analysis error: {ex.Message}";
+            _logger.LogError("Analysis error: {ex}", ex);
         }
         finally
         {
