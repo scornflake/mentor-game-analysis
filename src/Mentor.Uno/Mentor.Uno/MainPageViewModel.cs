@@ -16,7 +16,14 @@ public partial class MainPageViewModel : ObservableObject
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMessenger _messenger;
     private readonly ILogger<MainPageViewModel> _logger;
-    [ObservableProperty] private string? _imagePath;
+    
+    private CancellationTokenSource? _analysisCancellationTokenSource;
+    
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(ImageFileName))]
+    private string? _imagePath;
+
+    public string? ImageFileName => string.IsNullOrEmpty(ImagePath) ? null : Path.GetFileName(ImagePath);
 
     [ObservableProperty] private BitmapImage? _imageSource;
 
@@ -168,6 +175,11 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
+        // Create a new cancellation token source for this analysis
+        _analysisCancellationTokenSource?.Cancel();
+        _analysisCancellationTokenSource?.Dispose();
+        _analysisCancellationTokenSource = new CancellationTokenSource();
+
         IsAnalyzing = true;
         ErrorMessage = null;
         Result = null;
@@ -190,7 +202,7 @@ public partial class MainPageViewModel : ObservableObject
             byte[] imageData;
             try
             {
-                imageData = await File.ReadAllBytesAsync(ImagePath);
+                imageData = await File.ReadAllBytesAsync(ImagePath, _analysisCancellationTokenSource.Token);
             }
             catch (Exception ex)
             {
@@ -206,7 +218,12 @@ public partial class MainPageViewModel : ObservableObject
             };
 
             // Perform analysis
-            Result = await analysisService.AnalyzeAsync(request);
+            Result = await analysisService.AnalyzeAsync(request, _analysisCancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            ErrorMessage = "Analysis cancelled";
+            _logger.LogInformation("Analysis cancelled by user");
         }
         catch (Exception ex)
         {
@@ -216,12 +233,20 @@ public partial class MainPageViewModel : ObservableObject
         finally
         {
             IsAnalyzing = false;
+            _analysisCancellationTokenSource?.Dispose();
+            _analysisCancellationTokenSource = null;
         }
     }
 
     private bool CanAnalyze()
     {
         return !string.IsNullOrWhiteSpace(ImagePath) && !IsAnalyzing;
+    }
+
+    [RelayCommand]
+    public void CancelAnalysis()
+    {
+        _analysisCancellationTokenSource?.Cancel();
     }
 
     partial void OnImagePathChanged(string? value)

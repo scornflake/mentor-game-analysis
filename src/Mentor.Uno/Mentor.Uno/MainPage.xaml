@@ -42,10 +42,15 @@
               <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox Grid.Column="0"
-                     Text="{x:Bind ViewModel.ImagePath, Mode=OneWay}"
+                     Text="{x:Bind ViewModel.ImageFileName, Mode=OneWay}"
                      PlaceholderText="Select an image file..."
                      IsReadOnly="True"
-                     Margin="0,0,10,0"/>
+                     Margin="0,0,10,0">
+              <ToolTipService.ToolTip>
+                <ToolTip Content="{x:Bind ViewModel.ImagePath, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.ImagePath, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}"/>
+              </ToolTipService.ToolTip>
+            </TextBox>
             <Button Grid.Column="1"
                     Content="Browse..."
                     Click="OnBrowseClick"
@@ -93,9 +98,15 @@
         <StackPanel Orientation="Horizontal"
                     Spacing="10"
                     HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     Visibility="{x:Bind ViewModel.IsAnalyzing, Mode=OneWay}">
-          <ProgressRing IsActive="True" Width="20" Height="20"/>
-          <TextBlock Text="Analyzing..." FontStyle="Italic"/>
+          <ProgressRing IsActive="True" Width="32" Height="32" Margin="8" Padding="8" VerticalAlignment="Center"/>
+          <TextBlock Text="Analyzing..." FontStyle="Italic" VerticalAlignment="Center"/>
+          <Button Content="Cancel"
+                  Command="{x:Bind ViewModel.CancelAnalysisCommand}"
+                  MinWidth="80"
+                  VerticalAlignment="Center"
+                  Style="{StaticResource TextBlockButtonStyle}"/>
         </StackPanel>
 
           <!-- Error Message -->
@@ -166,19 +177,27 @@
                           Padding="12"
                           Margin="0,0,0,12">
                     <StackPanel Spacing="8">
-                      <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrushConverter}}"
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto"/>
+                          <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0"
+                                Background="{x:Bind Priority, Converter={StaticResource PriorityToBrushConverter}}"
                                 CornerRadius="3"
-                                Padding="8,4">
+                                Padding="8,4"
+                                Margin="0,0,10,0">
                           <TextBlock Text="{x:Bind Priority}"
                                      Foreground="White"
                                      FontWeight="SemiBold"
                                      FontSize="12"/>
                         </Border>
-                        <TextBlock Text="{x:Bind Action}"
-                                   FontWeight="SemiBold" TextWrapping="Wrap"
+                        <TextBlock Grid.Column="1"
+                                   Text="{x:Bind Action}"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
                                    VerticalAlignment="Center"/>
-                      </StackPanel>
+                      </Grid>
                       <StackPanel Spacing="4">
                         <TextBlock TextWrapping="Wrap">
                           <Run Text="Reasoning: " FontWeight="SemiBold"/>

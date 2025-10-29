@@ -48,8 +48,8 @@ public class WebsearchIntegrationTest
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<WebsearchIntegrationTest>>();
 
-        // API only does 1 fps
-        Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false).GetAwaiter().GetResult();
+        // API only does 1 fps. But, the BraveWebSearch has rate limiting built in. So not adding here
+        // Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     [Fact]

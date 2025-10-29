@@ -16,17 +16,17 @@ public class OpenAIAnalysisService : AnalysisService
     }
 
     [Description("Tool to perform web searchesa and return text snippets")]
-    string SearchTheWebSnippets(string query)
+    async Task<string> SearchTheWebSnippets(string query)
     {
         _logger.LogInformation("Performing web search for query: {Query}", query);
-        return _webSearchTool!.Search(query, SearchOutputFormat.Snippets, 5).ConfigureAwait(false).GetAwaiter().GetResult();
+        return await _webSearchTool!.Search(query, SearchOutputFormat.Snippets, 5);
     }
 
     [Description("Tool to perform web searches and return structured results. Good if you want detailed information")]
-    IList<SearchResult> SearchTheWebStructured(string query)
+    async Task<IList<SearchResult>> SearchTheWebStructured(string query)
     {
         _logger.LogInformation("Performing structured web search for query: {Query}", query);
-        return _webSearchTool!.SearchStructured(query, 5).ConfigureAwait(false).GetAwaiter().GetResult();
+        return await _webSearchTool!.SearchStructured(query, 5);
     }
 
     internal override async Task<IList<AITool>> SetupTools()
