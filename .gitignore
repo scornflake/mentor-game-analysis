@@ -32,6 +32,9 @@ bld/
 # macOS
 .DS_Store
 
+# Test configuration with secrets
+tests/**/appsettings.Development.json
+
 # NuGet Packages
 *.nupkg
 **/packages/*

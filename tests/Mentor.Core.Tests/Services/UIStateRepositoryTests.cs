@@ -1,3 +1,4 @@
+using Mentor.Core.Data;
 using Mentor.Core.Services;
 using Xunit;
 
@@ -22,9 +23,9 @@ public class UIStateRepositoryTests : IDisposable
         var state = await _repository.GetUIStateAsync();
 
         // Assert
-        Assert.Null(state.ImagePath);
-        Assert.Null(state.Prompt);
-        Assert.Null(state.Provider);
+        Assert.Null(state.LastImagePath);
+        Assert.Null(state.LastPrompt);
+        Assert.Null(state.LastProvider);
     }
 
     [Fact]
@@ -36,13 +37,19 @@ public class UIStateRepositoryTests : IDisposable
         const string provider = "Test Provider";
 
         // Act
-        await _repository.SaveUIStateAsync(imagePath, prompt, provider);
+        var entity = new UIStateEntity
+        {
+            LastImagePath = imagePath,
+            LastPrompt = prompt,
+            LastProvider = provider
+        };
+        await _repository.SaveUIStateAsync(entity);
 
         // Assert
         var state = await _repository.GetUIStateAsync();
-        Assert.Equal(imagePath, state.ImagePath);
-        Assert.Equal(prompt, state.Prompt);
-        Assert.Equal(provider, state.Provider);
+        Assert.Equal(imagePath, state.LastImagePath);
+        Assert.Equal(prompt, state.LastPrompt);
+        Assert.Equal(provider, state.LastProvider);
     }
 
     [Fact]
@@ -58,14 +65,24 @@ public class UIStateRepositoryTests : IDisposable
         const string updatedProvider = "Updated Provider";
 
         // Act
-        await _repository.SaveUIStateAsync(initialImagePath, initialPrompt, initialProvider);
-        await _repository.SaveUIStateAsync(updatedImagePath, updatedPrompt, updatedProvider);
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = initialImagePath,
+            LastPrompt = initialPrompt,
+            LastProvider = initialProvider
+        });
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = updatedImagePath,
+            LastPrompt = updatedPrompt,
+            LastProvider = updatedProvider
+        });
 
         // Assert
         var state = await _repository.GetUIStateAsync();
-        Assert.Equal(updatedImagePath, state.ImagePath);
-        Assert.Equal(updatedPrompt, state.Prompt);
-        Assert.Equal(updatedProvider, state.Provider);
+        Assert.Equal(updatedImagePath, state.LastImagePath);
+        Assert.Equal(updatedPrompt, state.LastPrompt);
+        Assert.Equal(updatedProvider, state.LastProvider);
     }
 
     [Fact]
@@ -77,16 +94,26 @@ public class UIStateRepositoryTests : IDisposable
         const string provider = "Test Provider";
 
         // Act - First save with values
-        await _repository.SaveUIStateAsync(imagePath, prompt, provider);
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = imagePath,
+            LastPrompt = prompt,
+            LastProvider = provider
+        });
         
         // Act - Then save with nulls
-        await _repository.SaveUIStateAsync(null, null, null);
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = null,
+            LastPrompt = null,
+            LastProvider = null
+        });
 
         // Assert
         var state = await _repository.GetUIStateAsync();
-        Assert.Null(state.ImagePath);
-        Assert.Null(state.Prompt);
-        Assert.Null(state.Provider);
+        Assert.Null(state.LastImagePath);
+        Assert.Null(state.LastPrompt);
+        Assert.Null(state.LastProvider);
     }
 
     [Fact]
@@ -98,13 +125,18 @@ public class UIStateRepositoryTests : IDisposable
         const string provider = "a";
 
         // Act
-        await _repository.SaveUIStateAsync(imagePath, prompt, provider);
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = imagePath,
+            LastPrompt = prompt,
+            LastProvider = provider
+        });
 
         // Assert
         var state = await _repository.GetUIStateAsync();
-        Assert.Equal(imagePath, state.ImagePath);
-        Assert.Equal(prompt, state.Prompt);
-        Assert.Equal(provider, state.Provider);
+        Assert.Equal(imagePath, state.LastImagePath);
+        Assert.Equal(prompt, state.LastPrompt);
+        Assert.Equal(provider, state.LastProvider);
     }
 
     [Fact]
@@ -118,14 +150,24 @@ public class UIStateRepositoryTests : IDisposable
         const string updatedPrompt = "Updated prompt only";
 
         // Act
-        await _repository.SaveUIStateAsync(initialImagePath, initialPrompt, initialProvider);
-        await _repository.SaveUIStateAsync(initialImagePath, updatedPrompt, initialProvider);
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = initialImagePath,
+            LastPrompt = initialPrompt,
+            LastProvider = initialProvider
+        });
+        await _repository.SaveUIStateAsync(new UIStateEntity
+        {
+            LastImagePath = initialImagePath,
+            LastPrompt = updatedPrompt,
+            LastProvider = initialProvider
+        });
 
         // Assert
         var state = await _repository.GetUIStateAsync();
-        Assert.Equal(initialImagePath, state.ImagePath);
-        Assert.Equal(updatedPrompt, state.Prompt);
-        Assert.Equal(initialProvider, state.Provider);
+        Assert.Equal(initialImagePath, state.LastImagePath);
+        Assert.Equal(updatedPrompt, state.LastPrompt);
+        Assert.Equal(initialProvider, state.LastProvider);
     }
 
     public void Dispose()

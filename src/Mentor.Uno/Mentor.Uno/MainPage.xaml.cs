@@ -1,11 +1,13 @@
 using Windows.Storage.Pickers;
 using Mentor.Uno.Helpers;
+using Mentor.Uno.Services;
 
 namespace Mentor.Uno;
 
 public sealed partial class MainPage : Page
 {
     private WindowStateHelper _windowStateHelper;
+    private ClipboardMonitor? _clipboardMonitor;
 
     public MainPageViewModel ViewModel { get; }
 
@@ -23,6 +25,34 @@ public sealed partial class MainPage : Page
         this.Resources["StringToBoolConverter"] = new StringToBoolConverter();
         this.Resources["StringToVisibilityConverter"] = new StringToVisibilityConverter();
         this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
+        
+        // Initialize clipboard monitoring
+        InitializeClipboardMonitoring();
+    }
+    
+    private void InitializeClipboardMonitoring()
+    {
+        try
+        {
+            _clipboardMonitor = App.GetService<ClipboardMonitor>();
+            _clipboardMonitor.ImageDetected += OnClipboardImageDetected;
+            _clipboardMonitor.StartMonitoring();
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't crash the app if clipboard monitoring fails
+            var logger = App.GetService<ILogger<MainPage>>();
+            logger?.LogError(ex, "Failed to initialize clipboard monitoring");
+        }
+    }
+    
+    private void OnClipboardImageDetected(object? sender, ClipboardImageEventArgs e)
+    {
+        // Update the ViewModel on the UI thread
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            ViewModel.OnClipboardImageDetected(e.ImageData);
+        });
     }
 
     private async void OnSettingsClick(object sender, RoutedEventArgs e)

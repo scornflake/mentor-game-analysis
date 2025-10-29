@@ -45,22 +45,32 @@ public class BraveWebSearch : IWebSearchTool
         }
     }
 
-    private string FormQuery(string userPrompt)
+    private string FormQuery(SearchContext context)
     {
-        var query = userPrompt;
+        var query = "";
+        if (!string.IsNullOrEmpty(context.GameName))
+        {
+            query += $"{context.GameName}, ";
+        }
+        query += $"Give me accurate information about: {context.Query}";
         query += ". do not include videos or images in the results.";
         query += ". Prefer recent results (within the last year) where possible.";
         return query;
     }
 
-    public async Task<IList<SearchResult>> SearchStructured(string query, int maxResults = 5)
+    public async Task<IList<SearchResult>> SearchStructured(SearchContext context, int maxResults = 5)
     {
-        if (string.IsNullOrWhiteSpace(query))
+        if (context == null)
         {
-            throw new ArgumentException("Query cannot be null or empty", nameof(query));
+            throw new ArgumentNullException(nameof(context));
+        }
+        
+        if (string.IsNullOrWhiteSpace(context.Query))
+        {
+            throw new ArgumentException("Query cannot be null or empty", nameof(context.Query));
         }
 
-        query = FormQuery(query);
+        var query = FormQuery(context);
         _logger.LogInformation("Searching for {query} using format 'structured'", query);
 
         var searchResponse = await ExecuteSearchWithRateLimit(query, maxResults);
@@ -95,8 +105,15 @@ public class BraveWebSearch : IWebSearchTool
                 
                 if (attempt == 0)
                 {
-                    _logger.LogWarning("Rate limit exceeded, retrying once after delay");
-                    await Task.Delay(100, cancellationToken); // Brief delay before retry
+                    // Calculate wait time: use RetryAfter if available, otherwise wait full window period
+                    var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue) 
+                        ? retryAfterValue 
+                        : (TimeSpan?)null;
+                    
+                    var waitTime = retryAfter ?? TimeSpan.FromSeconds(1);
+                    
+                    _logger.LogWarning("Rate limit exceeded, waiting {WaitTime}ms before retry", waitTime.TotalMilliseconds);
+                    await Task.Delay(waitTime, cancellationToken);
                 }
                 else
                 {
@@ -151,19 +168,24 @@ public class BraveWebSearch : IWebSearchTool
     }
 
 
-    public async Task<string> Search(string query, SearchOutputFormat format, int maxResults = 5)
+    public async Task<string> Search(SearchContext context, SearchOutputFormat format, int maxResults = 5)
     {
         if (format == SearchOutputFormat.Structured)
         {
             throw new NotSupportedException("Use the 'structured' method call to return structured results.");
         }
 
-        if (string.IsNullOrWhiteSpace(query))
+        if (context == null)
         {
-            throw new ArgumentException("Query cannot be null or empty", nameof(query));
+            throw new ArgumentNullException(nameof(context));
+        }
+        
+        if (string.IsNullOrWhiteSpace(context.Query))
+        {
+            throw new ArgumentException("Query cannot be null or empty", nameof(context.Query));
         }
 
-        query = FormQuery(query);
+        var query = FormQuery(context);
         _logger.LogInformation("Searching for {query} using format: {format}", query, format);
 
         var responseContent = await ExecuteSearchWithRateLimit(query, maxResults);

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -6,7 +7,9 @@ using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Tools;
 using Mentor.Uno.Messages;
+using Mentor.Uno.Services;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Storage.Streams;
 
 namespace Mentor.Uno;
 
@@ -26,8 +29,14 @@ public partial class MainPageViewModel : ObservableObject
     public string? ImageFileName => string.IsNullOrEmpty(ImagePath) ? null : Path.GetFileName(ImagePath);
 
     [ObservableProperty] private BitmapImage? _imageSource;
+    
+    [ObservableProperty] private string? _imageSourceCaption;
+    
+    private byte[]? _clipboardImageData;
 
     [ObservableProperty] private string _prompt = "How can I make this weapon do more damage against ...";
+
+    [ObservableProperty] private string _gameName = string.Empty;
 
     [ObservableProperty] private string _selectedProvider = string.Empty;
 
@@ -72,21 +81,27 @@ public partial class MainPageViewModel : ObservableObject
             var state = await _configurationRepository.GetUIStateAsync();
             
             // Restore image path
-            if (!string.IsNullOrEmpty(state.ImagePath))
+            if (!string.IsNullOrEmpty(state.LastImagePath))
             {
-                ImagePath = state.ImagePath;
+                ImagePath = state.LastImagePath;
             }
             
             // Restore prompt
-            if (!string.IsNullOrEmpty(state.Prompt))
+            if (!string.IsNullOrEmpty(state.LastPrompt))
             {
-                Prompt = state.Prompt;
+                Prompt = state.LastPrompt;
+            }
+            
+            // Restore game name
+            if (!string.IsNullOrEmpty(state.LastGameName))
+            {
+                GameName = state.LastGameName;
             }
             
             // Restore provider selection
-            if (!string.IsNullOrEmpty(state.Provider) && Providers.Contains(state.Provider))
+            if (!string.IsNullOrEmpty(state.LastProvider) && Providers.Contains(state.LastProvider))
             {
-                SelectedProvider = state.Provider;
+                SelectedProvider = state.LastProvider;
             }
         }
         catch (Exception ex)
@@ -104,8 +119,16 @@ public partial class MainPageViewModel : ObservableObject
         }
         try
         {
-            _logger.LogInformation($"Saving UI state: ImagePath={ImagePath}, Prompt={Prompt}, SelectedProvider={SelectedProvider}");
-            await _configurationRepository.SaveUIStateAsync(ImagePath, Prompt, SelectedProvider);
+            _logger.LogInformation($"Saving UI state: ImagePath={ImagePath}, Prompt={Prompt}, GameName={GameName}, SelectedProvider={SelectedProvider}");
+            var state = new Mentor.Core.Data.UIStateEntity
+            {
+                Name = "default",
+                LastImagePath = ImagePath,
+                LastPrompt = Prompt,
+                LastGameName = GameName,
+                LastProvider = SelectedProvider
+            };
+            await _configurationRepository.SaveUIStateAsync(state);
         }
         catch
         {
@@ -166,7 +189,8 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanAnalyze))]
     public async Task AnalyzeAsync()
     {
-        if (string.IsNullOrWhiteSpace(ImagePath))
+        // Check if we have either clipboard image data or a file path
+        if (_clipboardImageData == null && string.IsNullOrWhiteSpace(ImagePath))
             return;
 
         if (string.IsNullOrWhiteSpace(SelectedProvider))
@@ -198,15 +222,28 @@ public partial class MainPageViewModel : ObservableObject
             var llmClient = _providerFactory.GetProvider(providerConfig);
             var analysisService = _providerFactory.GetAnalysisService(llmClient);
 
-            // Read the image file
+            // Get image data - prioritize clipboard image over file path
             byte[] imageData;
-            try
+            if (_clipboardImageData != null)
             {
-                imageData = await File.ReadAllBytesAsync(ImagePath, _analysisCancellationTokenSource.Token);
+                imageData = _clipboardImageData;
+                _logger.LogInformation("Using clipboard image for analysis, size: {Size} bytes", imageData.Length);
             }
-            catch (Exception ex)
+            else if (!string.IsNullOrWhiteSpace(ImagePath))
             {
-                ErrorMessage = $"Error reading image file: {ex.Message}";
+                try
+                {
+                    imageData = await File.ReadAllBytesAsync(ImagePath, _analysisCancellationTokenSource.Token);
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = $"Error reading image file: {ex.Message}";
+                    return;
+                }
+            }
+            else
+            {
+                ErrorMessage = "No image available for analysis";
                 return;
             }
 
@@ -214,7 +251,8 @@ public partial class MainPageViewModel : ObservableObject
             var request = new AnalysisRequest
             {
                 ImageData = imageData,
-                Prompt = Prompt
+                Prompt = Prompt,
+                GameName = GameName
             };
 
             // Perform analysis
@@ -240,7 +278,65 @@ public partial class MainPageViewModel : ObservableObject
 
     private bool CanAnalyze()
     {
-        return !string.IsNullOrWhiteSpace(ImagePath) && !IsAnalyzing;
+        return (_clipboardImageData != null || !string.IsNullOrWhiteSpace(ImagePath)) && !IsAnalyzing;
+    }
+    
+    /// <summary>
+    /// Handles clipboard image detection events.
+    /// </summary>
+    public async void OnClipboardImageDetected(byte[] imageData)
+    {
+        if (imageData == null || imageData.Length == 0)
+        {
+            return;
+        }
+
+        _clipboardImageData = imageData;
+        
+        // Update the image source to display the clipboard image
+        await UpdateImageSourceFromClipboardAsync(imageData);
+        
+        // Clear the file path since we're using clipboard image
+        // Do this after setting ImageSource to ensure preview displays correctly
+        ImagePath = null;
+        
+        // Notify that analyze command availability might have changed
+        AnalyzeCommand.NotifyCanExecuteChanged();
+        
+        _logger.LogInformation("Clipboard image set as current image, size: {Size} bytes", imageData.Length);
+    }
+    
+    private async Task UpdateImageSourceFromClipboardAsync(byte[] imageData)
+    {
+        try
+        {
+            var bitmap = new BitmapImage();
+            using (var stream = new InMemoryRandomAccessStream())
+            {
+                using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
+                {
+                    writer.WriteBytes(imageData);
+                    await writer.StoreAsync();
+                    await writer.FlushAsync();
+                }
+                
+                // Reset stream position to beginning for SetSource
+                stream.Seek(0);
+                
+                // Set source after writing to ensure stream is ready
+                bitmap.SetSource(stream);
+            }
+            
+            // Set ImageSource on UI thread (we should already be on UI thread, but ensure it)
+            ImageSource = bitmap;
+            ImageSourceCaption = "Loaded from clipboard";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error displaying clipboard image");
+            ImageSource = null;
+            ImageSourceCaption = null;
+        }
     }
 
     [RelayCommand]
@@ -254,6 +350,12 @@ public partial class MainPageViewModel : ObservableObject
         AnalyzeCommand.NotifyCanExecuteChanged();
         _ = SaveUIStateAsync();
         
+        // When a file path is set, clear clipboard image data
+        if (!string.IsNullOrEmpty(value))
+        {
+            _clipboardImageData = null;
+        }
+        
         // Update the image source
         if (!string.IsNullOrEmpty(value) && File.Exists(value))
         {
@@ -262,16 +364,25 @@ public partial class MainPageViewModel : ObservableObject
                 var bitmap = new BitmapImage();
                 bitmap.UriSource = new Uri(value, UriKind.Absolute);
                 ImageSource = bitmap;
+                ImageSourceCaption = "Loaded from disk";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading image: {ImagePath}", value);
                 ImageSource = null;
+                ImageSourceCaption = null;
             }
         }
-        else
+        else if (string.IsNullOrEmpty(value))
         {
-            ImageSource = null;
+            // Only clear ImageSource if we don't have clipboard image data
+            // If we have clipboard data, it should already be displayed via UpdateImageSourceFromClipboardAsync
+            if (_clipboardImageData == null)
+            {
+                ImageSource = null;
+                ImageSourceCaption = null;
+            }
+            // If _clipboardImageData is not null, keep the current ImageSource (it should be set by UpdateImageSourceFromClipboardAsync)
         }
     }
 
@@ -284,7 +395,12 @@ public partial class MainPageViewModel : ObservableObject
     {
         _ = SaveUIStateAsync();
     }
-    
+
+    partial void OnGameNameChanged(string value)
+    {
+        _ = SaveUIStateAsync();
+    }
+
     partial void OnSelectedProviderChanged(string value)
     {
         _ = SaveUIStateAsync();

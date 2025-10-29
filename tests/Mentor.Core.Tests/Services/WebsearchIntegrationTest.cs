@@ -1,12 +1,10 @@
 using Mentor.Core.Data;
-using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Tests.Helpers;
 using Mentor.Core.Tools;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Xunit.Abstractions;
 
 namespace Mentor.Core.Tests.Services;
@@ -15,48 +13,49 @@ public class WebsearchIntegrationTest
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<WebsearchIntegrationTest> _logger;
-    private readonly ToolConfigurationEntity _config;
+    private readonly ToolConfigurationEntity? _config;
 
     public WebsearchIntegrationTest(ITestOutputHelper testOutputHelper)
     {
         var services = TestHelpers.CreateTestServices(testOutputHelper);
         services.AddWebSearchTool();
 
-        // Load configuration from appsettings
-        var projectRoot = ApiKeyHelper.FindProjectRoot(AppContext.BaseDirectory);
-        Assert.NotNull(projectRoot);
-        var settingsPath = Path.Combine(projectRoot, "src", "Mentor.CLI");
+        // Load configuration from multiple sources (priority: User Secrets > appsettings.Development.json > Environment Variables)
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(settingsPath)
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: false)
+            .AddUserSecrets<WebsearchIntegrationTest>(optional: true)
             .AddEnvironmentVariables()
             .Build();
 
         // Create configuration from settings
         var braveSection = configuration.GetSection("BraveSearch");
-        Assert.NotNull(braveSection);
-        
         var apiKey = braveSection["ApiKey"];
-        Assert.False(string.IsNullOrEmpty(apiKey), "Brave API key is not configured");
-        _config = new ToolConfigurationEntity
+        
+        // Only create config if API key is available
+        if (!string.IsNullOrEmpty(apiKey))
         {
-            ApiKey = apiKey,
-            BaseUrl = "https://api.search.brave.com/res/v1",
-            Timeout = 30
-        };
+            _config = new ToolConfigurationEntity
+            {
+                ApiKey = apiKey,
+                BaseUrl = braveSection["BaseUrl"] ?? "https://api.search.brave.com/res/v1",
+                Timeout = int.TryParse(braveSection["Timeout"], out var timeout) ? timeout : 30
+            };
+        }
 
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<WebsearchIntegrationTest>>();
-
-        // API only does 1 fps. But, the BraveWebSearch has rate limiting built in. So not adding here
-        // Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
-    [Fact]
+    [ConditionalFact("BRAVE_SEARCH_API_KEY")]
     public async Task DoWebSearch_Snippets()
     {
-        _logger.LogInformation("Brave API Key: {ApiKey}", _config.ApiKey);
-        Assert.True(!string.IsNullOrEmpty(_config.ApiKey));
+        // Skip if no config
+        if (_config == null)
+        {
+            _logger.LogWarning("Skipping test - no API key configured");
+            return;
+        }
 
         _logger.LogInformation("Brave Search Config: ApiKey={ApiKey}, BaseUrl={BaseUrl}, Timeout={Timeout}", 
             _config.ApiKey, _config.BaseUrl, _config.Timeout);
@@ -64,16 +63,20 @@ public class WebsearchIntegrationTest
         var websearch = _serviceProvider.GetRequiredService<IWebSearchTool>();
         websearch.Configure(_config);
         
-        var results = await websearch.Search("What is the capital of France?", SearchOutputFormat.Snippets);
+        var results = await websearch.Search(SearchContext.Create("What is the capital of France?"), SearchOutputFormat.Snippets);
         _logger.LogInformation("Web search results: {Results}", results);
         Assert.NotNull(results);
     }
     
-    [Fact]
+    [ConditionalFact("BRAVE_SEARCH_API_KEY")]
     public async Task DoWebSearch_Summary()
     {
-        _logger.LogInformation("Brave API Key: {ApiKey}", _config.ApiKey);
-        Assert.True(!string.IsNullOrEmpty(_config.ApiKey));
+        // Skip if no config
+        if (_config == null)
+        {
+            _logger.LogWarning("Skipping test - no API key configured");
+            return;
+        }
 
         _logger.LogInformation("Brave Search Config: ApiKey={ApiKey}, BaseUrl={BaseUrl}, Timeout={Timeout}", 
             _config.ApiKey, _config.BaseUrl, _config.Timeout);
@@ -81,16 +84,20 @@ public class WebsearchIntegrationTest
         var websearch = _serviceProvider.GetRequiredService<IWebSearchTool>();
         websearch.Configure(_config);
         
-        var results = await websearch.Search("What is the capital of France?", SearchOutputFormat.Summary);
+        var results = await websearch.Search(SearchContext.Create("What is the capital of France?"), SearchOutputFormat.Summary);
         _logger.LogInformation("Web search results: {Results}", results);
         Assert.NotNull(results);
     }
 
-    [Fact]
+    [ConditionalFact("BRAVE_SEARCH_API_KEY")]
     public async Task DoWebSearch_Structured()
     {
-        _logger.LogInformation("Brave API Key: {ApiKey}", _config.ApiKey);
-        Assert.True(!string.IsNullOrEmpty(_config.ApiKey));
+        // Skip if no config
+        if (_config == null)
+        {
+            _logger.LogWarning("Skipping test - no API key configured");
+            return;
+        }
 
         _logger.LogInformation("Brave Search Config: ApiKey={ApiKey}, BaseUrl={BaseUrl}, Timeout={Timeout}", 
             _config.ApiKey, _config.BaseUrl, _config.Timeout);
@@ -98,7 +105,7 @@ public class WebsearchIntegrationTest
         var websearch = _serviceProvider.GetRequiredService<IWebSearchTool>();
         websearch.Configure(_config);
         
-        var results = await websearch.SearchStructured("What is the capital of New Zealand?", maxResults: 1);
+        var results = await websearch.SearchStructured(SearchContext.Create("What is the capital of New Zealand?"), maxResults: 1);
         _logger.LogInformation("Web search results: {Results}", results);
         Assert.NotNull(results);
         Assert.Single(results);

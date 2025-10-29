@@ -1,3 +1,5 @@
+using Mentor.Core.Tools;
+
 namespace Mentor.Core.Models;
 
 public class Recommendation
@@ -8,6 +10,8 @@ public class Recommendation
     public double Confidence { get; set; }
     public DateTime GeneratedAt { get; set; }
     public string ProviderUsed { get; set; } = string.Empty;
+
+    public IList<SearchResult> SearchResults { get; set; } = [];
     
     public string GeneratedAtFormatted => GeneratedAt.ToUniversalTime().ToString("u") ?? "";
 }

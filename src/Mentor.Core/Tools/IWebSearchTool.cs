@@ -17,8 +17,8 @@ public class SearchResult
 
 public interface IWebSearchTool
 {
-    Task<string> Search(string query, SearchOutputFormat format, int maxResults = 5);
-    Task<IList<SearchResult>> SearchStructured(string query, int maxResults = 5);
+    Task<string> Search(SearchContext context, SearchOutputFormat format, int maxResults = 5);
+    Task<IList<SearchResult>> SearchStructured(SearchContext context, int maxResults = 5);
 
     void Configure(ToolConfigurationEntity configuration);
 }

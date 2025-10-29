@@ -6,6 +6,7 @@ public class AnalysisRequest
 {
     public byte[] ImageData { get; set; } = [];
     public string Prompt { get; set; } = string.Empty;
+    public string GameName { get; set; } = string.Empty;
 
     public void ValidateRequest()
     {

@@ -53,6 +53,9 @@ public partial class App : Application
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
                 
+                // Register clipboard monitoring service
+                services.AddSingleton<Mentor.Uno.Services.ClipboardMonitor>();
+                
                 // Register messaging
                 services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
                 

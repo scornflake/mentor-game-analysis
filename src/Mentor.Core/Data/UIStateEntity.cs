@@ -11,6 +11,7 @@ public class UIStateEntity
     public string? LastImagePath { get; set; }
     public string? LastPrompt { get; set; }
     public string? LastProvider { get; set; }
+    public string? LastGameName { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 

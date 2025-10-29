@@ -268,20 +268,20 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
         return Task.CompletedTask;
     }
 
-    public Task<(string? ImagePath, string? Prompt, string? Provider)> GetUIStateAsync()
+    public Task<UIStateEntity> GetUIStateAsync()
     {
         var collection = _database.GetCollection<UIStateEntity>("uistate");
         var uiState = collection.FindOne(u => u.Name.Equals("default"));
 
         if (uiState == null)
         {
-            return Task.FromResult<(string?, string?, string?)>((null, null, null));
+            return Task.FromResult(new UIStateEntity { Name = "default" });
         }
 
-        return Task.FromResult((uiState.LastImagePath, uiState.LastPrompt, uiState.LastProvider));
+        return Task.FromResult(uiState);
     }
 
-    public Task SaveUIStateAsync(string? imagePath, string? prompt, string? provider)
+    public Task SaveUIStateAsync(UIStateEntity state)
     {
         var collection = _database.GetCollection<UIStateEntity>("uistate");
         collection.EnsureIndex(x => x.Name);
@@ -290,9 +290,10 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
         if (existingState != null)
         {
             // Update existing state
-            existingState.LastImagePath = imagePath;
-            existingState.LastPrompt = prompt;
-            existingState.LastProvider = provider;
+            existingState.LastImagePath = state.LastImagePath;
+            existingState.LastPrompt = state.LastPrompt;
+            existingState.LastProvider = state.LastProvider;
+            existingState.LastGameName = state.LastGameName;
             existingState.UpdatedAt = DateTimeOffset.UtcNow;
             collection.Update(existingState);
         }
@@ -302,9 +303,10 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             var newState = new UIStateEntity
             {
                 Name = "default",
-                LastImagePath = imagePath,
-                LastPrompt = prompt,
-                LastProvider = provider,
+                LastImagePath = state.LastImagePath,
+                LastPrompt = state.LastPrompt,
+                LastProvider = state.LastProvider,
+                LastGameName = state.LastGameName,
                 UpdatedAt = DateTimeOffset.UtcNow
             };
             collection.Insert(newState);

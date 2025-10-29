@@ -20,7 +20,7 @@ public class PerplexityAnalysisService: AnalysisService
     {
         request.ValidateRequest();
         
-        var systemMessage = GetSystemPrompt();
+        var systemMessage = GetSystemPrompt(request);
         var userMessage = GetUserMessages(request);
     
         var messages = new List<ChatMessage> { systemMessage, userMessage };

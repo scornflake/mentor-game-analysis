@@ -2,6 +2,51 @@
 
 This project contains unit tests and integration tests for the Mentor.Core library.
 
+## Configuring API Keys for Tests
+
+Tests that make real API calls (like web search integration tests) require API keys. You have three options to configure them:
+
+### Option 1: User Secrets (Recommended for Local Development)
+
+User secrets are stored outside your project directory and never get checked into source control:
+
+```bash
+# Initialize user secrets (already done if UserSecretsId exists in .csproj)
+dotnet user-secrets init --project tests/Mentor.Core.Tests
+
+# Set your Brave Search API key
+dotnet user-secrets set "BraveSearch:ApiKey" "YOUR_ACTUAL_API_KEY" --project tests/Mentor.Core.Tests
+
+# List configured secrets
+dotnet user-secrets list --project tests/Mentor.Core.Tests
+```
+
+### Option 2: appsettings.Development.json
+
+Create `tests/Mentor.Core.Tests/appsettings.Development.json` (already in `.gitignore`):
+
+```json
+{
+  "BraveSearch": {
+    "ApiKey": "YOUR_ACTUAL_API_KEY",
+    "BaseUrl": "https://api.search.brave.com/res/v1",
+    "Timeout": 30
+  }
+}
+```
+
+### Option 3: Environment Variables
+
+```bash
+# Set environment variable
+export BRAVE_SEARCH_API_KEY="YOUR_ACTUAL_API_KEY"
+
+# Or on Windows PowerShell
+$env:BRAVE_SEARCH_API_KEY="YOUR_ACTUAL_API_KEY"
+```
+
+**Configuration Priority**: User Secrets → appsettings.Development.json → Environment Variables
+
 ## Test Types
 
 ### Unit Tests
@@ -10,9 +55,9 @@ This project contains unit tests and integration tests for the Mentor.Core libra
 - Examples: `AnalysisServiceTests`, `LLMProviderFactoryTests`
 
 ### Integration Tests
-- Make real API calls to external services (Perplexity)
-- Require explicit opt-in to run
-- Located in `AnalysisServiceIntegrationTests`
+- Make real API calls to external services (Perplexity, Brave Search)
+- Skip gracefully if API keys are not configured
+- Located in `AnalysisServiceIntegrationTests` and `WebsearchIntegrationTest`
 
 ## Running Tests
 

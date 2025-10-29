@@ -33,6 +33,14 @@
       <ScrollViewer Grid.Column="0" MaxWidth="400" Margin="0,0,20,0">
         <StackPanel Spacing="16">
 
+          <!-- Game Name -->
+          <StackPanel Spacing="8">
+            <TextBlock Text="Game Name:" FontWeight="SemiBold"/>
+            <TextBox Text="{x:Bind ViewModel.GameName, Mode=TwoWay}"
+                     PlaceholderText="e.g., Warframe"
+                     TextWrapping="NoWrap"/>
+          </StackPanel>
+
           <!-- Image Selection -->
         <StackPanel Spacing="8">
           <TextBlock Text="Screenshot Image:" FontWeight="SemiBold"/>
@@ -69,15 +77,22 @@
         </StackPanel>
 
         <!-- Image Preview -->
-        <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="4"
-                Visibility="{x:Bind ViewModel.ImageSource, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
-          <Image Source="{x:Bind ViewModel.ImageSource, Mode=OneWay}"
-                 Stretch="Uniform"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"/>
-        </Border>
+        <StackPanel Spacing="4"
+                    Visibility="{x:Bind ViewModel.ImageSource, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+          <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1"
+                  CornerRadius="4">
+            <Image Source="{x:Bind ViewModel.ImageSource, Mode=OneWay}"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+          </Border>
+          <TextBlock Text="{x:Bind ViewModel.ImageSourceCaption, Mode=OneWay}"
+                     FontSize="12"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     HorizontalAlignment="Center"
+                     FontStyle="Italic"/>
+        </StackPanel>
 
         <!-- Provider Selection -->
         <StackPanel Spacing="8">
@@ -199,10 +214,19 @@
                                    VerticalAlignment="Center"/>
                       </Grid>
                       <StackPanel Spacing="4">
-                        <TextBlock TextWrapping="Wrap">
-                          <Run Text="Reasoning: " FontWeight="SemiBold"/>
-                          <Run Text="{x:Bind Reasoning}"/>
-                        </TextBlock>
+                        <StackPanel Spacing="2">
+                          <TextBlock TextWrapping="Wrap">
+                            <Run Text="Reasoning: " FontWeight="SemiBold"/>
+                            <Run Text="{x:Bind Reasoning}"/>
+                          </TextBlock>
+                          <TextBlock FontSize="11"
+                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                     Visibility="{x:Bind HasReferenceLink, Mode=OneWay}">
+                            <Hyperlink NavigateUri="{x:Bind ReferenceLink}">
+                              <Run Text="{x:Bind ReferenceLink}"/>
+                            </Hyperlink>
+                          </TextBlock>
+                        </StackPanel>
                         <TextBlock TextWrapping="Wrap">
                           <Run Text="Context: " FontWeight="SemiBold"/>
                           <Run Text="{x:Bind Context}"/>

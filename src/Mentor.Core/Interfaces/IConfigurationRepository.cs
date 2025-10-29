@@ -51,14 +51,14 @@ public interface IConfigurationRepository
     Task DeleteToolAsync(string id);
     
     /// <summary>
-    /// Gets the saved UI state (last image path, prompt, and provider)
+    /// Gets the saved UI state (last image path, prompt, provider, and game name)
     /// </summary>
-    Task<(string? ImagePath, string? Prompt, string? Provider)> GetUIStateAsync();
+    Task<UIStateEntity> GetUIStateAsync();
     
     /// <summary>
-    /// Saves the UI state (last image path, prompt, and provider)
+    /// Saves the UI state (last image path, prompt, provider, and game name)
     /// </summary>
-    Task SaveUIStateAsync(string? imagePath, string? prompt, string? provider);
+    Task SaveUIStateAsync(UIStateEntity state);
     
     /// <summary>
     /// Gets the list of available provider types (e.g., "openai", "perplexity")

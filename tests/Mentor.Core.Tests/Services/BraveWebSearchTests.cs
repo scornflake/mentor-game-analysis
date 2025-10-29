@@ -1,14 +1,10 @@
 using System.Net;
 using System.Text;
 using Mentor.Core.Data;
-using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
-using Mentor.Core.Services;
 using Mentor.Core.Tests.Helpers;
 using Mentor.Core.Tools;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Xunit.Abstractions;
@@ -83,7 +79,7 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("test query", SearchOutputFormat.Snippets, 5);
+        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5);
 
         // Assert
         Assert.Contains("First test snippet.", result);
@@ -128,7 +124,7 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("test query", SearchOutputFormat.Summary, 5);
+        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Summary, 5);
 
         // Assert
         Assert.NotEmpty(result);
@@ -166,7 +162,7 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.SearchStructured("test query", 2);
+        var result = await service.SearchStructured(SearchContext.Create("test query"), 2);
 
         Assert.Equal(2, result.Count);
         
@@ -200,7 +196,7 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("test query", SearchOutputFormat.Snippets, 5);
+        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5);
 
         // Assert
         Assert.Contains("No results found", result);
@@ -224,7 +220,7 @@ public class BraveWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => service.Search("test query", SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5)
         );
     }
 
@@ -245,7 +241,7 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(
+        await Assert.ThrowsAsync<ArgumentNullException>(
             () => service.Search(null!, SearchOutputFormat.Snippets, 5)
         );
     }
@@ -268,7 +264,7 @@ public class BraveWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => service.Search("", SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create(""), SearchOutputFormat.Snippets, 5)
         );
     }
 }
@@ -304,7 +300,7 @@ public class WebsearchIntegrationTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("C# programming", SearchOutputFormat.Snippets, 3);
+        var result = await service.Search(SearchContext.Create("C# programming"), SearchOutputFormat.Snippets, 3);
 
         // Assert
         _testOutputHelper.WriteLine($"Search Result (Snippets): {result}");
@@ -334,7 +330,7 @@ public class WebsearchIntegrationTests
         service.Configure(config);
 
         // Act
-        var result = await service.SearchStructured("dotnet 8", 2);
+        var result = await service.SearchStructured(SearchContext.Create("dotnet 8"), 2);
 
         // Assert
         _testOutputHelper.WriteLine($"Search Result (Structured): {result}");
@@ -364,7 +360,7 @@ public class WebsearchIntegrationTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search("xUnit testing framework", SearchOutputFormat.Summary, 3);
+        var result = await service.Search(SearchContext.Create("xUnit testing framework"), SearchOutputFormat.Summary, 3);
 
         // Assert
         _testOutputHelper.WriteLine($"Search Result (Summary): {result}");

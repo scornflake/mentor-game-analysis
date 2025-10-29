@@ -19,13 +19,35 @@ public abstract class AnalysisService : IAnalysisService
         _logger = logger;
         _toolFactory = toolFactory;
     }
-    
-    protected virtual ChatMessage GetSystemPrompt()
+
+    protected virtual string GetSystemPromptText(AnalysisRequest request)
     {
-        var systemMessage = new ChatMessage(ChatRole.System,
-            "You are an expert game advisor. Analyze the provided screenshot and provide actionable recommendations. " +
-            "Backup your analysis with relevant web search results when necessary. " +
-            "Backup your recommendations using web search results");
+        var msg = "You are an expert game advisor. ";
+        if (!string.IsNullOrEmpty(request.GameName))
+        {
+            msg += $"The game being analyzed is '{request.GameName}'. ";
+        }
+        msg += "Analyze the provided screenshot and provide actionable recommendations. " +
+               "Backup your analysis with relevant web search results when necessary. " +
+               "Backup your recommendations using web search results. " +
+               "\n\n" +
+               "Your response must be structured as follows:\n" +
+               "- Analysis: Provide a detailed, comprehensive analysis of the screenshot/content based on visual observation and any web search results.\n" +
+               "- Summary: Provide a brief, concise summary of key findings and insights.\n" +
+               "- Recommendations: Provide a list of actionable recommendations. Each recommendation must include:\n" +
+               "  * Priority: Must be exactly one of 'high', 'medium', or 'low'.\n" +
+               "  * Action: A specific, clear, and concrete actionable step or item the user should take.\n" +
+               "  * Reasoning: Explain why this recommendation is relevant and important, justifying the priority level.\n" +
+               "  * Context: Include relevant context from the screenshot or analysis that supports this recommendation, with specific details observed.\n" +
+               "  * ReferenceLink: If available, include a URL from web search results that supports this recommendation. Use an empty string if no reference link is available.\n" +
+               "- Confidence: Provide a confidence score from 0.0 (low confidence) to 1.0 (high confidence) indicating how certain you are about your analysis.";
+        return msg;
+    }
+
+    protected virtual ChatMessage GetSystemPrompt(AnalysisRequest request)
+    {
+        var msg = GetSystemPromptText(request);
+        var systemMessage = new ChatMessage(ChatRole.System, msg);
         return systemMessage;
     }
 
@@ -69,7 +91,8 @@ public abstract class AnalysisService : IAnalysisService
                 Priority = ParsePriority(r.Priority),
                 Action = r.Action ?? string.Empty,
                 Reasoning = r.Reasoning ?? string.Empty,
-                Context = r.Context ?? string.Empty
+                Context = r.Context ?? string.Empty,
+                ReferenceLink = r.ReferenceLink ?? string.Empty
             }).ToList() ?? [],
             Confidence = jsonResponse.Confidence,
             GeneratedAt = DateTime.UtcNow,
@@ -94,7 +117,60 @@ public abstract class AnalysisService : IAnalysisService
         };
     }
 
-    private record LLMResponse(string Analysis, string Summary, List<LLMRecommendation> Recommendations, double Confidence);
+    /// <summary>
+    /// Response structure from the LLM containing analysis and recommendations.
+    /// </summary>
+    private record LLMResponse
+    {
+        /// <summary>
+        /// Detailed analysis of the screenshot/content provided by the user. Should be comprehensive and based on visual observation and any web search results.
+        /// </summary>
+        public string Analysis { get; init; } = string.Empty;
 
-    private record LLMRecommendation(string Priority, string Action, string Reasoning, string Context);
+        /// <summary>
+        /// Brief summary of key findings and insights. Should be concise but informative.
+        /// </summary>
+        public string Summary { get; init; } = string.Empty;
+
+        /// <summary>
+        /// List of actionable recommendations based on the analysis. Each recommendation should be specific and practical.
+        /// </summary>
+        public List<LLMRecommendation> Recommendations { get; init; } = [];
+
+        /// <summary>
+        /// Confidence score indicating how certain the analysis is, ranging from 0.0 (low confidence) to 1.0 (high confidence).
+        /// </summary>
+        public double Confidence { get; init; }
+    }
+
+    /// <summary>
+    /// Individual recommendation item with priority, action, reasoning, and context.
+    /// </summary>
+    private record LLMRecommendation
+    {
+        /// <summary>
+        /// Priority level for this recommendation. Must be exactly one of: 'high', 'medium', or 'low'.
+        /// </summary>
+        public string Priority { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Specific actionable step or item that the user should take. Should be clear and concrete.
+        /// </summary>
+        public string Action { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Explanation of why this recommendation is relevant and important. Should justify the priority level.
+        /// </summary>
+        public string Reasoning { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Relevant context from the screenshot or analysis that supports this recommendation. Include specific details observed.
+        /// </summary>
+        public string Context { get; init; } = string.Empty;
+
+        /// <summary>
+        /// URL from web search results that supports this recommendation, if applicable. Use empty string if no reference link is available.
+        /// </summary>
+        public string ReferenceLink { get; init; } = string.Empty;
+    }
 }
