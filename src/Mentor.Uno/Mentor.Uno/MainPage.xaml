@@ -64,6 +64,11 @@
                     Click="OnBrowseClick"
                     MinWidth="100"/>
           </Grid>
+          <TextBlock Text="or take a screenshot"
+                     FontSize="12"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     HorizontalAlignment="Center"
+                     FontStyle="Italic"/>
         </StackPanel>
 
         <!-- Prompt Input -->
@@ -88,11 +93,27 @@
                    VerticalAlignment="Center"
                    Tapped="OnImagePreviewTapped"/>
           </Border>
+          
+          <!-- Regular caption (hidden during validation) -->
           <TextBlock Text="{x:Bind ViewModel.ImageSourceCaption, Mode=OneWay}"
                      FontSize="12"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      HorizontalAlignment="Center"
-                     FontStyle="Italic"/>
+                     FontStyle="Italic"
+                     Visibility="{x:Bind ViewModel.IsValidatingImage, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+          
+          <!-- Validation progress (shown during validation) -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      HorizontalAlignment="Center"
+                      Visibility="{x:Bind ViewModel.IsValidatingImage, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressRing IsActive="True" Width="16" Height="16" VerticalAlignment="Center"/>
+            <TextBlock Text="{x:Bind ViewModel.ValidationMessage, Mode=OneWay}"
+                       FontSize="12"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       FontStyle="Italic"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
         </StackPanel>
 
         <!-- Provider Selection -->
@@ -129,6 +150,12 @@
           <InfoBar IsOpen="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
                    Severity="Error"
                    Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"/>
+          
+          <!-- Rejection Message -->
+          <InfoBar IsOpen="{x:Bind ViewModel.RejectionMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
+                   Severity="Warning"
+                   Title="Image Rejected"
+                   Message="{x:Bind ViewModel.RejectionMessage, Mode=OneWay}"/>
         </StackPanel>
       </ScrollViewer>
 

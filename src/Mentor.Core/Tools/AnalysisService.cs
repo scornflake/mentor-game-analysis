@@ -58,7 +58,10 @@ public abstract class AnalysisService : IAnalysisService
 
     protected virtual ChatMessage GetUserMessages(AnalysisRequest request)
     {
-        var content = new List<AIContent> { GetUserPrompt(request), request.GetImageAsReadOnlyMemory() };
+        // Convert image to PNG for LLM compatibility
+        var pngImageData = request.ImageData.ConvertToPng();
+        var imageContent = new DataContent(new ReadOnlyMemory<byte>(pngImageData.Data), pngImageData.MimeType);
+        var content = new List<AIContent> { GetUserPrompt(request), imageContent };
         return new ChatMessage(ChatRole.User, content);
     }
 

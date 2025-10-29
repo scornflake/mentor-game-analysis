@@ -1,4 +1,5 @@
 ﻿using Mentor.Core.Data;
+using Mentor.Core.Helpers;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
@@ -525,10 +526,12 @@ public class Program
             var analysisService = factory.GetAnalysisService(llmClient);
 
             // Read the image file
-            byte[] imageData;
+            RawImage imageData;
             try
             {
-                imageData = await File.ReadAllBytesAsync(imagePath);
+                var imageBytes = await File.ReadAllBytesAsync(imagePath);
+                var mimeType = ImageMimeTypeDetector.DetectMimeType(imageBytes, imagePath);
+                imageData = new RawImage(imageBytes, mimeType);
             }
             catch (Exception ex)
             {

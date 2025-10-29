@@ -282,7 +282,7 @@ public class ConfigurationRepositoryTests : IDisposable
 
         // Assert
         Assert.NotEmpty(allTools);
-        Assert.Single(allTools);
+        Assert.Equal(2, allTools.Count);
         
         var braveTool = allTools.FirstOrDefault(t => t.ToolName == "Brave");
         Assert.NotNull(braveTool);
@@ -389,7 +389,7 @@ public class ConfigurationRepositoryTests : IDisposable
         var allTools = await _repository.GetAllToolsAsync();
 
         // Assert
-        Assert.Equal(2, allTools.Count);
+        Assert.Equal(3, allTools.Count);
     }
 
     [Fact]

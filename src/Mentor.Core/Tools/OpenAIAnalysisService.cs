@@ -9,6 +9,10 @@ namespace Mentor.Core.Tools;
 
 public class OpenAIAnalysisService : AnalysisService
 {
+    // Tool names - these match the method names that OpenAI will see
+    private const string ToolNameSearchTheWebStructured = "SearchTheWebStructured";
+    private const string ToolNameReadArticleContent = "ReadArticleContent";
+
     private IWebSearchTool? _webSearchTool = null;
     private IArticleReader? _articleReader = null;
     private AnalysisRequest? _currentRequest = null;
@@ -18,7 +22,7 @@ public class OpenAIAnalysisService : AnalysisService
     {
     }
 
-    [Description("Tool to perform web searches and return structured results. Good if you want detailed information")]
+    [Description("Performs a structured web search to find relevant information about the query. Returns up to 5 search results with titles, URLs, descriptions, and snippets. Use this tool when you need to find factual information, current data, or specific details about game mechanics, builds, strategies, or other topics. The search results include structured metadata that can help you provide accurate recommendations with proper references. Call this tool with a clear, specific search query.")]
     async Task<IList<SearchResult>> SearchTheWebStructured(string query)
     {
         _logger.LogInformation("Performing structured web search for query: {Query}", query);
@@ -28,8 +32,10 @@ public class OpenAIAnalysisService : AnalysisService
         return theseResults;
     }
 
-    [Description("Tool to read the full content of an article from a URL. Use this after finding relevant URLs from web search to get detailed information from specific articles.")]
-    async Task<string> ReadArticleContent(string url)
+    [Description("Reads and extracts the full text content from an article or webpage at the specified URL. Returns the complete article text for detailed analysis. Use this tool when you need comprehensive information from a specific webpage, whether found through search results or known URLs. Provides detailed content that can be cited in recommendations.")]
+    async Task<string> ReadArticleContent(
+        [Description("The full URL of the article or webpage to read. Must be a valid HTTP or HTTPS URL.")] 
+        string url)
     {
         _logger.LogInformation("Reading article content from URL: {Url}", url);
         return await _articleReader!.ReadArticleAsync(url);
@@ -39,11 +45,11 @@ public class OpenAIAnalysisService : AnalysisService
     {
         var msg = base.GetSystemPromptText(request);
         msg += "\n\n" +
-               "You have access to a web search tool that can be used to find relevant information. " +
-               "Use the web search tool to find relevant information when necessary. " +
-               "After finding relevant URLs from web search results, you can use the article reading tool to read the full content of specific articles. " +
-               "Read the full article content when you need detailed information from a specific source. " +
-               "Use the article reading tool to get comprehensive information from articles returned by web search and use that information to backup your analysis and recommendations.";
+               $"You have access to two tools for gathering information:\n" +
+               $"- {ToolNameSearchTheWebStructured}: Searches the web and returns up to 5 structured results with titles, URLs, descriptions, and snippets. Use when you need to find information, verify facts, or get current data.\n" +
+               $"- {ToolNameReadArticleContent}: Reads the complete text content from any webpage URL. Use this with URLs from search results OR any known URLs when you need full article details. This provides comprehensive content for citations.\n\n" +
+               $"Workflow: Search first using {ToolNameSearchTheWebStructured} to find relevant URLs, then use {ToolNameReadArticleContent} with specific URLs when you need deeper information. " +
+               $"You can also use {ToolNameReadArticleContent} directly with any known URLs.";
         return msg;
     }
 
@@ -67,7 +73,6 @@ public class OpenAIAnalysisService : AnalysisService
         return [
             AIFunctionFactory.Create(SearchTheWebStructured), 
             AIFunctionFactory.Create(ReadArticleContent)
-            // AIFunctionFactory.Create(SearchTheWebSnippets)
         ];
     }
 

@@ -53,6 +53,7 @@ public partial class App : Application
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
                 services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);
+                services.AddTransient<IImageAnalyzer, ImageAnalyzer>();
 
                 // Register clipboard monitoring service
                 services.AddSingleton<Mentor.Uno.Services.ClipboardMonitor>();

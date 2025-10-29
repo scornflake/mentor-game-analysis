@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Mentor.Core.Helpers;
+using Mentor.Core.Models;
 using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Streams;
@@ -88,9 +90,14 @@ public class ClipboardMonitor : IDisposable
 
                 // Extract the image data
                 var imageData = await ExtractImageFromClipboardAsync(clipboardContent);
-                if (imageData != null && imageData.Length > 0)
+                if (imageData != null && imageData.SizeInBytes > 0)
                 {
-                    _logger.LogInformation("New image detected in clipboard, size: {Size} bytes", imageData.Length);
+                    _logger.LogInformation("New image detected in clipboard, size: {Size} bytes, MIME type: {MimeType}", 
+                        imageData.SizeInBytes, imageData.MimeType);
+                    
+                    // Save snapshot for verification
+                    await SaveSnapshotAsync(imageData);
+                    
                     OnImageDetected(new ClipboardImageEventArgs(imageData));
                 }
             }
@@ -149,7 +156,7 @@ public class ClipboardMonitor : IDisposable
         return DateTime.UtcNow.Ticks.ToString();
     }
 
-    private async Task<byte[]?> ExtractImageFromClipboardAsync(DataPackageView clipboardContent)
+    private async Task<RawImage?> ExtractImageFromClipboardAsync(DataPackageView clipboardContent)
     {
         try
         {
@@ -180,13 +187,58 @@ public class ClipboardMonitor : IDisposable
                 buffer.AddRange(actualBytes);
             }
             
-            return buffer.ToArray();
+            var imageBytes = buffer.ToArray();
+            
+            // Detect MIME type from byte content (clipboard typically provides PNG)
+            var mimeType = ImageMimeTypeDetector.DetectMimeType(imageBytes);
+            
+            return new RawImage(imageBytes, mimeType);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting image from clipboard");
             return null;
         }
+    }
+
+    private async Task SaveSnapshotAsync(RawImage imageData)
+    {
+        try
+        {
+            // Create snapshots directory if it doesn't exist
+            var snapshotsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "snapshots");
+            Directory.CreateDirectory(snapshotsDir);
+
+            // Get file extension from MIME type
+            var extension = GetExtensionFromMimeType(imageData.MimeType);
+            
+            // Create filename with timestamp and detected mime type
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var filename = $"snapshot_{timestamp}{extension}";
+            var filePath = Path.Combine(snapshotsDir, filename);
+
+            // Save the file
+            await File.WriteAllBytesAsync(filePath, imageData.Data);
+            
+            _logger.LogInformation("Saved snapshot to: {FilePath}", filePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save snapshot");
+        }
+    }
+
+    private static string GetExtensionFromMimeType(string mimeType)
+    {
+        return mimeType.ToLowerInvariant() switch
+        {
+            "image/png" => ".png",
+            "image/jpeg" => ".jpg",
+            "image/gif" => ".gif",
+            "image/bmp" => ".bmp",
+            "image/webp" => ".webp",
+            _ => ".unknown"
+        };
     }
 
     protected virtual void OnImageDetected(ClipboardImageEventArgs e)
@@ -213,9 +265,9 @@ public class ClipboardMonitor : IDisposable
 /// </summary>
 public class ClipboardImageEventArgs : EventArgs
 {
-    public byte[] ImageData { get; }
+    public RawImage ImageData { get; }
 
-    public ClipboardImageEventArgs(byte[] imageData)
+    public ClipboardImageEventArgs(RawImage imageData)
     {
         ImageData = imageData ?? throw new ArgumentNullException(nameof(imageData));
     }

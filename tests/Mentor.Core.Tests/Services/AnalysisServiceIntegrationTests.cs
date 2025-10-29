@@ -1,4 +1,5 @@
 using Mentor.Core.Data;
+using Mentor.Core.Helpers;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Services;
@@ -34,7 +35,7 @@ public class AnalysisServiceIntegrationTests
         
     }
 
-    private  byte[] LoadTestImage(string filename)
+    private RawImage LoadTestImage(string filename)
     {
         var projectRoot = ApiKeyHelper.FindProjectRoot(AppContext.BaseDirectory);
         if (projectRoot == null)
@@ -48,7 +49,9 @@ public class AnalysisServiceIntegrationTests
             throw new FileNotFoundException($"Test image not found: {imagePath}");
         }
 
-        return File.ReadAllBytes(imagePath);
+        var imageBytes = File.ReadAllBytes(imagePath);
+        var mimeType = ImageMimeTypeDetector.DetectMimeType(imageBytes, imagePath);
+        return new RawImage(imageBytes, mimeType);
     }
 
     private ILLMClient CreateLLMClient()

@@ -3,6 +3,7 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Mentor.Core.Helpers;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
 using Mentor.Core.Tools;
@@ -19,8 +20,49 @@ public partial class MainPageViewModel : ObservableObject
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMessenger _messenger;
     private readonly ILogger<MainPageViewModel> _logger;
+    private readonly IImageAnalyzer _imageAnalyzer;
     
     private CancellationTokenSource? _analysisCancellationTokenSource;
+    
+    private static readonly string[] SarcasticMessages = new[]
+    {
+        "Nice try, but that's not from the game. Maybe try actually playing it first?",
+        "That's a lovely picture and all, but it has nothing to do with the game. Back to square one!",
+        "I've seen better attempts. This image is definitely NOT game-related. Try again?",
+        "Are we playing the same game? Because that screenshot sure isn't from it.",
+        "Nope. Not even close. Did you copy the right image?",
+        "That image has about as much to do with the game as I have to do with being a toaster.",
+        "I'm not sure what game you're playing, but it's not THIS one. Swing and a miss!",
+        "Really? THAT'S your screenshot? I expected better. This isn't from the game.",
+        "Oof. That's embarrassing. Wrong image, friend. The game is calling—answer with the right screenshot!",
+        "I appreciate the enthusiasm, but that image? Zero chance it's from the game. Next!"
+    };
+    
+    private static readonly string[] ValidationMessages = new[]
+    {
+        "Let's see if this is actually from the game...",
+        "Analyzing... I'm sure this will be legitimate...",
+        "Hmm, checking if you copied the right thing...",
+        "Verifying this isn't just your desktop wallpaper...",
+        "One moment while I determine if you're messing with me...",
+        "Examining pixels... let's hope this is game-related...",
+        "Running my 'is this actually gameplay' detector...",
+        "Checking if this is the game or your browser history...",
+        "Analyzing... fingers crossed it's not a meme this time...",
+        "Let me guess, you definitely got this from the game, right?",
+        "Investigating whether this came from the game or Google Images...",
+        "Scanning for game content... trying not to get my hopes up...",
+        "Validating your screenshot choices... prepare for judgment...",
+        "Analyzing... statistically, this probably won't be from the game...",
+        "Checking game relevance... odds are not in your favor...",
+        "One sec, seeing if this is legit or just wishful thinking...",
+        "Verifying game content... I remain skeptical...",
+        "Processing image... let's see what you've brought me this time...",
+        "Examining screenshot authenticity... suspicion level: high...",
+        "Analyzing game relevance... trying to believe in you..."
+    };
+    
+    private static readonly Random _random = new();
     
     [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(ImageFileName))]
@@ -32,7 +74,11 @@ public partial class MainPageViewModel : ObservableObject
     
     [ObservableProperty] private string? _imageSourceCaption;
     
-    private byte[]? _clipboardImageData;
+    [ObservableProperty] private bool _isValidatingImage;
+    
+    [ObservableProperty] private string? _validationMessage;
+    
+    private RawImage? _clipboardImageData;
 
     [ObservableProperty] private string _prompt = "How can I make this weapon do more damage against ...";
 
@@ -46,16 +92,19 @@ public partial class MainPageViewModel : ObservableObject
 
     [ObservableProperty] private string? _errorMessage;
     
+    [ObservableProperty] private string? _rejectionMessage;
+    
     private bool _systemIsLoaded = false;
 
     public ObservableCollection<string> Providers { get; } = new();
 
-    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<MainPageViewModel> logger)
+    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<MainPageViewModel> logger, IImageAnalyzer imageAnalyzer)
     {
         _providerFactory = providerFactory;
         _configurationRepository = configurationRepository;
         _messenger = messenger;
         _logger = logger;
+        _imageAnalyzer = imageAnalyzer;
         // Subscribe to providers changed message
         _messenger.Register<ProvidersChangedMessage>(this, (r, m) =>
         {
@@ -223,17 +272,19 @@ public partial class MainPageViewModel : ObservableObject
             var analysisService = _providerFactory.GetAnalysisService(llmClient);
 
             // Get image data - prioritize clipboard image over file path
-            byte[] imageData;
+            RawImage imageData;
             if (_clipboardImageData != null)
             {
                 imageData = _clipboardImageData;
-                _logger.LogInformation("Using clipboard image for analysis, size: {Size} bytes", imageData.Length);
+                _logger.LogInformation("Using clipboard image for analysis, size: {Size} bytes", imageData.SizeInBytes);
             }
             else if (!string.IsNullOrWhiteSpace(ImagePath))
             {
                 try
                 {
-                    imageData = await File.ReadAllBytesAsync(ImagePath, _analysisCancellationTokenSource.Token);
+                    var imageBytes = await File.ReadAllBytesAsync(ImagePath, _analysisCancellationTokenSource.Token);
+                    var mimeType = ImageMimeTypeDetector.DetectMimeType(imageBytes, ImagePath);
+                    imageData = new RawImage(imageBytes, mimeType);
                 }
                 catch (Exception ex)
                 {
@@ -283,30 +334,126 @@ public partial class MainPageViewModel : ObservableObject
     
     /// <summary>
     /// Handles clipboard image detection events.
+    /// Validates that the image is game-related before accepting it.
     /// </summary>
-    public async void OnClipboardImageDetected(byte[] imageData)
+    public async void OnClipboardImageDetected(RawImage imageData)
     {
-        if (imageData == null || imageData.Length == 0)
+        if (imageData == null || imageData.SizeInBytes == 0)
         {
             return;
         }
 
-        _clipboardImageData = imageData;
-        
-        // Update the image source to display the clipboard image
+        // Clear any previous rejection message
+        RejectionMessage = null;
+
+        // Check if we have a game name to validate against
+        if (string.IsNullOrWhiteSpace(GameName))
+        {
+            _logger.LogInformation("No game name set, accepting clipboard image without validation");
+            await AcceptClipboardImageAsync(imageData);
+            return;
+        }
+
+        // Check if we have a selected provider
+        if (string.IsNullOrWhiteSpace(SelectedProvider))
+        {
+            _logger.LogInformation("No provider selected, accepting clipboard image without validation");
+            await AcceptClipboardImageAsync(imageData);
+            return;
+        }
+
+        // Display the image first so the validation UI can be shown
         await UpdateImageSourceFromClipboardAsync(imageData);
         
+        try
+        {
+            _logger.LogInformation("Validating clipboard image for game: {GameName}", GameName);
+
+            // Show validation progress with a sarcastic message
+            IsValidatingImage = true;
+            ValidationMessage = GetRandomValidationMessage();
+
+            // Get the provider configuration
+            var providerConfig = await _configurationRepository.GetProviderByNameAsync(SelectedProvider);
+            if (providerConfig == null)
+            {
+                _logger.LogWarning("Provider '{Provider}' not found, accepting image without validation", SelectedProvider);
+                await AcceptClipboardImageAsync(imageData);
+                return;
+            }
+
+            // Create the LLM client for validation
+            var llmClient = _providerFactory.GetProvider(providerConfig);
+
+            // Analyze the image
+            var result = await _imageAnalyzer.AnalyzeImageAsync(imageData, GameName, llmClient);
+
+            _logger.LogInformation(
+                "Image validation result - Game: {GameName}, Probability: {Probability:P0}, Description: {Description}",
+                GameName,
+                result.GameRelevanceProbability,
+                result.Description.Substring(0, Math.Min(100, result.Description.Length)));
+
+            // Check if probability is above threshold
+            if (result.GameRelevanceProbability > 0.6)
+            {
+                _logger.LogInformation("Image accepted (probability: {Probability:P0})", result.GameRelevanceProbability);
+                await AcceptClipboardImageAsync(imageData);
+            }
+            else
+            {
+                _logger.LogInformation("Image rejected (probability: {Probability:P0})", result.GameRelevanceProbability);
+                // Clear the image since it was rejected
+                ImageSource = null;
+                ImageSourceCaption = null;
+                RejectionMessage = GetRandomSarcasticMessage();
+                _logger.LogInformation("Showing rejection message: {Message}", RejectionMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating clipboard image, accepting without validation");
+            // On error, accept the image anyway (fail open)
+            await AcceptClipboardImageAsync(imageData);
+        }
+        finally
+        {
+            // Clear validation progress
+            IsValidatingImage = false;
+            ValidationMessage = null;
+        }
+    }
+
+    private async Task AcceptClipboardImageAsync(RawImage imageData)
+    {
+        _clipboardImageData = imageData;
+
+        // Update the image source to display the clipboard image
+        await UpdateImageSourceFromClipboardAsync(imageData);
+
         // Clear the file path since we're using clipboard image
         // Do this after setting ImageSource to ensure preview displays correctly
         ImagePath = null;
-        
+
         // Notify that analyze command availability might have changed
         AnalyzeCommand.NotifyCanExecuteChanged();
-        
-        _logger.LogInformation("Clipboard image set as current image, size: {Size} bytes", imageData.Length);
+
+        _logger.LogInformation("Clipboard image set as current image, size: {Size} bytes", imageData.SizeInBytes);
+    }
+
+    private static string GetRandomSarcasticMessage()
+    {
+        var index = _random.Next(SarcasticMessages.Length);
+        return SarcasticMessages[index];
     }
     
-    private async Task UpdateImageSourceFromClipboardAsync(byte[] imageData)
+    private static string GetRandomValidationMessage()
+    {
+        var index = _random.Next(ValidationMessages.Length);
+        return ValidationMessages[index];
+    }
+    
+    private async Task UpdateImageSourceFromClipboardAsync(RawImage imageData)
     {
         try
         {
@@ -315,7 +462,7 @@ public partial class MainPageViewModel : ObservableObject
             {
                 using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
                 {
-                    writer.WriteBytes(imageData);
+                    writer.WriteBytes(imageData.Data);
                     await writer.StoreAsync();
                     await writer.FlushAsync();
                 }
