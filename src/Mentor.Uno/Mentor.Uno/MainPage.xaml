@@ -132,18 +132,24 @@
                 Style="{StaticResource AccentButtonStyle}"/>
 
         <!-- Progress Indicator -->
-        <StackPanel Orientation="Horizontal"
-                    Spacing="10"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+        <StackPanel Spacing="8"
                     Visibility="{x:Bind ViewModel.IsAnalyzing, Mode=OneWay}">
-          <ProgressRing IsActive="True" Width="32" Height="32" Margin="8" Padding="8" VerticalAlignment="Center"/>
-          <TextBlock Text="Analyzing..." FontStyle="Italic" VerticalAlignment="Center"/>
-          <Button Content="Cancel"
-                  Command="{x:Bind ViewModel.CancelAnalysisCommand}"
-                  MinWidth="80"
-                  VerticalAlignment="Center"
-                  Style="{StaticResource TextBlockButtonStyle}"/>
+          <StackPanel Orientation="Horizontal"
+                      Spacing="10"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+            <ProgressRing IsActive="True" Width="32" Height="32" Margin="8" Padding="8" VerticalAlignment="Center"/>
+            <TextBlock Text="Analyzing..." FontStyle="Italic" VerticalAlignment="Center"/>
+            <Button Content="Cancel"
+                    Command="{x:Bind ViewModel.CancelAnalysisCommand}"
+                    MinWidth="80"
+                    VerticalAlignment="Center"/>
+          </StackPanel>
+          <TextBlock Text="{x:Bind ViewModel.AnalyzingMessage, Mode=OneWay}"
+                     FontSize="12"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     HorizontalAlignment="Center"
+                     FontStyle="Italic"/>
         </StackPanel>
 
           <!-- Error Message -->

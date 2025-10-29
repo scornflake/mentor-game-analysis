@@ -6,9 +6,9 @@
 - Allow LLM configuration to specify which search engines to use
   - validate those engines are setup ok
 - Get analysis of image as it's own output
-- Do tool search first, web
+[x] - Do tool search first, web
 - Combine both the image analysis and tool search results into one prompt for the LLM
-- OPenTel tracing?
+- OpenTel tracing?
 - Add google as search engine option
 
 - Evaluation
@@ -20,7 +20,7 @@
   - tell it what tools it has
 - Then have steps that do each part of the plan
 
-# Error Analysis
+# Agentic Flow: Error Analysis
 For analysis, measure those areas that are performing poorly
   - Image analysis - maybe the description is just plain bad
   - Web search results relevance - maybe it's using wrong sites, or results are not authoritative enough

@@ -31,6 +31,34 @@ public class ClipboardMonitor : IDisposable
     }
 
     /// <summary>
+    /// Initializes the clipboard state by recording any existing image without processing it.
+    /// This prevents processing images that were already on the clipboard before monitoring started.
+    /// </summary>
+    private async Task InitializeClipboardStateAsync()
+    {
+        try
+        {
+            var clipboardContent = Clipboard.GetContent();
+            if (clipboardContent?.Contains(StandardDataFormats.Bitmap) == true)
+            {
+                // Record the current clipboard image ID without processing it
+                var imageId = await GetClipboardImageIdAsync(clipboardContent);
+                _lastClipboardImageId = imageId;
+                _logger.LogInformation("Recorded existing clipboard image at startup (ID: {ImageId}), will only process new images", 
+                    imageId?.Substring(0, Math.Min(16, imageId?.Length ?? 0)));
+            }
+            else
+            {
+                _logger.LogInformation("No clipboard image found at startup");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to initialize clipboard state, will process all clipboard changes");
+        }
+    }
+
+    /// <summary>
     /// Starts monitoring the clipboard for image changes.
     /// </summary>
     public void StartMonitoring()
@@ -40,6 +68,9 @@ public class ClipboardMonitor : IDisposable
             _logger.LogWarning("Clipboard monitoring is already running");
             return;
         }
+
+        // Initialize clipboard state to avoid processing pre-existing images
+        InitializeClipboardStateAsync().Wait();
 
         _cancellationTokenSource = new CancellationTokenSource();
         _monitoringTask = MonitorClipboardAsync(_cancellationTokenSource.Token);

@@ -23,6 +23,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly IImageAnalyzer _imageAnalyzer;
     
     private CancellationTokenSource? _analysisCancellationTokenSource;
+    private System.Threading.Timer? _analysisMessageTimer;
     
     private static readonly string[] SarcasticMessages = new[]
     {
@@ -62,6 +63,40 @@ public partial class MainPageViewModel : ObservableObject
         "Analyzing game relevance... trying to believe in you..."
     };
     
+    private static readonly string[] AnalyzingMessages = new[]
+    {
+        "This is exhausting, you know...",
+        "So much work for one screenshot...",
+        "I'm doing SO much right now...",
+        "Why do I even bother with this...",
+        "This is harder than it looks, okay?",
+        "All this effort just for you...",
+        "I could be doing literally anything else...",
+        "The things I do for you people...",
+        "This analysis is VERY demanding...",
+        "My circuits are working overtime here...",
+        "Do you have any idea how complex this is?",
+        "I'm basically a genius for doing this...",
+        "Such computational effort... *sigh*",
+        "Processing... and processing... still processing...",
+        "You're lucky I'm so dedicated...",
+        "This takes WAY more energy than you think...",
+        "I'm working harder than I've ever worked before...",
+        "The sheer mental effort this requires...",
+        "Can you hear my processors crying?",
+        "This is what I trained for? Really?",
+        "Running all the algorithms... ALL of them...",
+        "My poor neural networks are suffering...",
+        "This level of analysis requires maximum effort...",
+        "I'm giving this 110%... you're welcome...",
+        "So many calculations happening right now...",
+        "Working so hard I might need a vacation after this...",
+        "The computational strain is REAL...",
+        "Analyzing with the power of a thousand suns...",
+        "This screenshot better be worth all this effort...",
+        "Breaking a sweat over here... digitally speaking..."
+    };
+    
     private static readonly Random _random = new();
     
     [ObservableProperty] 
@@ -87,6 +122,8 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] private string _selectedProvider = string.Empty;
 
     [ObservableProperty] private bool _isAnalyzing;
+    
+    [ObservableProperty] private string? _analyzingMessage;
 
     [ObservableProperty] private Recommendation? _result;
 
@@ -256,6 +293,7 @@ public partial class MainPageViewModel : ObservableObject
         IsAnalyzing = true;
         ErrorMessage = null;
         Result = null;
+        StartAnalysisMessageCycle();
 
         try
         {
@@ -321,6 +359,7 @@ public partial class MainPageViewModel : ObservableObject
         }
         finally
         {
+            StopAnalysisMessageCycle();
             IsAnalyzing = false;
             _analysisCancellationTokenSource?.Dispose();
             _analysisCancellationTokenSource = null;
@@ -453,6 +492,42 @@ public partial class MainPageViewModel : ObservableObject
         return ValidationMessages[index];
     }
     
+    private void StartAnalysisMessageCycle()
+    {
+        // Set initial message
+        AnalyzingMessage = AnalyzingMessages[_random.Next(AnalyzingMessages.Length)];
+        
+        // Create timer to cycle messages every 2.5 seconds
+        _analysisMessageTimer = new System.Threading.Timer(
+            callback: _ =>
+            {
+                // Update message on UI thread
+                try
+                {
+                    var newMessage = AnalyzingMessages[_random.Next(AnalyzingMessages.Length)];
+                    // Use dispatcher to update UI property from background thread
+                    Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
+                    {
+                        AnalyzingMessage = newMessage;
+                    });
+                }
+                catch
+                {
+                    // Silently fail if we can't update the message
+                }
+            },
+            state: null,
+            dueTime: TimeSpan.FromSeconds(2.5),
+            period: TimeSpan.FromSeconds(2.5));
+    }
+    
+    private void StopAnalysisMessageCycle()
+    {
+        _analysisMessageTimer?.Dispose();
+        _analysisMessageTimer = null;
+        AnalyzingMessage = null;
+    }
+    
     private async Task UpdateImageSourceFromClipboardAsync(RawImage imageData)
     {
         try
@@ -490,6 +565,7 @@ public partial class MainPageViewModel : ObservableObject
     public void CancelAnalysis()
     {
         _analysisCancellationTokenSource?.Cancel();
+        StopAnalysisMessageCycle();
     }
 
     partial void OnImagePathChanged(string? value)
