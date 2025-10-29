@@ -10,5 +10,18 @@ public class RecommendationItem
     public string ReferenceLink { get; set; } = string.Empty;
     
     public bool HasReferenceLink => !string.IsNullOrWhiteSpace(ReferenceLink) && ReferenceLink.StartsWith("https", StringComparison.OrdinalIgnoreCase);
+    
+    public Uri? ReferenceLinkUri
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ReferenceLink) || !ReferenceLink.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            
+            return Uri.TryCreate(ReferenceLink, UriKind.Absolute, out var uri) ? uri : null;
+        }
+    }
 }
 

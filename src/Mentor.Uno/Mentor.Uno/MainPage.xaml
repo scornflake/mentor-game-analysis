@@ -85,7 +85,8 @@
             <Image Source="{x:Bind ViewModel.ImageSource, Mode=OneWay}"
                    Stretch="Uniform"
                    HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
+                   VerticalAlignment="Center"
+                   Tapped="OnImagePreviewTapped"/>
           </Border>
           <TextBlock Text="{x:Bind ViewModel.ImageSourceCaption, Mode=OneWay}"
                      FontSize="12"
@@ -222,7 +223,7 @@
                           <TextBlock FontSize="11"
                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                      Visibility="{x:Bind HasReferenceLink, Mode=OneWay}">
-                            <Hyperlink NavigateUri="{x:Bind ReferenceLink}">
+                            <Hyperlink NavigateUri="{x:Bind ReferenceLinkUri}">
                               <Run Text="{x:Bind ReferenceLink}"/>
                             </Hyperlink>
                           </TextBlock>

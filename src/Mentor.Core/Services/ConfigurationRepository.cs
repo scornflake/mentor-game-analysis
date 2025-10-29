@@ -170,6 +170,7 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingTool.ApiKey = config.ApiKey;
             existingTool.BaseUrl = config.BaseUrl;
             existingTool.Timeout = config.Timeout;
+            existingTool.MaxArticleLength = config.MaxArticleLength;
             collection.Update(existingTool);
             
             // Return the updated entity
@@ -260,9 +261,21 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
                 ApiKey = string.Empty,
                 BaseUrl = "https://api.search.brave.com/res/v1/web/search",
                 Timeout = 30,
+                MaxArticleLength = 2000,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             toolCollection.Insert(braveTool);
+
+            var articleReaderTool = new ToolConfigurationEntity
+            {
+                ToolName = "article-reader",
+                ApiKey = string.Empty,
+                BaseUrl = string.Empty,
+                Timeout = 30,
+                MaxArticleLength = 2000,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            toolCollection.Insert(articleReaderTool);
         }
 
         return Task.CompletedTask;

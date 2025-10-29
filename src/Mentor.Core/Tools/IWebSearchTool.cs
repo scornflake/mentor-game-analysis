@@ -28,4 +28,9 @@ public class KnownSearchTools
     public const string Brave = "brave";
 }
 
+public class KnownTools
+{
+    public const string ArticleReader = "article-reader";
+}
+
 public record ResultStructure (string Title, string Url, string Snippet);

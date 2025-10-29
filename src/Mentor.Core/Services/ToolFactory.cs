@@ -1,4 +1,5 @@
 using Mentor.Core.Configuration;
+using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Tools;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ namespace Mentor.Core.Services;
 public interface IToolFactory
 {
     Task<IWebSearchTool> GetToolAsync(string toolName);
+    Task<IArticleReader> GetArticleReaderAsync();
 }
 
 public class ToolFactory : IToolFactory
@@ -49,5 +51,29 @@ public class ToolFactory : IToolFactory
             throw new NotSupportedException($"Tool type '{toolName}' is not supported.");
         }
         
+    }
+
+    public async Task<IArticleReader> GetArticleReaderAsync()
+    {
+        _logger.LogInformation("Creating article reader tool");
+        
+        var articleReader = _serviceProvider.GetRequiredKeyedService<IArticleReader>(KnownTools.ArticleReader);
+        var config = await _configurationRepository.GetToolByNameAsync(KnownTools.ArticleReader);
+        
+        // If no config exists, create a default one
+        if (config == null)
+        {
+            _logger.LogInformation("No article reader configuration found, using default settings");
+            config = new ToolConfigurationEntity
+            {
+                ToolName = KnownTools.ArticleReader,
+                Timeout = 30,
+                MaxArticleLength = 500,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+        }
+        
+        articleReader.Configure(config);
+        return articleReader;
     }
 }

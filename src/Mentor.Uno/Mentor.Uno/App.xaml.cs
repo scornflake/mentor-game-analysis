@@ -18,7 +18,7 @@ namespace Mentor.Uno;
 public partial class App : Application
 {
     private IHost? _host;
-    
+
     /// <summary>
     /// Initializes the singleton application object. This is the first line of authored code
     /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -26,9 +26,9 @@ public partial class App : Application
     public App()
     {
         this.InitializeComponent();
-        
+
     }
-    
+
     private IHost BuildHost()
     {
         return Host.CreateDefaultBuilder()
@@ -36,7 +36,7 @@ public partial class App : Application
             {
                 // Determine base path for configuration files
                 var basePath = AppContext.BaseDirectory;
-                
+
                 config.SetBasePath(basePath)
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                     .AddEnvironmentVariables();
@@ -52,13 +52,14 @@ public partial class App : Application
                 services.AddSingleton<IToolFactory, ToolFactory>();
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
-                
+                services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);
+
                 // Register clipboard monitoring service
                 services.AddSingleton<Mentor.Uno.Services.ClipboardMonitor>();
-                
+
                 // Register messaging
                 services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
-                
+
                 // Register ViewModels
                 services.AddTransient<MainPageViewModel>();
                 services.AddTransient<SettingsPageViewModel>();
@@ -74,10 +75,10 @@ public partial class App : Application
             })
             .Build();
     }
-    
+
     public static T GetService<T>() where T : class
     {
-        return ((App)Current)._host?.Services.GetRequiredService<T>() 
+        return ((App)Current)._host?.Services.GetRequiredService<T>()
             ?? throw new InvalidOperationException("Service not found");
     }
 
@@ -87,49 +88,49 @@ public partial class App : Application
     {
         var builder = this.CreateBuilder(args);
         builder = builder.UseToolkitNavigation();
-            //.Configure(host => {
-            //    host.ConfigureAppConfiguration((context, config) =>
-            //    {
-            //        // Determine base path for configuration files
-            //        var basePath = AppContext.BaseDirectory;
+        //.Configure(host => {
+        //    host.ConfigureAppConfiguration((context, config) =>
+        //    {
+        //        // Determine base path for configuration files
+        //        var basePath = AppContext.BaseDirectory;
 
-            //        config.SetBasePath(basePath)
-            //            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            //            .AddEnvironmentVariables();
-            //    })
-            //    .ConfigureServices((context, services) =>
-            //     {
-            //         // Register configuration repository
-            //         services.AddConfigurationRepository();
+        //        config.SetBasePath(basePath)
+        //            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        //            .AddEnvironmentVariables();
+        //    })
+        //    .ConfigureServices((context, services) =>
+        //     {
+        //         // Register configuration repository
+        //         services.AddConfigurationRepository();
 
-            //         // Register core services
-            //         services.AddHttpClient();
-            //         services.AddSingleton<IToolFactory, ToolFactory>();
-            //         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
-            //         services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
+        //         // Register core services
+        //         services.AddHttpClient();
+        //         services.AddSingleton<IToolFactory, ToolFactory>();
+        //         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
+        //         services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
 
-            //         // Register messaging
-            //         services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
+        //         // Register messaging
+        //         services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
 
-            //         // Register ViewModels
-            //         services.AddTransient<MainPageViewModel>();
-            //         services.AddTransient<SettingsPageViewModel>();
+        //         // Register ViewModels
+        //         services.AddTransient<MainPageViewModel>();
+        //         services.AddTransient<SettingsPageViewModel>();
 
-            //         // Seed defaults on startup
-            //         var serviceProvider = services.BuildServiceProvider();
-            //         var repo = serviceProvider.GetRequiredService<IConfigurationRepository>();
-            //         ////repo.SeedDefaultsAsync().Wait();
-            //     })
-            //    .ConfigureLogging((context, logging) =>
-            //    {
-            //        logging.ClearProviders();
-            //        var logger = new LoggerConfiguration()
-            //            .MinimumLevel.Debug()
-            //            .WriteTo.Console()
-            //            .CreateLogger();
-            //        logging.AddSerilog(logger);
-            //    });
-            //});
+        //         // Seed defaults on startup
+        //         var serviceProvider = services.BuildServiceProvider();
+        //         var repo = serviceProvider.GetRequiredService<IConfigurationRepository>();
+        //         ////repo.SeedDefaultsAsync().Wait();
+        //     })
+        //    .ConfigureLogging((context, logging) =>
+        //    {
+        //        logging.ClearProviders();
+        //        var logger = new LoggerConfiguration()
+        //            .MinimumLevel.Debug()
+        //            .WriteTo.Console()
+        //            .CreateLogger();
+        //        logging.AddSerilog(logger);
+        //    });
+        //});
         return builder;
     }
 
@@ -148,7 +149,7 @@ public partial class App : Application
         var repo = _host.Services.GetRequiredService<IConfigurationRepository>();
         await repo.SeedDefaultsAsync();
 
-        
+
 #if DEBUG
         MainWindow.UseStudio();
 #endif
@@ -178,10 +179,10 @@ public partial class App : Application
         // MainWindow.SetWindowIcon();
         // Ensure the current window is active
         MainWindow.Activate();
-        
+
         // Configure macOS menu bar after window activation (runtime check inside)
         MacOSExtensions.ConfigureMacOSMenu();
-        
+
         // Restore window state and setup tracking
         var windowStateHelper = _host.Services.GetRequiredService<WindowStateHelper>();
         await windowStateHelper.RestoreWindowStateAsync(MainWindow, "MainWindow", repo, defaultWidth: 1280, defaultHeight: 900);

@@ -1,6 +1,8 @@
 using Windows.Storage.Pickers;
 using Mentor.Uno.Helpers;
 using Mentor.Uno.Services;
+using Microsoft.UI.Xaml.Input;
+using Windows.System;
 
 namespace Mentor.Uno;
 
@@ -8,6 +10,8 @@ public sealed partial class MainPage : Page
 {
     private WindowStateHelper _windowStateHelper;
     private ClipboardMonitor? _clipboardMonitor;
+    private Window? _imageOverlayWindow;
+    private ImageOverlayPage? _imageOverlayPage;
 
     public MainPageViewModel ViewModel { get; }
 
@@ -25,9 +29,97 @@ public sealed partial class MainPage : Page
         this.Resources["StringToBoolConverter"] = new StringToBoolConverter();
         this.Resources["StringToVisibilityConverter"] = new StringToVisibilityConverter();
         this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
+        this.Resources["BoolToVisibilityConverter"] = new Converters.BoolToVisibilityConverter();
         
         // Initialize clipboard monitoring
         InitializeClipboardMonitoring();
+    }
+    
+    private void OnImagePreviewTapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (ViewModel.ImageSource != null)
+        {
+            ShowImageOverlayWindow();
+            e.Handled = true;
+        }
+    }
+    
+    private void ShowImageOverlayWindow()
+    {
+        // If window already exists, activate it and update the image
+        if (_imageOverlayWindow != null)
+        {
+            _imageOverlayWindow.Activate();
+            if (_imageOverlayPage != null)
+            {
+                _imageOverlayPage.ImageSource = ViewModel.ImageSource;
+                // Ensure focus is set when window is reactivated
+                _imageOverlayPage.Focus(FocusState.Programmatic);
+            }
+            return;
+        }
+
+        // Create a new window for the image overlay
+        _imageOverlayWindow = new Window
+        {
+            Title = "Image Viewer"
+        };
+        
+        // Create the overlay page and set it as the window content
+        _imageOverlayPage = new ImageOverlayPage();
+        _imageOverlayPage.SetOwnerWindow(_imageOverlayWindow);
+        _imageOverlayPage.ImageSource = ViewModel.ImageSource;
+        _imageOverlayWindow.Content = _imageOverlayPage;
+        
+        // Handle window activated event to set focus
+        _imageOverlayWindow.Activated += (sender, args) =>
+        {
+            if (_imageOverlayPage != null)
+            {
+                // Focus the page so it can receive keyboard events immediately
+                _imageOverlayPage.Focus(FocusState.Programmatic);
+            }
+        };
+        
+        // Handle window closed event to clean up reference
+        _imageOverlayWindow.Closed += (sender, args) =>
+        {
+            _imageOverlayWindow = null;
+            _imageOverlayPage = null;
+        };
+        
+        // Activate (show) the window
+        _imageOverlayWindow.Activate();
+        
+        // Set initial window size based on image dimensions or use defaults
+        var appWindow = _imageOverlayWindow.AppWindow;
+        if (appWindow != null && ViewModel.ImageSource != null)
+        {
+            // Try to get image dimensions, but use reasonable defaults if not available
+            int width = 1200;
+            int height = 900;
+            
+            try
+            {
+                // Wait for image to load if needed
+                if (ViewModel.ImageSource.PixelWidth > 0 && ViewModel.ImageSource.PixelHeight > 0)
+                {
+                    // Use image dimensions plus some padding for the border and UI
+                    width = Math.Min(ViewModel.ImageSource.PixelWidth + 100, 1920);
+                    height = Math.Min(ViewModel.ImageSource.PixelHeight + 150, 1080);
+                }
+            }
+            catch
+            {
+                // Use defaults if we can't get dimensions
+            }
+            
+            appWindow.Resize(new Windows.Graphics.SizeInt32
+            {
+                Width = width,
+                Height = height
+            });
+        }
     }
     
     private void InitializeClipboardMonitoring()

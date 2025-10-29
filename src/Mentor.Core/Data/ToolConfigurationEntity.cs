@@ -11,6 +11,7 @@ public class ToolConfigurationEntity
     public string ApiKey { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = "";
     public int Timeout { get; set; } = 30;
+    public int MaxArticleLength { get; set; } = 2000;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
