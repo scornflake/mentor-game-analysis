@@ -30,6 +30,10 @@ public sealed partial class MainPage : Page
         this.Resources["StringToVisibilityConverter"] = new StringToVisibilityConverter();
         this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
         this.Resources["BoolToVisibilityConverter"] = new Converters.BoolToVisibilityConverter();
+        this.Resources["JobStatusToBrushConverter"] = new Converters.JobStatusToBrushConverter();
+        this.Resources["JobStatusToIndeterminateConverter"] = new Converters.JobStatusToIndeterminateConverter();
+        this.Resources["JobProgressToValueConverter"] = new Converters.JobProgressToValueConverter();
+        this.Resources["JobStatusToVisibilityConverter"] = new Converters.JobStatusToVisibilityConverter();
         
         // Initialize clipboard monitoring
         InitializeClipboardMonitoring();

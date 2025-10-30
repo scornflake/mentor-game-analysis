@@ -55,10 +55,7 @@ public class ImageAnalyzer : IImageAnalyzer
         };
 
         // Create options for structured response
-        var options = new ChatOptions
-        {
-            Temperature = 0.7f
-        };
+        var options = ChatOptionsFactory.CreateForImageAnalysis();
 
         try
         {

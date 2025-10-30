@@ -31,6 +31,7 @@ public class KnownSearchTools
 public class KnownTools
 {
     public const string ArticleReader = "article-reader";
+    public const string TextSummarizer = "text-summarizer";
 }
 
 public record ResultStructure (string Title, string Url, string Snippet);

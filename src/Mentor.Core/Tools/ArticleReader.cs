@@ -1,11 +1,10 @@
 using System.Text;
-using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Mentor.Core.Data;
+using Mentor.Core.Services;
 using Microsoft.Extensions.Logging;
-using ReverseMarkdown;
 
 namespace Mentor.Core.Tools;
 
@@ -15,7 +14,9 @@ public class ArticleReader : IArticleReader
     private readonly ILogger<ArticleReader> _logger;
     private ToolConfigurationEntity _config = new ToolConfigurationEntity();
 
-    public ArticleReader(IHttpClientFactory httpClientFactory, ILogger<ArticleReader> logger)
+    public ArticleReader(
+        IHttpClientFactory httpClientFactory, 
+        ILogger<ArticleReader> logger)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _logger = logger;
@@ -55,15 +56,9 @@ public class ArticleReader : IArticleReader
                 return "Unable to extract main content from the article.";
             }
 
-            // Convert HTML to Markdown
-            var markdown = ConvertToMarkdown(mainContent);
+            _logger.LogInformation("Successfully extracted article content from URL: {Url}", url);
             
-            // Apply line limit
-            var limitedMarkdown = ApplyLineLimit(markdown, _config.MaxArticleLength);
-            
-            _logger.LogInformation("Successfully extracted article content from URL: {Url}, {LineCount} lines", url, limitedMarkdown.Split('\n').Length);
-            
-            return limitedMarkdown;
+            return mainContent;
         }
         catch (HttpRequestException ex)
         {
@@ -164,73 +159,5 @@ public class ArticleReader : IArticleReader
         }
     }
 
-    private string ConvertToMarkdown(string htmlContent)
-    {
-        try
-        {
-            var config = new ReverseMarkdown.Config
-            {
-                UnknownTags = ReverseMarkdown.Config.UnknownTagsOption.PassThrough,
-                GithubFlavored = true,
-                RemoveComments = true,
-                SmartHrefHandling = true
-            };
-
-            var converter = new ReverseMarkdown.Converter(config);
-            var markdown = converter.Convert(htmlContent);
-            
-            // Clean up excessive whitespace and normalize line breaks
-            markdown = Regex.Replace(markdown, @"\n{3,}", "\n\n");
-            markdown = Regex.Replace(markdown, @"[ \t]+\n", "\n");
-            
-            return markdown.Trim();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error converting HTML to Markdown, falling back to plain text extraction");
-            // Fallback: Basic text extraction
-            return ExtractPlainText(htmlContent);
-        }
-    }
-
-    private string ExtractPlainText(string htmlContent)
-    {
-        var config = AngleSharp.Configuration.Default;
-        var context = BrowsingContext.New(config);
-        var document = context.OpenAsync(req => req.Content(htmlContent)).GetAwaiter().GetResult();
-        
-        // Remove script and style elements
-        document.QuerySelectorAll("script, style").ToList().ForEach(el => el.Remove());
-        
-        return document.Body?.TextContent ?? string.Empty;
-    }
-
-    private string ApplyLineLimit(string markdown, int maxLines)
-    {
-        if (maxLines <= 0)
-        {
-            return markdown;
-        }
-
-        var lines = markdown.Split('\n');
-        
-        if (lines.Length <= maxLines)
-        {
-            return markdown;
-        }
-
-        _logger.LogInformation("Truncating article content from {TotalLines} lines to {MaxLines} lines", lines.Length, maxLines);
-
-        // Take the first maxLines lines
-        var truncatedLines = lines.Take(maxLines).ToArray();
-        
-        // Try to end at a complete sentence if possible
-        var result = string.Join("\n", truncatedLines);
-        
-        // Add truncation indicator
-        result += "\n\n[Article truncated due to length limit]";
-        
-        return result;
-    }
 }
 

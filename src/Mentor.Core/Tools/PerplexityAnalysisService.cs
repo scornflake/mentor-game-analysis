@@ -16,7 +16,7 @@ public class PerplexityAnalysisService: AnalysisService
     {
     }
 
-    public override async Task<Recommendation> AnalyzeAsync(AnalysisRequest request, CancellationToken cancellationToken = default)
+    public override async Task<Recommendation> AnalyzeAsync(AnalysisRequest request, IProgress<AnalysisProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         request.ValidateRequest();
         
@@ -26,6 +26,6 @@ public class PerplexityAnalysisService: AnalysisService
         var messages = new List<ChatMessage> { systemMessage, userMessage };
         var options = await CreateAIOptions();
         
-        return await ExecuteAndParse(messages, options, cancellationToken);
+        return await ExecuteAndParse(messages, options, progress, cancellationToken);
     }
 }

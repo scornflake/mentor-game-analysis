@@ -11,6 +11,8 @@ public interface IToolFactory
 {
     Task<IWebSearchTool> GetToolAsync(string toolName);
     Task<IArticleReader> GetArticleReaderAsync();
+    ITextSummarizer CreateTextSummarizer(ILLMClient llmClient);
+    IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient);
 }
 
 public class ToolFactory : IToolFactory
@@ -75,5 +77,28 @@ public class ToolFactory : IToolFactory
         
         articleReader.Configure(config);
         return articleReader;
+    }
+
+    public ITextSummarizer CreateTextSummarizer(ILLMClient llmClient)
+    {
+        if (llmClient == null)
+        {
+            throw new ArgumentNullException(nameof(llmClient));
+        }
+
+        _logger.LogInformation("Creating text summarizer tool");
+        
+        var logger = _serviceProvider.GetRequiredService<ILogger<TextSummarizer>>();
+        return new TextSummarizer(llmClient, logger);
+    }
+
+    public IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient) {
+        if (llmClient == null) {
+            throw new ArgumentNullException(nameof(llmClient));
+        }
+        
+        _logger.LogInformation("Creating HTML to Markdown converter tool");
+        var logger = _serviceProvider.GetRequiredService<ILogger<LlmHtmlToMarkdownConverter>>();
+        return new LlmHtmlToMarkdownConverter(llmClient, logger);
     }
 }

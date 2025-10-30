@@ -24,6 +24,9 @@ public partial class MainPageViewModel : ObservableObject
     
     private CancellationTokenSource? _analysisCancellationTokenSource;
     private System.Threading.Timer? _analysisMessageTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
+    private readonly Queue<string> _recentAnalyzingMessages = new();
+    private const int MaxRecentMessages = 10;
     
     private static readonly string[] SarcasticMessages = new[]
     {
@@ -130,6 +133,10 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] private string? _errorMessage;
     
     [ObservableProperty] private string? _rejectionMessage;
+    
+    [ObservableProperty] private AnalysisProgress? _analysisProgress;
+    
+    public ObservableCollection<AnalysisJob> Jobs { get; } = new();
     
     private bool _systemIsLoaded = false;
 
@@ -293,7 +300,36 @@ public partial class MainPageViewModel : ObservableObject
         IsAnalyzing = true;
         ErrorMessage = null;
         Result = null;
+        AnalysisProgress = null;
         StartAnalysisMessageCycle();
+
+        // Capture the UI dispatcher if not already captured
+        _dispatcherQueue ??= Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        
+        // Create progress reporter that updates on UI thread
+        var progressReporter = new Progress<AnalysisProgress>(progress =>
+        {
+            _dispatcherQueue?.TryEnqueue(() =>
+            {
+                // Always replace the entire object to ensure UI updates
+                // This triggers PropertyChanged which should cause Binding to re-evaluate
+                _logger.LogInformation("Progress update: {TotalPercentage}%, Jobs: {JobCount}", 
+                    progress.TotalPercentage, progress.Jobs.Count);
+                AnalysisProgress = progress;
+                
+                // Update the ObservableCollection for UI binding
+                Jobs.Clear();
+                foreach (var job in progress.Jobs)
+                {
+                    Jobs.Add(job);
+                }
+                
+                var perJobCounts = string.Join(", ", progress.Jobs.Select(j => $"{j.Name}=({j.Progress}%)"));
+                
+                _logger.LogInformation("AnalysisProgress updated, Jobs in ViewModel: {JobCount}, ObservableCollection: {ObsCount}, Jobs Detail: {JobsDetail}", 
+                    AnalysisProgress?.Jobs?.Count ?? 0, Jobs.Count, perJobCounts);
+            });
+        });
 
         try
         {
@@ -345,7 +381,7 @@ public partial class MainPageViewModel : ObservableObject
             };
 
             // Perform analysis
-            Result = await analysisService.AnalyzeAsync(request, _analysisCancellationTokenSource.Token);
+            Result = await analysisService.AnalyzeAsync(request, progressReporter, _analysisCancellationTokenSource.Token);
         }
         catch (OperationCanceledException)
         {
@@ -361,6 +397,8 @@ public partial class MainPageViewModel : ObservableObject
         {
             StopAnalysisMessageCycle();
             IsAnalyzing = false;
+            AnalysisProgress = null;
+            Jobs.Clear();
             _analysisCancellationTokenSource?.Dispose();
             _analysisCancellationTokenSource = null;
         }
@@ -492,33 +530,79 @@ public partial class MainPageViewModel : ObservableObject
         return ValidationMessages[index];
     }
     
+    private string GetNextAnalyzingMessage()
+    {
+        // Get available messages (not in recent history)
+        var availableMessages = AnalyzingMessages
+            .Where(msg => !_recentAnalyzingMessages.Contains(msg))
+            .ToArray();
+        
+        // If all messages are in recent history (shouldn't happen with 30 messages and 10 history),
+        // fall back to any random message
+        if (availableMessages.Length == 0)
+        {
+            availableMessages = AnalyzingMessages;
+        }
+        
+        // Select random message from available ones
+        var selectedMessage = availableMessages[_random.Next(availableMessages.Length)];
+        
+        // Add to recent history
+        _recentAnalyzingMessages.Enqueue(selectedMessage);
+        
+        // Remove oldest if we exceed max history size
+        while (_recentAnalyzingMessages.Count > MaxRecentMessages)
+        {
+            _recentAnalyzingMessages.Dequeue();
+        }
+        
+        return selectedMessage;
+    }
+    
     private void StartAnalysisMessageCycle()
     {
-        // Set initial message
-        AnalyzingMessage = AnalyzingMessages[_random.Next(AnalyzingMessages.Length)];
+        // Capture the UI dispatcher if not already captured
+        _dispatcherQueue ??= Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         
-        // Create timer to cycle messages every 2.5 seconds
+        // Set initial message using history-aware selection
+        AnalyzingMessage = GetNextAnalyzingMessage();
+        
+        // Schedule the first message update with random delay
+        ScheduleNextMessageUpdate();
+    }
+    
+    private void ScheduleNextMessageUpdate()
+    {
+        // Generate random delay between 3.0 and 8.0 seconds
+        var delaySeconds = 3.0 + (_random.NextDouble() * 5.0);
+        
+        // Create one-shot timer with random delay
         _analysisMessageTimer = new System.Threading.Timer(
             callback: _ =>
             {
                 // Update message on UI thread
                 try
                 {
-                    var newMessage = AnalyzingMessages[_random.Next(AnalyzingMessages.Length)];
-                    // Use dispatcher to update UI property from background thread
-                    Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
+                    var newMessage = GetNextAnalyzingMessage();
+                    // Use captured dispatcher to update UI property from background thread
+                    _dispatcherQueue?.TryEnqueue(() =>
                     {
                         AnalyzingMessage = newMessage;
                     });
+                    
+                    // Dispose old timer and schedule next update with new random delay
+                    _analysisMessageTimer?.Dispose();
+                    ScheduleNextMessageUpdate();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Silently fail if we can't update the message
+                    // Log if we can't update the message
+                    _logger.LogDebug(ex, "Failed to update analyzing message");
                 }
             },
             state: null,
-            dueTime: TimeSpan.FromSeconds(2.5),
-            period: TimeSpan.FromSeconds(2.5));
+            dueTime: TimeSpan.FromSeconds(delaySeconds),
+            period: Timeout.InfiniteTimeSpan); // One-shot timer
     }
     
     private void StopAnalysisMessageCycle()
@@ -526,6 +610,7 @@ public partial class MainPageViewModel : ObservableObject
         _analysisMessageTimer?.Dispose();
         _analysisMessageTimer = null;
         AnalyzingMessage = null;
+        _recentAnalyzingMessages.Clear();
     }
     
     private async Task UpdateImageSourceFromClipboardAsync(RawImage imageData)

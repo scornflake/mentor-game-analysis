@@ -9,6 +9,7 @@ public interface IAnalysisService
     /// </summary>
     Task<Recommendation> AnalyzeAsync(
         AnalysisRequest request,
+        IProgress<AnalysisProgress>? progress = null,
         CancellationToken cancellationToken = default
     );
 }

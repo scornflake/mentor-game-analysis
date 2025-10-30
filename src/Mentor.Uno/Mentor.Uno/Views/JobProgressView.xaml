@@ -1,0 +1,71 @@
+<UserControl x:Class="Mentor.Uno.Views.JobProgressView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:Mentor.Core.Models"
+             xmlns:converters="using:Mentor.Uno.Converters"
+             xmlns:local="using:Mentor.Uno">
+  <UserControl.Resources>
+    <converters:JobStatusToBrushConverter x:Key="JobStatusToBrushConverter"/>
+    <converters:JobStatusToIndeterminateConverter x:Key="JobStatusToIndeterminateConverter"/>
+    <converters:JobProgressToValueConverter x:Key="JobProgressToValueConverter"/>
+    <converters:JobStatusToVisibilityConverter x:Key="JobStatusToVisibilityConverter"/>
+    <converters:JobProgressMultiConverter x:Key="JobProgressMultiConverter"/>
+    <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+  </UserControl.Resources>
+  
+  <StackPanel Spacing="12">
+    <ItemsRepeater ItemsSource="{Binding Jobs, Mode=OneWay}"
+                   Visibility="{Binding ., Converter={StaticResource NullToVisibilityConverter}}">
+      <ItemsRepeater.ItemTemplate>
+        <DataTemplate x:DataType="models:AnalysisJob">
+          <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Padding="12"
+                  Margin="0,0,0,8">
+            <StackPanel Spacing="8">
+              <!-- Job Name and Status Indicator -->
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0"
+                           Text="{x:Bind Name}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+                
+                <!-- Status Indicator -->
+                <Border Grid.Column="1"
+                        Background="{x:Bind Status, Converter={StaticResource JobStatusToBrushConverter}}"
+                        CornerRadius="3"
+                        Padding="8,4"
+                        MinWidth="80"
+                        Margin="8,0,0,0">
+                  <TextBlock Text="{x:Bind Status}"
+                             Foreground="White"
+                             FontWeight="SemiBold"
+                             FontSize="11"
+                             HorizontalAlignment="Center"/>
+                </Border>
+              </Grid>
+              
+              <!-- Progress Bar -->
+              <Grid Visibility="{x:Bind Status, Converter={StaticResource JobStatusToVisibilityConverter}}">
+                <ProgressBar Minimum="0"
+                             Maximum="100"
+                             Value="{x:Bind Progress, Converter={StaticResource JobProgressToValueConverter}}"
+                             IsIndeterminate="{x:Bind Status, Converter={StaticResource JobStatusToIndeterminateConverter}}"
+                             Height="8"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsRepeater.ItemTemplate>
+    </ItemsRepeater>
+  </StackPanel>
+</UserControl>
+

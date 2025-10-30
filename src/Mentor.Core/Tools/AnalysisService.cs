@@ -67,6 +67,7 @@ public abstract class AnalysisService : IAnalysisService
 
     public virtual Task<Recommendation> AnalyzeAsync(
         AnalysisRequest request,
+        IProgress<AnalysisProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
@@ -75,10 +76,10 @@ public abstract class AnalysisService : IAnalysisService
     protected virtual async Task<ChatOptions> CreateAIOptions()
     {
         await Task.CompletedTask;
-        return new ChatOptions();
+        return ChatOptionsFactory.CreateDefault();
     }
 
-    protected virtual async Task<Recommendation> ExecuteAndParse(List<ChatMessage> messages, ChatOptions options, CancellationToken cancellationToken)
+    protected virtual async Task<Recommendation> ExecuteAndParse(List<ChatMessage> messages, ChatOptions options, IProgress<AnalysisProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var completion = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken: cancellationToken);
 
