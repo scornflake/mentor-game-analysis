@@ -19,13 +19,22 @@ public class PerplexityAnalysisService: AnalysisService
     public override async Task<Recommendation> AnalyzeAsync(AnalysisRequest request, IProgress<AnalysisProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         request.ValidateRequest();
-        
+        var analysisProgress = new AnalysisProgress
+        {
+            Jobs = new List<AnalysisJob>
+            {
+                new AnalysisJob { Tag = "perplexity", Name = "Talking with Perplexity", Status = JobStatus.InProgress, Progress = 50 }
+            }
+        };
+        analysisProgress.ReportProgress(progress);
         var systemMessage = GetSystemPrompt(request);
         var userMessage = GetUserMessages(request);
     
         var messages = new List<ChatMessage> { systemMessage, userMessage };
         var options = await CreateAIOptions();
-        
-        return await ExecuteAndParse(messages, options, progress, cancellationToken);
+        var result = await ExecuteAndParse(messages, options, progress, cancellationToken);
+        analysisProgress.UpdateJobProgress("perplexity", JobStatus.Completed, 100);
+        analysisProgress.ReportProgress(progress);
+        return result;
     }
 }

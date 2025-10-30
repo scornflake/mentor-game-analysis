@@ -11,5 +11,6 @@
     <PackageVersion Include="Uno.Extensions.Core.WinUI" Version="6.2.3" />
     <PackageVersion Include="Uno.Extensions.Navigation.Toolkit.WinUI" Version="6.2.3" />
     <PackageVersion Include="Uno.Extensions.Navigation.WinUI" Version="6.2.3" />
+    <PackageVersion Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
 </Project>

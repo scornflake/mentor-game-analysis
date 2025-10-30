@@ -1,7 +1,7 @@
 # TODO
 
 # Improving
-- Get job status working
+[x] - Get job status working
 - Make perplexity/travily/brave "hidden" from the user settings.
   - put in a "settings" panel, that has spaces for their API keys
 - Put "date" into the query (so LLM knows to look for recent info)

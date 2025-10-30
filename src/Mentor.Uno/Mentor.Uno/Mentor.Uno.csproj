@@ -7,7 +7,8 @@
 
         <!-- Assembly/Executable name -->
         <AssemblyName>Mentor</AssemblyName>
-        <!--<ApplicationIcon>Assets\Icons\App.ico</ApplicationIcon>-->
+        <!-- ApplicationIcon requires an .ico file, not .png. Temporarily removed until ICO file is created -->
+        <!-- <ApplicationIcon>Assets\Icons\icon.ico</ApplicationIcon> -->
 
         <!-- Display name -->
         <ApplicationTitle>Mentor - Game Analysis</ApplicationTitle>
@@ -59,6 +60,7 @@
       <PackageReference Include="Uno.Extensions.Core.WinUI" />
       <PackageReference Include="Uno.Extensions.Navigation.Toolkit.WinUI" />
       <PackageReference Include="Uno.Extensions.Navigation.WinUI" />
+      <PackageReference Include="System.Drawing.Common" />
     </ItemGroup>
 
     <ItemGroup>
@@ -69,6 +71,9 @@
 
     <ItemGroup>
       <UnoIcon Remove="Assets\Icons\icon.svg" />
+      <Content Include="Assets\Icons\icon.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 

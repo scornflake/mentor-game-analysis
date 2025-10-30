@@ -12,6 +12,7 @@ using Serilog;
 using Uno.Resizetizer;
 using Mentor.Uno.Platforms;
 using Uno.Extensions.Navigation.Toolkit;
+using Microsoft.UI.Xaml;
 
 namespace Mentor.Uno;
 
@@ -177,7 +178,9 @@ public partial class App : Application
             rootFrame.Navigate(typeof(MainPage), args.Arguments);
         }
 
-        // MainWindow.SetWindowIcon();
+        // Set the window icon for Windows
+        MainWindow.SetWindowIcon();
+        
         // Ensure the current window is active
         MainWindow.Activate();
 

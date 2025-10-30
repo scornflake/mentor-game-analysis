@@ -1,0 +1,120 @@
+<UserControl x:Class="Mentor.Uno.Views.AnalysisResultsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:Mentor.Core.Models"
+             xmlns:local="using:Mentor.Uno">
+  <UserControl.Resources>
+    <local:PriorityToBrushConverter x:Key="PriorityToBrushConverter"/>
+    <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+  </UserControl.Resources>
+  
+  <ScrollViewer Visibility="{x:Bind Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+    <StackPanel Spacing="16">
+      <TextBlock Text="Analysis Results"
+                 Style="{StaticResource TitleTextBlockStyle}"/>
+
+      <!-- Metadata -->
+      <StackPanel Spacing="4">
+        <TextBlock>
+          <Run Text="Provider: " FontWeight="SemiBold"/>
+          <Run Text="{x:Bind Result.ProviderUsed, Mode=OneWay}"/>
+        </TextBlock>
+        <TextBlock>
+          <Run Text="Confidence: " FontWeight="SemiBold"/>
+          <Run Text="{x:Bind Result.Confidence, Mode=OneWay}"/>
+        </TextBlock>
+        <TextBlock>
+          <Run Text="Generated: " FontWeight="SemiBold"/>
+          <Run Text="{x:Bind Result.GeneratedAtFormatted, Mode=OneWay}"/>
+        </TextBlock>
+      </StackPanel>
+
+      <!-- Summary -->
+      <StackPanel Spacing="8">
+        <TextBlock Text="Summary" Style="{StaticResource SubtitleTextBlockStyle}"/>
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderThickness="1"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                CornerRadius="4"
+                Padding="12">
+          <TextBlock Text="{x:Bind Result.Summary, Mode=OneWay}"
+                     TextWrapping="Wrap"/>
+        </Border>
+      </StackPanel>
+
+      <!-- Analysis -->
+      <StackPanel Spacing="8">
+        <TextBlock Text="Detailed Analysis" Style="{StaticResource SubtitleTextBlockStyle}"/>
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderThickness="1"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                CornerRadius="4"
+                Padding="12">
+          <TextBlock Text="{x:Bind Result.Analysis, Mode=OneWay}"
+                     TextWrapping="Wrap"/>
+        </Border>
+      </StackPanel>
+
+      <!-- Recommendations -->
+      <StackPanel Spacing="8">
+        <TextBlock Text="Recommendations" Style="{StaticResource SubtitleTextBlockStyle}"/>
+        <ItemsRepeater ItemsSource="{x:Bind Result.Recommendations, Mode=OneWay}">
+          <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="models:RecommendationItem">
+              <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                      BorderThickness="1"
+                      CornerRadius="4"
+                      Padding="12"
+                      Margin="0,0,0,12">
+                <StackPanel Spacing="8">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto"/>
+                      <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Background="{x:Bind Priority, Converter={StaticResource PriorityToBrushConverter}}"
+                            CornerRadius="3"
+                            Padding="8,4"
+                            Margin="0,0,10,0">
+                      <TextBlock Text="{x:Bind Priority}"
+                                 Foreground="White"
+                                 FontWeight="SemiBold"
+                                 FontSize="12"/>
+                    </Border>
+                    <TextBlock Grid.Column="1"
+                               Text="{x:Bind Action}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"/>
+                  </Grid>
+                  <StackPanel Spacing="4">
+                    <StackPanel Spacing="2">
+                      <TextBlock TextWrapping="Wrap">
+                        <Run Text="Reasoning: " FontWeight="SemiBold"/>
+                        <Run Text="{x:Bind Reasoning}"/>
+                      </TextBlock>
+                      <TextBlock FontSize="11"
+                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                 Visibility="{x:Bind HasReferenceLink, Mode=OneWay}">
+                        <Hyperlink NavigateUri="{x:Bind ReferenceLinkUri}">
+                          <Run Text="{x:Bind ReferenceLink}"/>
+                        </Hyperlink>
+                      </TextBlock>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap">
+                      <Run Text="Context: " FontWeight="SemiBold"/>
+                      <Run Text="{x:Bind Context}"/>
+                    </TextBlock>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
+

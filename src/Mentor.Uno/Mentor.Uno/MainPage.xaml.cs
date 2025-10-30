@@ -23,17 +23,8 @@ public sealed partial class MainPage : Page
         
         _windowStateHelper = new WindowStateHelper(App.GetService<ILogger<WindowStateHelper>>());
 
-        // Add converters to page resources
-        this.Resources["NullToVisibilityConverter"] = new NullToVisibilityConverter();
+        // Add converters to page resources (only converters used directly in MainPage.xaml)
         this.Resources["InverseNullToVisibilityConverter"] = new InverseNullToVisibilityConverter();
-        this.Resources["StringToBoolConverter"] = new StringToBoolConverter();
-        this.Resources["StringToVisibilityConverter"] = new StringToVisibilityConverter();
-        this.Resources["PriorityToBrushConverter"] = new PriorityToBrushConverter();
-        this.Resources["BoolToVisibilityConverter"] = new Converters.BoolToVisibilityConverter();
-        this.Resources["JobStatusToBrushConverter"] = new Converters.JobStatusToBrushConverter();
-        this.Resources["JobStatusToIndeterminateConverter"] = new Converters.JobStatusToIndeterminateConverter();
-        this.Resources["JobProgressToValueConverter"] = new Converters.JobProgressToValueConverter();
-        this.Resources["JobStatusToVisibilityConverter"] = new Converters.JobStatusToVisibilityConverter();
         
         // Initialize clipboard monitoring
         InitializeClipboardMonitoring();
