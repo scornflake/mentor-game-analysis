@@ -4,14 +4,12 @@ using Mentor.Core.Models;
 using Mentor.Core.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 
 namespace Mentor.Core.Tools;
 
 public class OpenAIAnalysisService : AnalysisService
 {
-    // Tool names - these match the method names that OpenAI will see
-    private const string ToolNameSearchTheWebStructured = "SearchTheWebStructured";
-    private const string ToolNameReadArticleContent = "ReadArticleContent";
 
     private IWebSearchTool? _webSearchTool = null;
     private IArticleReader? _articleReader = null;
@@ -111,127 +109,88 @@ public class OpenAIAnalysisService : AnalysisService
     {
         var researchResults = new List<ResearchResult>();
         
-        // Report initial jobs
-        var jobs = new List<AnalysisJob>
+        // Create and initialize progress tracking
+        var analysisProgress = new AnalysisProgress
         {
-            new AnalysisJob { Name = "Searching web", Status = JobStatus.InProgress, Progress = 0 },
-            new AnalysisJob { Name = "Analyzing with LLM", Status = JobStatus.Pending, Progress = 0 }
+            Jobs = new List<AnalysisJob>
+            {
+                new AnalysisJob { Tag = "search-web", Name = "Searching web", Status = JobStatus.InProgress, Progress = 0 },
+                new AnalysisJob { Tag = "analyze-llm", Name = "Analyzing with LLM", Status = JobStatus.Pending, Progress = 0 }
+            }
         };
-        
-        ReportProgress(progress, 0, jobs);
+        analysisProgress.ReportProgress(progress);
         
         // search based on the prompt
         var searchResults = await SearchTheWebStructured(request.Prompt);
         
         // Update search job to completed
-        jobs[0].Status = JobStatus.Completed;
-        jobs[0].Progress = 100;
+        analysisProgress.UpdateJobProgress("search-web", JobStatus.Completed, 100);
+        analysisProgress.ReportProgress(progress);
         
         // Add article processing jobs (reading + converting combined)
         for (int i = 0; i < searchResults.Count; i++)
         {
-            jobs.Add(new AnalysisJob 
-            { 
-                Name = $"Processing article {i + 1}: {searchResults[i].Title}", 
-                Status = JobStatus.Pending,
-                Progress = 0
-            });
+            analysisProgress.AddJobAbove(
+                referenceTag: "analyze-llm",
+                newJob: new AnalysisJob 
+                { 
+                    Tag = $"article-{i + 1}",
+                    Name = $"Processing article {i + 1}: {searchResults[i].Title}", 
+                    Status = JobStatus.Pending,
+                    Progress = 0
+                }
+            );
         }
         
-        var summarizer = _toolFactory.CreateTextSummarizer(_llmClient);
+        //var summarizer = _toolFactory.CreateTextSummarizer(_llmClient);
         var htmlToMarkdownConverter = _toolFactory.CreateHtmlToMarkdownConverter(_llmClient);
-
-        // Calculate progress weights:
-        // - Search: 10% of research phase (7% of total)
-        // - Processing articles (read + convert): 90% of research phase (63% of total)
-        // Research phase total: 70% of overall
-        const double researchPhaseWeight = 0.70;
-        const double searchWeight = 0.10; // 10% of research phase
-        const double processingWeight = 0.90; // 90% of research phase
-        double searchProgress = searchWeight * researchPhaseWeight * 100; // ~7%
         
-        ReportProgress(progress, searchProgress, jobs);
+        analysisProgress.ReportProgress(progress);
 
         // Process articles (read + convert combined)
         int articleIndex = 0;
         foreach (var searchResult in searchResults)
         {
-            // Update processing job (single job per article now)
-            int processingJobIndex = 1 + articleIndex; // Skip search job (index 0) and LLM job (last)
+            var articleTag = $"article-{articleIndex + 1}";
             
-            jobs[processingJobIndex].Status = JobStatus.InProgress;
-            jobs[processingJobIndex].Progress = 0;
-            
-            ReportProgress(progress, 0, jobs);
+            // Update processing job
+            analysisProgress.UpdateJobProgress(articleTag, JobStatus.InProgress, 0);
+            analysisProgress.SetName(articleTag, $"Reading article {articleIndex + 1}: {searchResult.Title}");
+            analysisProgress.ReportProgress(progress);
             
             // Read article (first half of the work)
             var articleContent = await ReadArticleContent(searchResult.Url);
             
-            jobs[processingJobIndex].Progress = 50;
-            ReportProgress(progress, 0, jobs);
+            analysisProgress.UpdateJobProgress(articleTag, JobStatus.InProgress, 50);
+            analysisProgress.SetName(articleTag, $"Converting article {articleIndex + 1}: {searchResult.Title}");
+            analysisProgress.ReportProgress(progress);
             
             // Convert to markdown (second half of the work)
             var markdown = await htmlToMarkdownConverter.ConvertAsync(articleContent, cancellationToken);
             
-            jobs[processingJobIndex].Status = JobStatus.Completed;
-            jobs[processingJobIndex].Progress = 100;
-            
-            // Calculate overall progress: each article is equal portion of processing weight
-            double progressPerArticle = processingWeight / searchResults.Count;
-            double currentProgress = (searchWeight + (articleIndex + 1) * progressPerArticle) * researchPhaseWeight * 100;
-            
-            ReportProgress(progress, currentProgress, jobs);
+            analysisProgress.UpdateJobProgress(articleTag, JobStatus.Completed, 100);
+            analysisProgress.SetName(articleTag, $"Converted article {articleIndex + 1}: {searchResult.Title}");
+            analysisProgress.ReportProgress(progress);
             
             researchResults.Add(new ResearchResult { Title = searchResult.Title, Url = searchResult.Url, Content = markdown });
             
             articleIndex++;
         }
         
-        // Research phase complete - report 70%
-        ReportProgress(progress, researchPhaseWeight * 100, jobs);
-
         return researchResults;
-    }
-    
-    private void ReportProgress(IProgress<AnalysisProgress>? progress, double totalPercentage, List<AnalysisJob> jobs)
-    {
-        if (progress != null)
-        {
-            progress.Report(new AnalysisProgress
-            {
-                TotalPercentage = Math.Min(100, Math.Max(0, totalPercentage)),
-                Jobs = jobs.ToList() // Create a copy to avoid modification issues
-            });
-        }
     }
     
     protected override async Task<Recommendation> ExecuteAndParse(List<ChatMessage> messages, ChatOptions options, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
     {
-        // Report LLM analysis starting
-        var jobs = new List<AnalysisJob>
-        {
-            new AnalysisJob { Name = "Searching web", Status = JobStatus.Completed, Progress = 100 },
-            new AnalysisJob { Name = "Analyzing with LLM", Status = JobStatus.InProgress, Progress = 0 }
-        };
-        
-        // All research jobs are completed at this point
-        // We'll add completed article jobs if we have research results
-        if (_researchResults != null && _researchResults.Count > 0)
-        {
-            for (int i = 0; i < _researchResults.Count; i++)
-            {
-                jobs.Add(new AnalysisJob { Name = $"Processing article {i + 1}", Status = JobStatus.Completed, Progress = 100 });
-            }
-        }
-        
-        ReportProgress(progress, 70, jobs); // Research phase complete (70%)
+        var analysisProgress = new AnalysisProgress();
+        analysisProgress.UpdateJobProgress("analyze-llm", JobStatus.InProgress, 0);
+        analysisProgress.ReportProgress(progress);
         
         var result = await base.ExecuteAndParse(messages, options, progress, cancellationToken);
 
         // Report completion
-        jobs[1].Status = JobStatus.Completed;
-        jobs[1].Progress = 100;
-        ReportProgress(progress, 100, jobs);
+        analysisProgress.UpdateJobProgress("analyze-llm", JobStatus.Completed, 100);
+        analysisProgress.ReportProgress(progress);
 
         return result;
     }

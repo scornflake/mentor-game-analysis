@@ -1,6 +1,9 @@
 # TODO
 
 # Improving
+- Get job status working
+- Make perplexity/travily/brave "hidden" from the user settings.
+  - put in a "settings" panel, that has spaces for their API keys
 - Put "date" into the query (so LLM knows to look for recent info)
 - For search, are there well known "warframe" sites where we get better, more accurate info?
 - Allow LLM configuration to specify which search engines to use
