@@ -13,10 +13,7 @@
     </Grid.RowDefinitions>
 
     <!-- Fixed Header -->
-    <Grid Grid.Row="0" Padding="20,20,20,12">
-      <TextBlock Text="Game Analysis"
-                 Style="{StaticResource TitleTextBlockStyle}"
-                 HorizontalAlignment="Left"/>
+    <Grid Grid.Row="0" Padding="20,20,20,0">
       <Button Content="⚙ Settings"
               Click="OnSettingsClick"
               HorizontalAlignment="Right"
@@ -24,7 +21,7 @@
     </Grid>
 
     <!-- Main Content Area -->
-    <Grid Grid.Row="1" Padding="20,12,20,20">
+    <Grid Grid.Row="1" Padding="20,0,20,20">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*"/>

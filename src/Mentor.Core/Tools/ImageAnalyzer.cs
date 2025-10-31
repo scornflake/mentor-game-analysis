@@ -1,5 +1,6 @@
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
+using Mentor.Core.Serialization;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -60,8 +61,10 @@ public class ImageAnalyzer : IImageAnalyzer
         try
         {
             // Get structured response from LLM
+            var jsonOptions = MentorJsonSerializerContext.CreateOptions();
             var completion = await provider.ChatClient.GetResponseAsync<ImageAnalysisResponse>(
-                messages, 
+                messages,
+                jsonOptions,
                 options, 
                 cancellationToken: cancellationToken);
 
@@ -113,22 +116,6 @@ public class ImageAnalyzer : IImageAnalyzer
 
         var content = new List<AIContent> { textContent, imageContent };
         return new ChatMessage(ChatRole.User, content);
-    }
-
-    /// <summary>
-    /// Internal record for deserializing structured LLM responses
-    /// </summary>
-    private record ImageAnalysisResponse
-    {
-        /// <summary>
-        /// Detailed description of the image content
-        /// </summary>
-        public string Description { get; init; } = string.Empty;
-
-        /// <summary>
-        /// Probability (0.0 to 1.0) that the image is related to the specified game
-        /// </summary>
-        public double GameRelevanceProbability { get; init; }
     }
 }
 

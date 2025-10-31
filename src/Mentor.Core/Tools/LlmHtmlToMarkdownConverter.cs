@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 using Mentor.Core.Interfaces;
+using Mentor.Core.Models;
+using Mentor.Core.Serialization;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -9,13 +11,16 @@ public class LlmHtmlToMarkdownConverter : IHtmlToMarkdownConverter
 {
     private readonly ILLMClient _llmClient;
     private readonly ILogger<LlmHtmlToMarkdownConverter> _logger;
+    private readonly int _maxLinesToConvert;
 
     public LlmHtmlToMarkdownConverter(
         ILLMClient llmClient,
-        ILogger<LlmHtmlToMarkdownConverter> logger)
+        ILogger<LlmHtmlToMarkdownConverter> logger,
+        int maxLinesToConvert = 1000)
     {
         _llmClient = llmClient ?? throw new ArgumentNullException(nameof(llmClient));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _maxLinesToConvert = maxLinesToConvert;
     }
 
     public async Task<string> ConvertAsync(string htmlContent, CancellationToken cancellationToken = default)
@@ -23,6 +28,15 @@ public class LlmHtmlToMarkdownConverter : IHtmlToMarkdownConverter
         if (string.IsNullOrWhiteSpace(htmlContent))
         {
             throw new ArgumentException("HTML content cannot be null or empty", nameof(htmlContent));
+        }
+
+        // Limit HTML content to max lines
+        var lines = htmlContent.Split('\n');
+        if (lines.Length > _maxLinesToConvert)
+        {
+            _logger.LogWarning("HTML content has {TotalLines} lines, truncating to {MaxLines} lines", 
+                lines.Length, _maxLinesToConvert);
+            htmlContent = string.Join('\n', lines.Take(_maxLinesToConvert));
         }
 
         var systemMessage = new ChatMessage(
@@ -54,14 +68,15 @@ public class LlmHtmlToMarkdownConverter : IHtmlToMarkdownConverter
             $"Convert the following HTML to clean Markdown:\n\n{htmlContent}");
 
         var messages = new List<ChatMessage> { systemMessage, userMessage };
-        // var messages = new List<ChatMessage> { userMessage };
 
         var chatOptions = ChatOptionsFactory.CreateForConversion();
 
         _logger.LogInformation("Starting HTML to Markdown conversion. Input length: {Length} characters", htmlContent.Length);
         // Call LLM
+        var jsonOptions = MentorJsonSerializerContext.CreateOptions();
         var completion = await _llmClient.ChatClient.GetResponseAsync<MarkdownResponse>(
             messages,
+            jsonOptions,
             chatOptions,
             cancellationToken: cancellationToken);
 
@@ -73,17 +88,6 @@ public class LlmHtmlToMarkdownConverter : IHtmlToMarkdownConverter
         _logger.LogDebug("LLM conversion successful, output length: {Length}", markdown.Length);
 
         return markdown.Trim();
-    }
-
-    /// <summary>
-    /// Response structure from the LLM containing the converted markdown.
-    /// </summary>
-    private record MarkdownResponse
-    {
-        /// <summary>
-        /// The HTML content converted to Markdown format.
-        /// </summary>
-        public string Markdown { get; init; } = string.Empty;
     }
 }
 

@@ -22,7 +22,7 @@ public static class ChatOptionsFactory
     {
         return new ChatOptions
         {
-            MaxOutputTokens = DefaultMaxOutputTokens
+            MaxOutputTokens = DefaultMaxOutputTokens,            
         };
     }
 

@@ -71,9 +71,9 @@
 
     <ItemGroup>
       <UnoIcon Remove="Assets\Icons\icon.svg" />
-      <Content Include="Assets\Icons\icon.png">
+      <UnoIcon Include="Assets\Icons\icon.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
+      </UnoIcon>
     </ItemGroup>
 
 

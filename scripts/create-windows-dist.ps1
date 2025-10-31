@@ -14,39 +14,61 @@ $ErrorActionPreference = "Stop"
 # Paths
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
+$ProjectPath = Join-Path $ProjectRoot "src\Mentor.Uno\Mentor.Uno\Mentor.Uno.csproj"
 $PublishDir = Join-Path $ProjectRoot "src\Mentor.Uno\Mentor.Uno\bin\Release\net9.0-desktop\$Arch\publish"
 $DistDir = Join-Path $ProjectRoot "dist\Mentor-Windows-$Arch"
+$DistRootDir = Join-Path $ProjectRoot "dist"
 
 Write-Host "Creating Windows distribution for $Arch..." -ForegroundColor Cyan
+Write-Host ""
 
-# Check if publish directory exists
+# Step 1: Clean Release build
+Write-Host "Step 1: Cleaning Release build..." -ForegroundColor Yellow
+$cleanResult = dotnet clean $ProjectPath -c Release -f net9.0-desktop
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error: Clean failed" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Clean completed" -ForegroundColor Green
+Write-Host ""
+
+# Step 2: Publish Release build
+Write-Host "Step 2: Publishing Release build..." -ForegroundColor Yellow
+$publishResult = dotnet publish $ProjectPath -c Release -f net9.0-desktop /p:PublishProfile=$Arch
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error: Publish failed" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Publish completed" -ForegroundColor Green
+Write-Host ""
+
+# Step 3: Verify publish directory exists
 if (-not (Test-Path $PublishDir)) {
     Write-Host "Error: Publish directory not found at $PublishDir" -ForegroundColor Red
-    Write-Host "Run: cd src\Mentor.Uno\Mentor.Uno; dotnet publish -c Release -f net9.0-desktop /p:PublishProfile=$Arch" -ForegroundColor Yellow
     exit 1
 }
 
-# Create dist directory
-$DistRootDir = Join-Path $ProjectRoot "dist"
+# Step 4: Create dist directory
 if (-not (Test-Path $DistRootDir)) {
-    New-Item -ItemType Directory -Path $DistRootDir | Out-Null
+    New-Item -ItemType Directory -Path $DistRootDir
 }
 
-# Remove old distribution if it exists
+# Step 5: Remove old distribution if it exists
 if (Test-Path $DistDir) {
-    Write-Host "Removing existing distribution..." -ForegroundColor Yellow
+    Write-Host "Step 3: Removing existing distribution..." -ForegroundColor Yellow
     Remove-Item -Recurse -Force $DistDir
 }
 
-# Create distribution directory
-Write-Host "Creating distribution structure..." -ForegroundColor Green
-New-Item -ItemType Directory -Path $DistDir | Out-Null
+# Step 6: Create distribution directory
+Write-Host "Step 4: Creating distribution structure..." -ForegroundColor Green
+New-Item -ItemType Directory -Path $DistDir 
 
-# Copy all published files
-Write-Host "Copying published files..." -ForegroundColor Green
+# Step 7: Copy all published files
+Write-Host "Step 5: Copying published files..." -ForegroundColor Green
 Copy-Item -Path "$PublishDir\*" -Destination $DistDir -Recurse -Force
 
-# Create a README for the distribution
+# Step 8: Create a README for the distribution
+Write-Host "Step 6: Creating README..." -ForegroundColor Green
 $ReadmeContent = @"
 Mentor - Game Analysis
 ======================
@@ -69,26 +91,28 @@ Write-Host ""
 Write-Host "✅ Windows distribution created successfully!" -ForegroundColor Green
 Write-Host "Location: $DistDir" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Contents:" -ForegroundColor Yellow
-Write-Host "  Executable: Mentor.exe"
-Write-Host ""
-Write-Host "To run the app:" -ForegroundColor Yellow
-Write-Host "  $DistDir\Mentor.exe"
+
+# Step 9: Create ZIP archive
+$ZipName = "Mentor-Windows-$Arch.zip"
+$ZipPath = Join-Path $DistRootDir $ZipName
+
+Write-Host "Step 7: Creating ZIP archive..." -ForegroundColor Green
+
+# Remove old ZIP if exists
+if (Test-Path $ZipPath) {
+    Remove-Item $ZipPath -Force
+}
+
+Compress-Archive -Path $DistDir -DestinationPath $ZipPath -CompressionLevel Optimal
+Write-Host "✅ ZIP archive created: $ZipPath" -ForegroundColor Green
 Write-Host ""
 
-# Optionally create a ZIP file
-$CreateZip = Read-Host "Create ZIP archive? (y/n)"
-if ($CreateZip -eq 'y' -or $CreateZip -eq 'Y') {
-    $ZipName = "Mentor-Windows-$Arch.zip"
-    $ZipPath = Join-Path $DistRootDir $ZipName
-    
-    # Remove old ZIP if exists
-    if (Test-Path $ZipPath) {
-        Remove-Item $ZipPath -Force
-    }
-    
-    Write-Host "Creating $ZipName..." -ForegroundColor Green
-    Compress-Archive -Path $DistDir -DestinationPath $ZipPath -CompressionLevel Optimal
-    Write-Host "✅ ZIP archive created: dist\$ZipName" -ForegroundColor Green
-}
+# Step 10: Show ZIP in Explorer
+Write-Host "Step 8: Opening ZIP location in Explorer..." -ForegroundColor Green
+Start-Process explorer.exe -ArgumentList "/select,`"$ZipPath`""
+Write-Host "✅ Explorer opened" -ForegroundColor Green
+Write-Host ""
+Write-Host "Distribution complete! ZIP file location:" -ForegroundColor Cyan
+Write-Host "  $ZipPath" -ForegroundColor White
+Write-Host ""
 

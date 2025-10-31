@@ -69,10 +69,31 @@ public partial class App : Application
             .ConfigureLogging((context, logging) =>
             {
                 logging.ClearProviders();
-                var logger = new LoggerConfiguration()
+                
+                // Determine log path in user's local app data
+                var logPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Mentor",
+                    "logs",
+                    "mentor.log");
+                
+                // Ensure log directory exists
+                var logDir = Path.GetDirectoryName(logPath);
+                if (!string.IsNullOrEmpty(logDir))
+                {
+                    Directory.CreateDirectory(logDir);
+                }
+                
+                var logConfig = new LoggerConfiguration()
                     .MinimumLevel.Debug()
                     .WriteTo.Console()
-                    .CreateLogger();
+                    .WriteTo.File(
+                        logPath,
+                        rollingInterval: RollingInterval.Day,
+                        retainedFileCountLimit: 7,
+                        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+                
+                var logger = logConfig.CreateLogger();
                 logging.AddSerilog(logger);
             })
             .Build();

@@ -12,7 +12,7 @@ public interface IToolFactory
     Task<IWebSearchTool> GetToolAsync(string toolName);
     Task<IArticleReader> GetArticleReaderAsync();
     ITextSummarizer CreateTextSummarizer(ILLMClient llmClient);
-    IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient);
+    IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient, int maxLinesToConvert = 1000);
 }
 
 public class ToolFactory : IToolFactory
@@ -92,13 +92,13 @@ public class ToolFactory : IToolFactory
         return new TextSummarizer(llmClient, logger);
     }
 
-    public IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient) {
+    public IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient, int maxLinesToConvert = 1000) {
         if (llmClient == null) {
             throw new ArgumentNullException(nameof(llmClient));
         }
         
         _logger.LogInformation("Creating HTML to Markdown converter tool");
         var logger = _serviceProvider.GetRequiredService<ILogger<LlmHtmlToMarkdownConverter>>();
-        return new LlmHtmlToMarkdownConverter(llmClient, logger);
+        return new LlmHtmlToMarkdownConverter(llmClient, logger, maxLinesToConvert);
     }
 }

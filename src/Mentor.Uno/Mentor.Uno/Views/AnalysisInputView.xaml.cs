@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Mentor.Core.Models;
+using Mentor.Uno.Helpers;
 
 namespace Mentor.Uno.Views;
 
@@ -256,6 +257,16 @@ public sealed partial class AnalysisInputView : UserControl
     private void OnImagePreviewTapped(object sender, TappedRoutedEventArgs e)
     {
         ImagePreviewTapped?.Invoke(sender, e);
+    }
+
+    private async void OnCopyErrorMessageClick(object sender, RoutedEventArgs e)
+    {
+        await ClipboardHelper.CopyToClipboardAsync(ErrorMessage, sender as Button);
+    }
+
+    private async void OnCopyRejectionMessageClick(object sender, RoutedEventArgs e)
+    {
+        await ClipboardHelper.CopyToClipboardAsync(RejectionMessage, sender as Button);
     }
 }
 

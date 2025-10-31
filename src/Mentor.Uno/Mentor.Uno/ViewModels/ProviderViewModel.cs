@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Mentor.Core.Data;
 
 namespace Mentor.Uno.ViewModels;
@@ -12,6 +13,8 @@ public partial class ProviderViewModel : ObservableObject
     [ObservableProperty] private string _model = string.Empty;
     [ObservableProperty] private string _baseUrl = string.Empty;
     [ObservableProperty] private int _timeout = 60;
+    [ObservableProperty] private bool _searchWeb = false;
+    [ObservableProperty] private bool _isApiKeyVisible = false;
 
     public ProviderViewModel(ProviderConfigurationEntity config)
     {
@@ -22,6 +25,7 @@ public partial class ProviderViewModel : ObservableObject
         _model = config.Model;
         _baseUrl = config.BaseUrl;
         _timeout = config.Timeout;
+        _searchWeb = config.SearchWeb;
     }
 
     public ProviderViewModel()
@@ -31,6 +35,7 @@ public partial class ProviderViewModel : ObservableObject
         _providerType = "openai";
         _baseUrl = "https://api.openai.com";
         _timeout = 60;
+        _searchWeb = false;
     }
 
     public ProviderConfigurationEntity ToConfiguration()
@@ -43,8 +48,22 @@ public partial class ProviderViewModel : ObservableObject
             ApiKey = ApiKey,
             Model = Model,
             BaseUrl = BaseUrl,
-            Timeout = Timeout
+            Timeout = Timeout,
+            SearchWeb = SearchWeb
         };
+    }
+
+    public bool IsOpenAIProvider => ProviderType?.Equals("openai", StringComparison.OrdinalIgnoreCase) ?? false;
+
+    partial void OnProviderTypeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsOpenAIProvider));
+    }
+
+    [RelayCommand]
+    private void ToggleApiKeyVisibility()
+    {
+        IsApiKeyVisible = !IsApiKeyVisible;
     }
 }
 

@@ -139,13 +139,25 @@
       <!-- Error Message -->
       <InfoBar IsOpen="{x:Bind ErrorMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
                Severity="Error"
-               Message="{x:Bind ErrorMessage, Mode=OneWay}"/>
+               Message="{x:Bind ErrorMessage, Mode=OneWay}">
+        <InfoBar.ActionButton>
+          <Button Content="Copy"
+                  Click="OnCopyErrorMessageClick"
+                  Style="{StaticResource TextBlockButtonStyle}"/>
+        </InfoBar.ActionButton>
+      </InfoBar>
       
       <!-- Rejection Message -->
       <InfoBar IsOpen="{x:Bind RejectionMessage, Mode=OneWay, Converter={StaticResource StringToBoolConverter}}"
                Severity="Warning"
                Title="Image Rejected"
-               Message="{x:Bind RejectionMessage, Mode=OneWay}"/>
+               Message="{x:Bind RejectionMessage, Mode=OneWay}">
+        <InfoBar.ActionButton>
+          <Button Content="Copy"
+                  Click="OnCopyRejectionMessageClick"
+                  Style="{StaticResource TextBlockButtonStyle}"/>
+        </InfoBar.ActionButton>
+      </InfoBar>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

@@ -43,6 +43,13 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
     {
         var path = databasePath ?? "mentor.db";
         _database = new LiteDatabase(path);
+        
+        
+        var collection = _database.GetCollection<ProviderConfigurationEntity>("providers");
+        collection.EnsureIndex(x => x.Id);
+        var toolsCollection = _database.GetCollection<ToolConfigurationEntity>("tools");
+        toolsCollection.EnsureIndex(x => x.Id);
+
     }
 
     public Task<ProviderConfigurationEntity?> GetProviderByNameAsync(string name)
@@ -95,6 +102,7 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingProvider.Model = config.Model;
             existingProvider.BaseUrl = config.BaseUrl;
             existingProvider.Timeout = config.Timeout;
+            existingProvider.SearchWeb = config.SearchWeb;
 
             collection.Update(existingProvider);
             
@@ -122,6 +130,7 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
                 Model = config.Model,
                 BaseUrl = config.BaseUrl,
                 Timeout = config.Timeout,
+                SearchWeb = config.SearchWeb,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             collection.Insert(newProvider);

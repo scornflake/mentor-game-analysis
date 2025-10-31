@@ -1,4 +1,6 @@
 using Mentor.Core.Interfaces;
+using Mentor.Core.Models;
+using Mentor.Core.Serialization;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -60,8 +62,10 @@ public class TextSummarizer : ITextSummarizer
             // Call the LLM using the same pattern as other tools
             var chatOptions = ChatOptionsFactory.CreateForSummarization();
 
+            var jsonOptions = MentorJsonSerializerContext.CreateOptions();
             var completion = await _llmClient.ChatClient.GetResponseAsync<SummaryResponse>(
                 messages,
+                jsonOptions,
                 chatOptions,
                 cancellationToken: cancellationToken);
 
@@ -88,17 +92,6 @@ public class TextSummarizer : ITextSummarizer
         }
 
         return text.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
-    }
-
-    /// <summary>
-    /// Response structure from the LLM containing the summary.
-    /// </summary>
-    private record SummaryResponse
-    {
-        /// <summary>
-        /// The summarized text.
-        /// </summary>
-        public string Summary { get; init; } = string.Empty;
     }
 }
 

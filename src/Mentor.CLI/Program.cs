@@ -485,9 +485,28 @@ public class Program
 
     private static ServiceProvider ConfigureServices()
     {
+        // Determine log path in user's local app data
+        var logPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Mentor",
+            "logs",
+            "mentor-cli.log");
+        
+        // Ensure log directory exists
+        var logDir = Path.GetDirectoryName(logPath);
+        if (!string.IsNullOrEmpty(logDir))
+        {
+            Directory.CreateDirectory(logDir);
+        }
+        
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
+            .WriteTo.File(
+                logPath,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
 
         var services = new ServiceCollection();

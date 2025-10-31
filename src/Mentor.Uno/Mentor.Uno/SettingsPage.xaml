@@ -32,6 +32,96 @@
     <ScrollViewer Grid.Row="1" Padding="20,12,20,20">
       <StackPanel Spacing="32">
 
+        <!-- Global Settings Section -->
+        <StackPanel Spacing="16">
+          <TextBlock Text="Global Settings"
+                     Style="{StaticResource SubtitleTextBlockStyle}"/>
+          <TextBlock Text="Fixed providers and tools that can only have their API keys configured."
+                     FontSize="12"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     Margin="0,0,0,8"/>
+          
+          <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Padding="16">
+            <StackPanel Spacing="16">
+              
+              <!-- Perplexity API Key -->
+              <StackPanel Spacing="8">
+                <TextBlock Text="Perplexity API Key" FontWeight="SemiBold"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <PasswordBox Grid.Column="0"
+                              Password="{x:Bind ViewModel.PerplexityApiKey, Mode=TwoWay}"
+                              Visibility="{x:Bind ViewModel.IsPerplexityApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                  <TextBox Grid.Column="0"
+                          Text="{x:Bind ViewModel.PerplexityApiKey, Mode=TwoWay}"
+                          Visibility="{x:Bind ViewModel.IsPerplexityApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                  <Button Grid.Column="1"
+                          Margin="8,0,0,0"
+                          VerticalAlignment="Center"
+                          Command="{x:Bind ViewModel.TogglePerplexityApiKeyVisibilityCommand}"
+                          Style="{StaticResource TextBlockButtonStyle}"
+                          Background="Transparent"
+                          Padding="8"
+                          MinWidth="40"
+                          MinHeight="40">
+                    <Grid>
+                      <FontIcon Glyph="&#xE890;"
+                               FontFamily="Segoe MDL2 Assets"
+                               Visibility="{x:Bind ViewModel.IsPerplexityApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                      <FontIcon Glyph="&#xE7C8;"
+                               FontFamily="Segoe MDL2 Assets"
+                               Visibility="{x:Bind ViewModel.IsPerplexityApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </Grid>
+                  </Button>
+                </Grid>
+              </StackPanel>
+
+              <!-- Brave API Key -->
+              <StackPanel Spacing="8">
+                <TextBlock Text="Brave Search API Key" FontWeight="SemiBold"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <PasswordBox Grid.Column="0"
+                              Password="{x:Bind ViewModel.BraveApiKey, Mode=TwoWay}"
+                              Visibility="{x:Bind ViewModel.IsBraveApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                  <TextBox Grid.Column="0"
+                          Text="{x:Bind ViewModel.BraveApiKey, Mode=TwoWay}"
+                          Visibility="{x:Bind ViewModel.IsBraveApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                  <Button Grid.Column="1"
+                          Margin="8,0,0,0"
+                          VerticalAlignment="Center"
+                          Command="{x:Bind ViewModel.ToggleBraveApiKeyVisibilityCommand}"
+                          Style="{StaticResource TextBlockButtonStyle}"
+                          Background="Transparent"
+                          Padding="8"
+                          MinWidth="40"
+                          MinHeight="40">
+                    <Grid>
+                      <FontIcon Glyph="&#xE890;"
+                               FontFamily="Segoe MDL2 Assets"
+                               Visibility="{x:Bind ViewModel.IsBraveApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                      <FontIcon Glyph="&#xE7C8;"
+                               FontFamily="Segoe MDL2 Assets"
+                               Visibility="{x:Bind ViewModel.IsBraveApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </Grid>
+                  </Button>
+                </Grid>
+              </StackPanel>
+
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
         <!-- LLM Providers Section -->
         <StackPanel Spacing="16">
           <Grid>
@@ -86,13 +176,51 @@
 
                       <!-- API Key and Timeout -->
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <PasswordBox Header="API Key"
-                                     Password="{x:Bind ApiKey, Mode=TwoWay}"
-                                     Width="300"/>
+                        <Grid Width="300">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                          </Grid.ColumnDefinitions>
+                          <PasswordBox Grid.Column="0"
+                                      Header="API Key"
+                                      Password="{x:Bind ApiKey, Mode=TwoWay}"
+                                      Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                          <TextBox Grid.Column="0"
+                                  Header="API Key"
+                                  Text="{x:Bind ApiKey, Mode=TwoWay}"
+                                  Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                          <Button Grid.Column="1"
+                                  Margin="8,0,0,0"
+                                  VerticalAlignment="Bottom"
+                                  Command="{x:Bind ToggleApiKeyVisibilityCommand}"
+                                  Style="{StaticResource TextBlockButtonStyle}"
+                                  Background="Transparent"
+                                  Padding="8"
+                                  MinWidth="40"
+                                  MinHeight="40">
+                            <Grid>
+                              <FontIcon Glyph="&#xE890;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                              <FontIcon Glyph="&#xE7C8;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </Grid>
+                          </Button>
+                        </Grid>
                         <TextBox Header="Timeout (seconds)"
                                  Text="{x:Bind Timeout, Mode=TwoWay}"
                                  Width="120"
                                  InputScope="Number"/>
+                      </StackPanel>
+
+                      <!-- SearchWeb Option (OpenAI only) -->
+                      <StackPanel Orientation="Horizontal" 
+                                  Spacing="12"
+                                  Visibility="{x:Bind IsOpenAIProvider, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <CheckBox Content="Perform automatic web research"
+                                  IsChecked="{x:Bind SearchWeb, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="If enabled, searches and reads articles before analysis. If disabled, LLM decides when to use search tools."/>
                       </StackPanel>
                     </StackPanel>
 
@@ -111,7 +239,7 @@
         </StackPanel>
 
         <!-- Web Search Tools Section -->
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="16" Visibility="Collapsed">
           <Grid>
             <TextBlock Text="Web Search Tools"
                        Style="{StaticResource SubtitleTextBlockStyle}"/>
@@ -153,9 +281,38 @@
 
                       <!-- API Key and Timeout -->
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <PasswordBox Header="API Key"
-                                     Password="{x:Bind ApiKey, Mode=TwoWay}"
-                                     Width="300"/>
+                        <Grid Width="300">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                          </Grid.ColumnDefinitions>
+                          <PasswordBox Grid.Column="0"
+                                      Header="API Key"
+                                      Password="{x:Bind ApiKey, Mode=TwoWay}"
+                                      Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                          <TextBox Grid.Column="0"
+                                  Header="API Key"
+                                  Text="{x:Bind ApiKey, Mode=TwoWay}"
+                                  Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                          <Button Grid.Column="1"
+                                  Margin="8,0,0,0"
+                                  VerticalAlignment="Bottom"
+                                  Command="{x:Bind ToggleApiKeyVisibilityCommand}"
+                                  Style="{StaticResource TextBlockButtonStyle}"
+                                  Background="Transparent"
+                                  Padding="8"
+                                  MinWidth="40"
+                                  MinHeight="40">
+                            <Grid>
+                              <FontIcon Glyph="&#xE890;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                              <FontIcon Glyph="&#xE7C8;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Visibility="{x:Bind IsApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </Grid>
+                          </Button>
+                        </Grid>
                         <TextBox Header="Timeout (seconds)"
                                  Text="{x:Bind Timeout, Mode=TwoWay}"
                                  Width="120"
@@ -227,6 +384,12 @@
                    FontWeight="SemiBold"
                    MaxWidth="400"
                    TextWrapping="Wrap"/>
+        <Button Content="Copy"
+                Click="OnCopyErrorMessageClick"
+                Style="{StaticResource TextBlockButtonStyle}"
+                Padding="8,4"
+                Margin="8,0,0,0"
+                VerticalAlignment="Center"/>
       </StackPanel>
     </Border>
   </Grid>

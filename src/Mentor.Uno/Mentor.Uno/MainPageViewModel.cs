@@ -390,7 +390,7 @@ public partial class MainPageViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Analysis error: {ex.Message}";
+            ErrorMessage = $"Analysis error: {ex.Message}\n{ex.StackTrace}";
             _logger.LogError("Analysis error: {ex}", ex);
         }
         finally

@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Mentor.Core.Data;
 
 namespace Mentor.Uno.ViewModels;
@@ -10,6 +11,7 @@ public partial class ToolViewModel : ObservableObject
     [ObservableProperty] private string _apiKey = string.Empty;
     [ObservableProperty] private string _baseUrl = string.Empty;
     [ObservableProperty] private int _timeout = 30;
+    [ObservableProperty] private bool _isApiKeyVisible = false;
 
     public ToolViewModel(ToolConfigurationEntity config)
     {
@@ -37,6 +39,12 @@ public partial class ToolViewModel : ObservableObject
             BaseUrl = BaseUrl,
             Timeout = Timeout
         };
+    }
+
+    [RelayCommand]
+    private void ToggleApiKeyVisibility()
+    {
+        IsApiKeyVisible = !IsApiKeyVisible;
     }
 }
 

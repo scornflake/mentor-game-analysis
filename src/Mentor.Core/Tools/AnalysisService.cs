@@ -1,5 +1,6 @@
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
+using Mentor.Core.Serialization;
 using Mentor.Core.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -28,8 +29,7 @@ public abstract class AnalysisService : IAnalysisService
             msg += $"The game being analyzed is '{request.GameName}'. ";
         }
         msg += "Analyze the provided screenshot and provide actionable recommendations. " +
-               "Backup your analysis with relevant web search results when necessary. " +
-               "Backup your recommendations using web search results. " +
+               "Do some research first, back up your findings with actual articles. Make sure the articles are reasonably recent and representative." +
                "\n\n" +
                "Your response must be structured as follows:\n" +
                "- Analysis: Provide a detailed, comprehensive analysis of the screenshot/content based on visual observation and any web search results.\n" +
@@ -81,7 +81,8 @@ public abstract class AnalysisService : IAnalysisService
 
     protected virtual async Task<Recommendation> ExecuteAndParse(List<ChatMessage> messages, ChatOptions options, IProgress<AnalysisProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        var completion = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken: cancellationToken);
+        var jsonOptions = MentorJsonSerializerContext.CreateOptions();
+        var completion = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, jsonOptions, options, cancellationToken: cancellationToken);
 
         // Parse the response
         var jsonResponse = completion.Result;
@@ -119,62 +120,5 @@ public abstract class AnalysisService : IAnalysisService
             "low" => Priority.Low,
             _ => Priority.Medium
         };
-    }
-
-    /// <summary>
-    /// Response structure from the LLM containing analysis and recommendations.
-    /// </summary>
-    private record LLMResponse
-    {
-        /// <summary>
-        /// Detailed analysis of the screenshot/content provided by the user. Should be comprehensive and based on visual observation and any web search results.
-        /// </summary>
-        public string Analysis { get; init; } = string.Empty;
-
-        /// <summary>
-        /// Brief summary of key findings and insights. Should be concise but informative.
-        /// </summary>
-        public string Summary { get; init; } = string.Empty;
-
-        /// <summary>
-        /// List of actionable recommendations based on the analysis. Each recommendation should be specific and practical.
-        /// </summary>
-        public List<LLMRecommendation> Recommendations { get; init; } = [];
-
-        /// <summary>
-        /// Confidence score indicating how certain the analysis is, ranging from 0.0 (low confidence) to 1.0 (high confidence).
-        /// </summary>
-        public double Confidence { get; init; }
-    }
-
-    /// <summary>
-    /// Individual recommendation item with priority, action, reasoning, and context.
-    /// </summary>
-    private record LLMRecommendation
-    {
-        /// <summary>
-        /// Priority level for this recommendation. Must be exactly one of: 'high', 'medium', or 'low'.
-        /// </summary>
-        public string Priority { get; init; } = string.Empty;
-
-        /// <summary>
-        /// Specific actionable step or item that the user should take. Should be clear and concrete.
-        /// </summary>
-        public string Action { get; init; } = string.Empty;
-
-        /// <summary>
-        /// Explanation of why this recommendation is relevant and important. Should justify the priority level.
-        /// </summary>
-        public string Reasoning { get; init; } = string.Empty;
-
-        /// <summary>
-        /// Relevant context from the screenshot or analysis that supports this recommendation. Include specific details observed.
-        /// </summary>
-        public string Context { get; init; } = string.Empty;
-
-        /// <summary>
-        /// URL from web search results that supports this recommendation, if applicable. Use empty string if no reference link is available.
-        /// </summary>
-        public string ReferenceLink { get; init; } = string.Empty;
     }
 }

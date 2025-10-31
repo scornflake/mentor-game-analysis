@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Mentor.Core.Data;
 using Mentor.Core.Models;
+using Mentor.Core.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -151,7 +152,8 @@ public class BraveWebSearch : IWebSearchTool
         var responseContent = await response.Content.ReadAsStringAsync();
         try
         {
-            var searchResponse = JsonSerializer.Deserialize<BraveSearchResponse>(responseContent);
+            var jsonOptions = MentorJsonSerializerContext.CreateOptions();
+            var searchResponse = JsonSerializer.Deserialize<BraveSearchResponse>(responseContent, jsonOptions);
             return searchResponse;
         }
         catch (JsonException ex)
@@ -251,17 +253,5 @@ public class BraveWebSearch : IWebSearchTool
         }
 
         return sb.ToString().TrimEnd();
-    }
-
-    private class BraveSearchResponse
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("web")]
-        public WebResults? Web { get; set; }
-    }
-
-    private class WebResults
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("results")]
-        public List<SearchResult> Results { get; set; } = new();
     }
 }

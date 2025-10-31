@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Mentor.Uno.Helpers;
 
 namespace Mentor.Uno;
 
@@ -33,6 +34,11 @@ public sealed partial class SettingsPage : Page
         {
             Frame.GoBack();
         }
+    }
+
+    private async void OnCopyErrorMessageClick(object sender, RoutedEventArgs e)
+    {
+        await ClipboardHelper.CopyToClipboardAsync(ViewModel.ErrorMessage, sender as Button);
     }
 }
 

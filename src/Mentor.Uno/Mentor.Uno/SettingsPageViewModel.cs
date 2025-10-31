@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.Messaging;
 using Mentor.Core.Interfaces;
+using Mentor.Core.Tools;
 using Mentor.Uno.Messages;
 using Mentor.Uno.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -21,6 +23,11 @@ public partial class SettingsPageViewModel : ObservableObject
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _isErrorVisible;
 
+    [ObservableProperty] private string _perplexityApiKey = string.Empty;
+    [ObservableProperty] private bool _isPerplexityApiKeyVisible = false;
+    [ObservableProperty] private string _braveApiKey = string.Empty;
+    [ObservableProperty] private bool _isBraveApiKeyVisible = false;
+
     public ObservableCollection<ProviderViewModel> Providers { get; } = new();
     public ObservableCollection<ToolViewModel> Tools { get; } = new();
     public ObservableCollection<string> AvailableProviderTypes { get; } = new();
@@ -40,6 +47,7 @@ public partial class SettingsPageViewModel : ObservableObject
         await LoadAvailableProviderTypesAsync();
         await LoadProvidersAsync();
         await LoadToolsAsync();
+        await LoadGlobalSettingsAsync();
     }
 
     private async Task LoadAvailableProviderTypesAsync()
@@ -60,6 +68,12 @@ public partial class SettingsPageViewModel : ObservableObject
         Providers.Clear();
         foreach (var provider in providers)
         {
+            // Filter out fixed providers (Perplexity)
+            if (provider.ProviderType.ToLower() == KnownProviderTools.Perplexity.ToLower())
+            {
+                continue;
+            }
+
             var providerVm = new ProviderViewModel(provider);
             
             // Subscribe to property changes for auto-save
@@ -83,6 +97,12 @@ public partial class SettingsPageViewModel : ObservableObject
         Tools.Clear();
         foreach (var tool in tools)
         {
+            // Filter out fixed tools (Brave)
+            if (tool.ToolName.ToLower() == KnownSearchTools.Brave.ToLower())
+            {
+                continue;
+            }
+
             var toolVm = new ToolViewModel(tool);
             
             // Subscribe to property changes for auto-save
@@ -106,6 +126,167 @@ public partial class SettingsPageViewModel : ObservableObject
     private void NotifyToolsChanged()
     {
         _queueAtCreationTime.TryEnqueue(() => { _messenger.Send(new ToolsChangedMessage()); });
+    }
+
+    private async Task LoadGlobalSettingsAsync()
+    {
+        try
+        {
+            // Load Perplexity provider API key
+            var perplexityProvider = await _configurationRepository.GetProviderByNameAsync("Perplexity");
+            if (perplexityProvider != null)
+            {
+                PerplexityApiKey = perplexityProvider.ApiKey;
+            }
+            else
+            {
+                // Try to find by provider type
+                var providers = await _configurationRepository.GetAllProvidersAsync();
+                var perplexity = providers.FirstOrDefault(p => p.ProviderType.ToLower() == KnownProviderTools.Perplexity.ToLower());
+                if (perplexity != null)
+                {
+                    PerplexityApiKey = perplexity.ApiKey;
+                }
+            }
+
+            // Load Brave tool API key
+            var braveTool = await _configurationRepository.GetToolByNameAsync(KnownSearchTools.Brave);
+            if (braveTool != null)
+            {
+                BraveApiKey = braveTool.ApiKey;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading global settings: {ErrorMessage}", ex.Message);
+        }
+    }
+
+    partial void OnPerplexityApiKeyChanged(string value)
+    {
+        if (!string.IsNullOrEmpty(value) || !string.IsNullOrEmpty(_perplexityApiKey))
+        {
+            DebounceAndSavePerplexityApiKey();
+        }
+    }
+
+    partial void OnBraveApiKeyChanged(string value)
+    {
+        if (!string.IsNullOrEmpty(value) || !string.IsNullOrEmpty(_braveApiKey))
+        {
+            DebounceAndSaveBraveApiKey();
+        }
+    }
+
+    [RelayCommand]
+    private void TogglePerplexityApiKeyVisibility()
+    {
+        IsPerplexityApiKeyVisible = !IsPerplexityApiKeyVisible;
+    }
+
+    [RelayCommand]
+    private void ToggleBraveApiKeyVisibility()
+    {
+        IsBraveApiKeyVisible = !IsBraveApiKeyVisible;
+    }
+
+    private void DebounceAndSavePerplexityApiKey()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await SavePerplexityApiKeyAsync();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when debouncing
+            }
+        }, token);
+    }
+
+    private void DebounceAndSaveBraveApiKey()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await SaveBraveApiKeyAsync();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when debouncing
+            }
+        }, token);
+    }
+
+    private async Task SavePerplexityApiKeyAsync()
+    {
+        try
+        {
+            // Find Perplexity provider
+            var providers = await _configurationRepository.GetAllProvidersAsync();
+            var perplexityProvider = providers.FirstOrDefault(p => p.ProviderType.ToLower() == KnownProviderTools.Perplexity.ToLower());
+
+            if (perplexityProvider != null)
+            {
+                perplexityProvider.ApiKey = PerplexityApiKey;
+                await _configurationRepository.SaveProviderAsync(perplexityProvider);
+                NotifyProvidersChanged();
+                await ShowSaveCompleteAsync();
+            }
+            else
+            {
+                _logger.LogWarning("Perplexity provider not found when saving API key");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving Perplexity API key: {ErrorMessage}", ex.Message);
+            await ShowErrorAsync($"Failed to save Perplexity API key: {ex.Message}");
+        }
+    }
+
+    private async Task SaveBraveApiKeyAsync()
+    {
+        try
+        {
+            // Find Brave tool
+            var braveTool = await _configurationRepository.GetToolByNameAsync(KnownSearchTools.Brave);
+
+            if (braveTool != null)
+            {
+                braveTool.ApiKey = BraveApiKey;
+                await _configurationRepository.SaveToolAsync(braveTool);
+                NotifyToolsChanged();
+                await ShowSaveCompleteAsync();
+            }
+            else
+            {
+                _logger.LogWarning("Brave tool not found when saving API key");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving Brave API key: {ErrorMessage}", ex.Message);
+            await ShowErrorAsync($"Failed to save Brave API key: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -246,14 +427,18 @@ public partial class SettingsPageViewModel : ObservableObject
             var config = provider.ToConfiguration();
             var savedEntity = await _configurationRepository.SaveProviderAsync(config);
             
-            // Update the ViewModel with the saved entity (especially the ID)
-            provider.Id = savedEntity.Id;
-            provider.Name = savedEntity.Name;
-            provider.ProviderType = savedEntity.ProviderType;
-            provider.ApiKey = savedEntity.ApiKey;
-            provider.Model = savedEntity.Model;
-            provider.BaseUrl = savedEntity.BaseUrl;
-            provider.Timeout = savedEntity.Timeout;
+            // Update the ViewModel with the saved entity (especially the ID) - must run on UI thread
+            _queueAtCreationTime.TryEnqueue(() =>
+            {
+                provider.Id = savedEntity.Id;
+                provider.Name = savedEntity.Name;
+                provider.ProviderType = savedEntity.ProviderType;
+                provider.ApiKey = savedEntity.ApiKey;
+                provider.Model = savedEntity.Model;
+                provider.BaseUrl = savedEntity.BaseUrl;
+                provider.Timeout = savedEntity.Timeout;
+                provider.SearchWeb = savedEntity.SearchWeb;
+            });
             
             NotifyProvidersChanged();
             
@@ -273,12 +458,15 @@ public partial class SettingsPageViewModel : ObservableObject
             var config = tool.ToConfiguration();
             var savedEntity = await _configurationRepository.SaveToolAsync(config);
             
-            // Update the ViewModel with the saved entity (especially the ID)
-            tool.Id = savedEntity.Id;
-            tool.ToolName = savedEntity.ToolName;
-            tool.ApiKey = savedEntity.ApiKey;
-            tool.BaseUrl = savedEntity.BaseUrl;
-            tool.Timeout = savedEntity.Timeout;
+            // Update the ViewModel with the saved entity (especially the ID) - must run on UI thread
+            _queueAtCreationTime.TryEnqueue(() =>
+            {
+                tool.Id = savedEntity.Id;
+                tool.ToolName = savedEntity.ToolName;
+                tool.ApiKey = savedEntity.ApiKey;
+                tool.BaseUrl = savedEntity.BaseUrl;
+                tool.Timeout = savedEntity.Timeout;
+            });
             
             NotifyToolsChanged();
             
