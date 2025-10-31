@@ -510,7 +510,8 @@ public partial class SettingsPageViewModel : ObservableObject
                 provider.Model = savedEntity.Model;
                 provider.BaseUrl = savedEntity.BaseUrl;
                 provider.Timeout = savedEntity.Timeout;
-                provider.SearchWeb = savedEntity.SearchWeb;
+                provider.RetrievalAugmentedGeneration = savedEntity.RetrievalAugmentedGeneration;
+                provider.ServerHasMcpSearch = savedEntity.ServerHasMcpSearch;
             });
             
             NotifyProvidersChanged();

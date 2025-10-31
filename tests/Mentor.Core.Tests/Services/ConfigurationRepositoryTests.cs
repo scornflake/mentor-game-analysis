@@ -437,6 +437,57 @@ public class ConfigurationRepositoryTests : IDisposable
         Assert.Equal(2, providerTypes.Count);
     }
 
+    [Fact]
+    public async Task SaveProviderAsync_WithRAGAndMcpSearchProperties_SavesAndRetrievesCorrectly()
+    {
+        // Arrange
+        var config = new ProviderConfigurationEntity
+        {
+            Name = "TestProvider",
+            ProviderType = "openai",
+            ApiKey = "test-key",
+            Model = "gpt-4o",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 60,
+            RetrievalAugmentedGeneration = true,
+            ServerHasMcpSearch = true
+        };
+
+        // Act
+        await _repository.SaveProviderAsync(config);
+        var savedProvider = await _repository.GetProviderByNameAsync("TestProvider");
+
+        // Assert
+        Assert.NotNull(savedProvider);
+        Assert.True(savedProvider.RetrievalAugmentedGeneration);
+        Assert.True(savedProvider.ServerHasMcpSearch);
+    }
+
+    [Fact]
+    public async Task SaveProviderAsync_WithRAGAndMcpSearchDefaultValues_SavesCorrectly()
+    {
+        // Arrange
+        var config = new ProviderConfigurationEntity
+        {
+            Name = "DefaultProvider",
+            ProviderType = "openai",
+            ApiKey = "test-key",
+            Model = "gpt-4o",
+            BaseUrl = "https://api.openai.com/v1",
+            Timeout = 60
+            // RetrievalAugmentedGeneration and ServerHasMcpSearch will use defaults (false)
+        };
+
+        // Act
+        await _repository.SaveProviderAsync(config);
+        var savedProvider = await _repository.GetProviderByNameAsync("DefaultProvider");
+
+        // Assert
+        Assert.NotNull(savedProvider);
+        Assert.False(savedProvider.RetrievalAugmentedGeneration);
+        Assert.False(savedProvider.ServerHasMcpSearch);
+    }
+
     public void Dispose()
     {
         _repository?.Dispose();

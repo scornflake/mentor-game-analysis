@@ -1,4 +1,5 @@
 using Mentor.Core.Models;
+using Microsoft.Extensions.AI;
 
 namespace Mentor.Core.Tools;
 
@@ -10,6 +11,7 @@ public interface IAnalysisService
     Task<Recommendation> AnalyzeAsync(
         AnalysisRequest request,
         IProgress<AnalysisProgress>? progress = null,
+        IProgress<AIContent>? aiProgress = null,
         CancellationToken cancellationToken = default
     );
 }

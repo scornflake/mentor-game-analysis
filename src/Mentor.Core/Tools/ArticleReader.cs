@@ -15,7 +15,7 @@ public class ArticleReader : IArticleReader
     private ToolConfigurationEntity _config = new ToolConfigurationEntity();
 
     public ArticleReader(
-        IHttpClientFactory httpClientFactory, 
+        IHttpClientFactory httpClientFactory,
         ILogger<ArticleReader> logger)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
@@ -36,47 +36,34 @@ public class ArticleReader : IArticleReader
 
         _logger.LogInformation("Fetching article content from URL: {Url}", url);
 
-        try
-        {
-            // Fetch HTML content
-            var htmlContent = await FetchHtmlContentAsync(url, cancellationToken);
-            
-            if (string.IsNullOrWhiteSpace(htmlContent))
-            {
-                _logger.LogWarning("No content retrieved from URL: {Url}", url);
-                return "Unable to retrieve article content from the provided URL.";
-            }
+        // Fetch HTML content
+        var htmlContent = await FetchHtmlContentAsync(url, cancellationToken);
 
-            // Parse HTML and extract main content
-            var mainContent = await ExtractMainContentAsync(htmlContent, cancellationToken);
-            
-            if (string.IsNullOrWhiteSpace(mainContent))
-            {
-                _logger.LogWarning("No main content extracted from URL: {Url}", url);
-                return "Unable to extract main content from the article.";
-            }
+        if (string.IsNullOrWhiteSpace(htmlContent))
+        {
+            _logger.LogWarning("No content retrieved from URL: {Url}", url);
+            return "Unable to retrieve article content from the provided URL.";
+        }
 
-            _logger.LogInformation("Successfully extracted article content from URL: {Url}", url);
-            
-            return mainContent;
-        }
-        catch (HttpRequestException ex)
+        // Parse HTML and extract main content
+        var mainContent = await ExtractMainContentAsync(htmlContent, cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(mainContent))
         {
-            _logger.LogError(ex, "HTTP error while fetching article from URL: {Url}", url);
-            return $"Error fetching article: {ex.Message}";
+            _logger.LogWarning("No main content extracted from URL: {Url}", url);
+            return "Unable to extract main content from the article.";
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while processing article from URL: {Url}", url);
-            return $"Error processing article: {ex.Message}";
-        }
+
+        _logger.LogInformation("Successfully extracted article content from URL: {Url}", url);
+
+        return mainContent;
     }
 
     private async Task<string> FetchHtmlContentAsync(string url, CancellationToken cancellationToken)
     {
         var httpClient = _httpClientFactory.CreateClient();
         httpClient.Timeout = TimeSpan.FromSeconds(_config.Timeout);
-        
+
         // Set a user agent to avoid being blocked
         httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
@@ -96,9 +83,9 @@ public class ArticleReader : IArticleReader
         RemoveUnwantedElements(document);
 
         // Try to find main content using semantic HTML5 elements first
-        var mainContent = document.QuerySelector("article") 
-                         ?? document.QuerySelector("main")
-                         ?? document.QuerySelector("[role='main']");
+        var mainContent = document.QuerySelector("article")
+                          ?? document.QuerySelector("main")
+                          ?? document.QuerySelector("[role='main']");
 
         if (mainContent != null)
         {
@@ -135,7 +122,7 @@ public class ArticleReader : IArticleReader
             // Remove common non-content elements
             body.QuerySelectorAll("nav, header, footer, aside, .sidebar, .navigation, .menu, .footer, .header").ToList()
                 .ForEach(el => el.Remove());
-            
+
             return body.InnerHtml;
         }
 
@@ -158,6 +145,4 @@ public class ArticleReader : IArticleReader
             element.Remove();
         }
     }
-
 }
-

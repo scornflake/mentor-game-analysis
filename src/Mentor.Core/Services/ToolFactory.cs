@@ -11,8 +11,9 @@ public interface IToolFactory
 {
     Task<IWebSearchTool> GetToolAsync(string toolName);
     Task<IArticleReader> GetArticleReaderAsync();
+    Task<IResearchTool> GetResearchToolAsync(string toolName, string webSearchToolName, ILLMClient llmClient);
     ITextSummarizer CreateTextSummarizer(ILLMClient llmClient);
-    IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient, int maxLinesToConvert = 1000);
+    IHtmlToMarkdownConverter CreateLLMHtmlToMarkdownConverter(ILLMClient llmClient, int maxLinesToConvert = 1000);
 }
 
 public class ToolFactory : IToolFactory
@@ -107,7 +108,14 @@ public class ToolFactory : IToolFactory
         return new TextSummarizer(llmClient, logger);
     }
 
-    public IHtmlToMarkdownConverter CreateHtmlToMarkdownConverter(ILLMClient llmClient, int maxLinesToConvert = 1000) {
+    public IHtmlToMarkdownConverter CreateSimpleHtmlToMarkdownConverter(int maxLinesToConvert = 1000)
+    {
+        _logger.LogInformation("Creating simple HTML to Markdown converter tool");
+        var extractor = _serviceProvider.GetRequiredService<IHtmlTextExtractor>();
+        return new SimpleHtmlToMarkdownConverter(extractor);
+    }
+
+    public IHtmlToMarkdownConverter CreateLLMHtmlToMarkdownConverter(ILLMClient llmClient, int maxLinesToConvert = 1000) {
         if (llmClient == null) {
             throw new ArgumentNullException(nameof(llmClient));
         }
@@ -115,5 +123,49 @@ public class ToolFactory : IToolFactory
         _logger.LogInformation("Creating HTML to Markdown converter tool");
         var logger = _serviceProvider.GetRequiredService<ILogger<LlmHtmlToMarkdownConverter>>();
         return new LlmHtmlToMarkdownConverter(llmClient, logger, maxLinesToConvert);
+    }
+
+    public async Task<IResearchTool> GetResearchToolAsync(string toolName, string webSearchToolName, ILLMClient llmClient)
+    {
+        if (llmClient == null)
+        {
+            throw new ArgumentNullException(nameof(llmClient));
+        }
+
+        _logger.LogInformation("Creating research tool of type '{ToolName}' with web search tool '{WebSearchToolName}'", toolName, webSearchToolName);
+
+        if (toolName.ToLower() == KnownTools.BasicResearch.ToLower())
+        {
+            // Get dependencies for BasicResearchTool
+            var webSearchTool = await GetToolAsync(webSearchToolName);
+            var articleReader = await GetArticleReaderAsync();
+            
+            // Create HTML to markdown converter with provided LLMClient
+            var logger = _serviceProvider.GetRequiredService<ILogger<BasicResearchTool>>();
+            // var htmlToMarkdownConverter = CreateLLMHtmlToMarkdownConverter(llmClient);
+            var htmlToMarkdownConverter = CreateSimpleHtmlToMarkdownConverter();
+
+            var researchTool = new BasicResearchTool(webSearchTool, articleReader, htmlToMarkdownConverter, logger);
+
+            // Get configuration if available
+            var config = await _configurationRepository.GetToolByNameAsync(toolName);
+            if (config == null)
+            {
+                _logger.LogInformation("No research tool configuration found, using default settings");
+                config = new ToolConfigurationEntity
+                {
+                    ToolName = KnownTools.BasicResearch,
+                    Timeout = 300, // 5 minutes for research
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+            }
+
+            researchTool.Configure(config);
+            return researchTool;
+        }
+        else
+        {
+            throw new NotSupportedException($"Research tool type '{toolName}' is not supported.");
+        }
     }
 }

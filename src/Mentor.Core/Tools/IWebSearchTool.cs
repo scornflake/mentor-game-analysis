@@ -5,12 +5,10 @@ namespace Mentor.Core.Tools;
 
 public interface IWebSearchTool
 {
-    Task<string> Search(SearchContext context, SearchOutputFormat format, int maxResults = 5);
-    Task<IList<SearchResult>> SearchStructured(SearchContext context, int maxResults = 5);
+    Task<List<SearchResult>> Search(SearchContext context, int maxResults = 8);
+    Task<IList<SearchResult>> SearchStructured(SearchContext context, int maxResults = 8);
 
     void Configure(ToolConfigurationEntity configuration);
-    
-    IReadOnlySet<SearchOutputFormat> SupportedModes { get; }
 }
 
 public class KnownSearchTools
@@ -28,6 +26,7 @@ public class KnownTools
 {
     public const string ArticleReader = "article-reader";
     public const string TextSummarizer = "text-summarizer";
+    public const string BasicResearch = "basic-research";
 }
 
 public record ResultStructure (string Title, string Url, string Snippet);

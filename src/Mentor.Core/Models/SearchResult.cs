@@ -12,8 +12,8 @@ public class SearchResult
     [JsonPropertyName("url")]
     public string Url { get; set; } = string.Empty;
         
-    [JsonPropertyName("description")]
-    public string Description { get; set; } = string.Empty;
+    [JsonPropertyName("content")]
+    public string Content { get; set; } = string.Empty;
     
     [JsonPropertyName("score")]
     public double? Score { get; set; }

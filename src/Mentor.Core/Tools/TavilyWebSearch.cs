@@ -16,13 +16,6 @@ public class TavilyWebSearch : IWebSearchTool
     private ToolConfigurationEntity _config = new ToolConfigurationEntity();
     private static readonly ConcurrentDictionary<string, RateLimiter> _rateLimiters = new();
     private RateLimiter? _rateLimiter;
-    
-    public IReadOnlySet<SearchOutputFormat> SupportedModes { get; } = new HashSet<SearchOutputFormat>
-    {
-        SearchOutputFormat.Snippets,
-        SearchOutputFormat.Summary,
-        SearchOutputFormat.Structured
-    };
 
     public TavilyWebSearch(IHttpClientFactory httpClientFactory, ILogger<TavilyWebSearch> logger)
     {
@@ -92,7 +85,7 @@ public class TavilyWebSearch : IWebSearchTool
             {
                 Title = r.Title,
                 Url = r.Url,
-                Description = r.Content,
+                Content = r.Content,
                 Score = r.Score
             })
             .ToList();
@@ -193,13 +186,8 @@ public class TavilyWebSearch : IWebSearchTool
         }
     }
 
-    public async Task<string> Search(SearchContext context, SearchOutputFormat format, int maxResults = 5)
+    public async Task<List<SearchResult>> Search(SearchContext context, int maxResults = 5)
     {
-        if (format == SearchOutputFormat.Structured)
-        {
-            throw new NotSupportedException("Use the 'SearchStructured' method call to return structured results.");
-        }
-
         if (context == null)
         {
             throw new ArgumentNullException(nameof(context));
@@ -211,20 +199,16 @@ public class TavilyWebSearch : IWebSearchTool
         }
 
         var query = FormQuery(context);
-        _logger.LogInformation("Searching for {query} using format: {format}", query, format);
+        _logger.LogInformation("Searching for {query}", query);
 
         ValidateQuery(query);
 
-        // For Summary format, use Tavily's answer feature
-        var includeAnswer = format == SearchOutputFormat.Summary;
-        var searchDepth = format == SearchOutputFormat.Summary ? "advanced" : "basic";
-
-        var responseContent = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth, includeAnswer);
+        var responseContent = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth: "basic", includeAnswer: false);
         var results = responseContent?.Results;
         
         if (results == null || results.Count == 0)
         {
-            return "No results found for the given query.";
+            return new List<SearchResult>();
         }
 
         var searchResults = results.Take(maxResults)
@@ -232,19 +216,14 @@ public class TavilyWebSearch : IWebSearchTool
             {
                 Title = r.Title,
                 Url = r.Url,
-                Description = r.Content,
+                Content = r.Content,
                 Score = r.Score
             })
             .ToList();
             
         LogResults(query, searchResults);
 
-        return format switch
-        {
-            SearchOutputFormat.Snippets => FormatAsSnippets(searchResults),
-            SearchOutputFormat.Summary => FormatAsSummary(query, searchResults, responseContent?.Answer),
-            _ => throw new ArgumentException($"Unknown format: {format}", nameof(format))
-        };
+        return searchResults;
     }
 
     private void LogResults(string query, List<SearchResult> results)
@@ -254,56 +233,12 @@ public class TavilyWebSearch : IWebSearchTool
         {
             _logger.LogInformation("Title: {Title}", result.Title);
             _logger.LogInformation("URL: {Url}", result.Url);
-            _logger.LogInformation("Description: {Description}", result.Description);
+            _logger.LogInformation("Description: {Description}", result.Content);
             if (result.Score.HasValue)
             {
                 _logger.LogInformation("Score: {Score}", result.Score.Value);
             }
         }
-    }
-
-    private static string FormatAsSnippets(List<SearchResult> results)
-    {
-        var sb = new StringBuilder();
-        foreach (var result in results)
-        {
-            if (!string.IsNullOrWhiteSpace(result.Description))
-            {
-                sb.AppendLine(result.Description);
-            }
-        }
-
-        return sb.ToString().TrimEnd();
-    }
-
-    private static string FormatAsSummary(string query, List<SearchResult> results, string? tavilyAnswer)
-    {
-        var sb = new StringBuilder();
-        
-        // If Tavily provided an answer, use it as the primary summary
-        if (!string.IsNullOrWhiteSpace(tavilyAnswer))
-        {
-            sb.AppendLine(tavilyAnswer);
-            sb.AppendLine();
-        }
-        
-        sb.AppendLine($"Search results for '{query}':");
-        sb.AppendLine();
-        sb.AppendLine($"Found {results.Count} result(s):");
-
-        foreach (var result in results)
-        {
-            if (!string.IsNullOrWhiteSpace(result.Description))
-            {
-                // Take first 550 characters
-                var snippet = result.Description.Length > 550
-                    ? result.Description[..550] + "..."
-                    : result.Description;
-                sb.AppendLine($"- {snippet}");
-            }
-        }
-
-        return sb.ToString().TrimEnd();
     }
 }
 

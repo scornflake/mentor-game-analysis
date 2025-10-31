@@ -27,7 +27,6 @@ public partial class App : Application
     public App()
     {
         this.InitializeComponent();
-
     }
 
     private IHost BuildHost()
@@ -52,6 +51,8 @@ public partial class App : Application
                 services.AddSingleton<WindowStateHelper>();
                 services.AddSingleton<IToolFactory, ToolFactory>();
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
+                services.AddSingleton<IHtmlTextExtractor, HtmlTextExtractor>();
+                services.AddSingleton<SearchResultFormatter>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
                 services.AddKeyedTransient<IWebSearchTool, TavilyWebSearch>(KnownSearchTools.Tavily);
                 services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);
@@ -70,21 +71,21 @@ public partial class App : Application
             .ConfigureLogging((context, logging) =>
             {
                 logging.ClearProviders();
-                
+
                 // Determine log path in user's local app data
                 var logPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Mentor",
                     "logs",
                     "mentor.log");
-                
+
                 // Ensure log directory exists
                 var logDir = Path.GetDirectoryName(logPath);
                 if (!string.IsNullOrEmpty(logDir))
                 {
                     Directory.CreateDirectory(logDir);
                 }
-                
+
                 var logConfig = new LoggerConfiguration()
                     .MinimumLevel.Debug()
                     .WriteTo.Console()
@@ -93,7 +94,7 @@ public partial class App : Application
                         rollingInterval: RollingInterval.Day,
                         retainedFileCountLimit: 7,
                         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
-                
+
                 var logger = logConfig.CreateLogger();
                 logging.AddSerilog(logger);
             })
@@ -103,7 +104,7 @@ public partial class App : Application
     public static T GetService<T>() where T : class
     {
         return ((App)Current)._host?.Services.GetRequiredService<T>()
-            ?? throw new InvalidOperationException("Service not found");
+               ?? throw new InvalidOperationException("Service not found");
     }
 
     public Window? MainWindow { get; private set; }
@@ -202,7 +203,7 @@ public partial class App : Application
 
         // Set the window icon for Windows
         MainWindow.SetWindowIcon();
-        
+
         // Ensure the current window is active
         MainWindow.Activate();
 

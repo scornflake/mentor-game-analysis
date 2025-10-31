@@ -48,7 +48,7 @@ public class WebsearchIntegrationTest
     }
 
     [ConditionalFact("BRAVE_SEARCH_API_KEY")]
-    public async Task DoWebSearch_Snippets()
+    public async Task DoWebSearch()
     {
         // Skip if no config
         if (_config == null)
@@ -63,30 +63,10 @@ public class WebsearchIntegrationTest
         var websearch = _serviceProvider.GetRequiredService<IWebSearchTool>();
         websearch.Configure(_config);
         
-        var results = await websearch.Search(SearchContext.Create("What is the capital of France?"), SearchOutputFormat.Snippets);
-        _logger.LogInformation("Web search results: {Results}", results);
+        var results = await websearch.Search(SearchContext.Create("What is the capital of France?"));
+        _logger.LogInformation("Web search results count: {Count}", results.Count);
         Assert.NotNull(results);
-    }
-    
-    [ConditionalFact("BRAVE_SEARCH_API_KEY")]
-    public async Task DoWebSearch_Summary()
-    {
-        // Skip if no config
-        if (_config == null)
-        {
-            _logger.LogWarning("Skipping test - no API key configured");
-            return;
-        }
-
-        _logger.LogInformation("Brave Search Config: ApiKey={ApiKey}, BaseUrl={BaseUrl}, Timeout={Timeout}", 
-            _config.ApiKey, _config.BaseUrl, _config.Timeout);
-        
-        var websearch = _serviceProvider.GetRequiredService<IWebSearchTool>();
-        websearch.Configure(_config);
-        
-        var results = await websearch.Search(SearchContext.Create("What is the capital of France?"), SearchOutputFormat.Summary);
-        _logger.LogInformation("Web search results: {Results}", results);
-        Assert.NotNull(results);
+        Assert.NotEmpty(results);
     }
 
     [ConditionalFact("BRAVE_SEARCH_API_KEY")]
@@ -109,6 +89,6 @@ public class WebsearchIntegrationTest
         _logger.LogInformation("Web search results: {Results}", results);
         Assert.NotNull(results);
         Assert.Single(results);
-        Assert.Contains("Wellington", results[0].Description);
+        Assert.Contains("Wellington", results[0].Content);
     }
 }

@@ -9,6 +9,8 @@ using Mentor.Core.Models;
 using Mentor.Core.Tools;
 using Mentor.Uno.Messages;
 using Mentor.Uno.Services;
+using Mentor.Uno.ViewModels;
+using Microsoft.Extensions.AI;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage.Streams;
 
@@ -136,7 +138,15 @@ public partial class MainPageViewModel : ObservableObject
     
     [ObservableProperty] private AnalysisProgress? _analysisProgress;
     
+    [ObservableProperty]
+    private StreamingFeedbackViewModel? _streamingFeedback;
+    
     public ObservableCollection<AnalysisJob> Jobs { get; } = new();
+    
+    /// <summary>
+    /// True when we should show the empty state (no result and not analyzing)
+    /// </summary>
+    public bool ShowEmptyState => Result == null && !IsAnalyzing;
     
     private bool _systemIsLoaded = false;
 
@@ -301,6 +311,7 @@ public partial class MainPageViewModel : ObservableObject
         ErrorMessage = null;
         Result = null;
         AnalysisProgress = null;
+        StreamingFeedback = new StreamingFeedbackViewModel();
         StartAnalysisMessageCycle();
 
         // Capture the UI dispatcher if not already captured
@@ -328,6 +339,15 @@ public partial class MainPageViewModel : ObservableObject
                 
                 _logger.LogInformation("AnalysisProgress updated, Jobs in ViewModel: {JobCount}, ObservableCollection: {ObsCount}, Jobs Detail: {JobsDetail}", 
                     AnalysisProgress?.Jobs?.Count ?? 0, Jobs.Count, perJobCounts);
+            });
+        });
+
+        // Create AI progress reporter for streaming feedback
+        var aiProgressReporter = new Progress<AIContent>(content =>
+        {
+            _dispatcherQueue?.TryEnqueue(() =>
+            {
+                StreamingFeedback?.HandleAIContent(content);
             });
         });
 
@@ -381,7 +401,7 @@ public partial class MainPageViewModel : ObservableObject
             };
 
             // Perform analysis
-            Result = await analysisService.AnalyzeAsync(request, progressReporter, _analysisCancellationTokenSource.Token);
+            Result = await analysisService.AnalyzeAsync(request, progressReporter, aiProgressReporter, _analysisCancellationTokenSource.Token);
         }
         catch (OperationCanceledException)
         {
@@ -398,6 +418,7 @@ public partial class MainPageViewModel : ObservableObject
             StopAnalysisMessageCycle();
             IsAnalyzing = false;
             AnalysisProgress = null;
+            StreamingFeedback = null;
             Jobs.Clear();
             _analysisCancellationTokenSource?.Dispose();
             _analysisCancellationTokenSource = null;
@@ -697,6 +718,12 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnIsAnalyzingChanged(bool value)
     {
         AnalyzeCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(ShowEmptyState));
+    }
+    
+    partial void OnResultChanged(Recommendation? value)
+    {
+        OnPropertyChanged(nameof(ShowEmptyState));
     }
     
     partial void OnPromptChanged(string value)

@@ -67,13 +67,13 @@ public class LlmHtmlToMarkdownConverterTests
     public async Task Convert_VeryShortHtml_UsesFallback()
     {
         // Arrange
-        var reverseLogger = _serviceProvider.GetRequiredService<ILogger<ReverseMarkdownConverter>>();
-        var converter = new ReverseMarkdownConverter(reverseLogger);
+        var reverseLogger = _serviceProvider.GetRequiredService<ILogger<HtmlTextExtractor>>();
+        var converter = new HtmlTextExtractor(reverseLogger);
 
         var shortHtml = "<p>Short</p>";
 
         // Act
-        var result = await converter.ConvertAsync(shortHtml);
+        var result = await converter.ExtractTextAsync(shortHtml);
 
         // Assert
         Assert.NotNull(result);
@@ -182,8 +182,8 @@ public class LlmHtmlToMarkdownConverterTests
         _logger.LogInformation("=== Starting Real LLM Test: Convert_HtmlWithNoiseRemoval_ProducesCleanerOutput ===");
 
         var llmClient = CreateLLMClient();
-        var reverseLogger = _serviceProvider.GetRequiredService<ILogger<ReverseMarkdownConverter>>();
-        var fallback = new ReverseMarkdownConverter(reverseLogger);
+        var reverseLogger = _serviceProvider.GetRequiredService<ILogger<HtmlTextExtractor>>();
+        var fallback = new HtmlTextExtractor(reverseLogger);
         var llmLogger = _serviceProvider.GetRequiredService<ILogger<LlmHtmlToMarkdownConverter>>();
         var llmConverter = new LlmHtmlToMarkdownConverter(llmClient, llmLogger);
 
@@ -214,7 +214,7 @@ public class LlmHtmlToMarkdownConverterTests
 
         // Act
         var llmResult = await llmConverter.ConvertAsync(htmlWithNoise);
-        var fallbackResult = await fallback.ConvertAsync(htmlWithNoise);
+        var fallbackResult = await fallback.ExtractTextAsync(htmlWithNoise);
 
         // Assert
         Assert.NotNull(llmResult);

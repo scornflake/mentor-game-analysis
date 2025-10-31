@@ -4,6 +4,9 @@
 
         <OutputType>Exe</OutputType>
         <UnoSingleProject>true</UnoSingleProject>
+        
+        <!-- Suppress experimental API warnings for Microsoft.Extensions.AI -->
+        <NoWarn>$(NoWarn);MEAI001</NoWarn>
 
         <!-- Assembly/Executable name -->
         <AssemblyName>Mentor</AssemblyName>

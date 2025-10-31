@@ -44,25 +44,7 @@ public class TavilyWebSearchTests
     }
 
     [Fact]
-    public void SupportedModes_ReturnsAllThreeModes()
-    {
-        // Arrange
-        var mockFactory = CreateMockHttpClientFactory("{}");
-        var logger = NullLogger<TavilyWebSearch>.Instance;
-        var service = new TavilyWebSearch(mockFactory.Object, logger);
-
-        // Act
-        var supportedModes = service.SupportedModes;
-
-        // Assert
-        Assert.Contains(SearchOutputFormat.Snippets, supportedModes);
-        Assert.Contains(SearchOutputFormat.Summary, supportedModes);
-        Assert.Contains(SearchOutputFormat.Structured, supportedModes);
-        Assert.Equal(3, supportedModes.Count);
-    }
-
-    [Fact]
-    public async Task Search_WithSnippetsFormat_ReturnsConcatenatedSnippets()
+    public async Task Search_ReturnsSearchResults()
     {
         // Arrange
         var mockResponse = """
@@ -98,53 +80,17 @@ public class TavilyWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5);
+        var result = await service.Search(SearchContext.Create("test query"), 5);
 
         // Assert
-        Assert.Contains("First test snippet.", result);
-        Assert.Contains("Second test snippet.", result);
-        Assert.DoesNotContain("https://example.com", result);
-        Assert.DoesNotContain("Test Result 1", result);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Test Result 1", result[0].Title);
+        Assert.Equal("https://example.com/1", result[0].Url);
+        Assert.Equal("First test snippet.", result[0].Content);
+        Assert.Equal(0.95, result[0].Score);
     }
 
-    [Fact]
-    public async Task Search_WithSummaryFormat_ReturnsTavilyAnswer()
-    {
-        // Arrange
-        var mockResponse = """
-        {
-            "query": "test query",
-            "answer": "This is a comprehensive answer from Tavily's LLM.",
-            "results": [
-                {
-                    "title": "Test Result 1",
-                    "url": "https://example.com/1",
-                    "content": "First test snippet.",
-                    "score": 0.95
-                }
-            ]
-        }
-        """;
-
-        var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new ToolConfigurationEntity
-        {
-            ApiKey = "test-key",
-            BaseUrl = "https://api.tavily.com",
-            Timeout = 30
-        };
-
-        var logger = NullLogger<TavilyWebSearch>.Instance;
-        var service = new TavilyWebSearch(mockFactory.Object, logger);
-        service.Configure(config);
-
-        // Act
-        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Summary, 5);
-
-        // Assert
-        Assert.NotEmpty(result);
-        Assert.Contains("This is a comprehensive answer from Tavily's LLM.", result);
-    }
 
     [Fact]
     public async Task SearchStructured_ReturnsResultsWithScore()
@@ -189,7 +135,7 @@ public class TavilyWebSearchTests
         Assert.Equal(2, result.Count);
         Assert.Equal("Result 1", result[0].Title);
         Assert.Equal("https://example.com/1", result[0].Url);
-        Assert.Equal("Snippet 1.", result[0].Description);
+        Assert.Equal("Snippet 1.", result[0].Content);
         Assert.Equal(0.95, result[0].Score);
     }
 
@@ -233,7 +179,7 @@ public class TavilyWebSearchTests
     }
 
     [Fact]
-    public async Task Search_WithEmptyResults_ReturnsNoResultsMessage()
+    public async Task Search_WithEmptyResults_ReturnsEmptyList()
     {
         // Arrange
         var mockResponse = """
@@ -256,10 +202,11 @@ public class TavilyWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5);
+        var result = await service.Search(SearchContext.Create("test query"), 5);
 
         // Assert
-        Assert.Contains("No results found", result);
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -280,7 +227,7 @@ public class TavilyWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create("test query"), 5)
         );
     }
 
@@ -302,7 +249,7 @@ public class TavilyWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => service.Search(null!, SearchOutputFormat.Snippets, 5)
+            () => service.Search(null!, 5)
         );
     }
 
@@ -324,7 +271,7 @@ public class TavilyWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => service.Search(SearchContext.Create(""), SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create(""), 5)
         );
     }
 
@@ -348,7 +295,7 @@ public class TavilyWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => service.Search(SearchContext.Create(longQuery), SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create(longQuery), 5)
         );
     }
 }
@@ -384,12 +331,12 @@ public class TavilyWebSearchIntegrationTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search(SearchContext.Create("C# programming"), SearchOutputFormat.Snippets, 3);
+        var result = await service.Search(SearchContext.Create("C# programming"), 3);
 
         // Assert
-        _testOutputHelper.WriteLine($"Search Result (Snippets): {result}");
+        _testOutputHelper.WriteLine($"Search Result Count: {result.Count}");
         Assert.NotEmpty(result);
-        Assert.DoesNotContain("No results found", result);
+        Assert.True(result.Count <= 3);
     }
 
     [ConditionalFact("TAVILY_API_KEY")]
@@ -423,33 +370,5 @@ public class TavilyWebSearchIntegrationTests
         Assert.NotNull(result[0].Score);
     }
 
-    [ConditionalFact("TAVILY_API_KEY")]
-    public async Task Search_WithRealApi_SummaryFormat_ReturnsResults()
-    {
-        // Arrange
-        var apiKey = Environment.GetEnvironmentVariable("TAVILY_API_KEY");
-        Assert.NotNull(apiKey);
-
-        var httpClientFactory = new Mock<IHttpClientFactory>();
-        httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
-
-        var config = new ToolConfigurationEntity
-        {
-            ApiKey = apiKey,
-            BaseUrl = "https://api.tavily.com",
-            Timeout = 30
-        };
-
-        var logger = NullLogger<TavilyWebSearch>.Instance;
-        var service = new TavilyWebSearch(httpClientFactory.Object, logger);
-        service.Configure(config);
-
-        // Act
-        var result = await service.Search(SearchContext.Create("xUnit testing framework"), SearchOutputFormat.Summary, 3);
-
-        // Assert
-        _testOutputHelper.WriteLine($"Search Result (Summary): {result}");
-        Assert.NotEmpty(result);
-    }
 }
 

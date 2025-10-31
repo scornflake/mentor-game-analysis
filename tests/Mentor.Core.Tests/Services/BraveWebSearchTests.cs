@@ -44,7 +44,7 @@ public class BraveWebSearchTests
     }
 
     [Fact]
-    public async Task Search_WithSnippetsFormat_ReturnsConcatenatedSnippets()
+    public async Task Search_ReturnsSearchResults()
     {
         // Arrange
         var mockResponse = """
@@ -54,12 +54,12 @@ public class BraveWebSearchTests
                     {
                         "title": "Test Result 1",
                         "url": "https://example.com/1",
-                        "description": "First test snippet."
+                        "content": "First test snippet."
                     },
                     {
                         "title": "Test Result 2",
                         "url": "https://example.com/2",
-                        "description": "Second test snippet."
+                        "content": "Second test snippet."
                     }
                 ]
             }
@@ -79,57 +79,17 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5);
+        var result = await service.Search(SearchContext.Create("test query"), 5);
 
         // Assert
-        Assert.Contains("First test snippet.", result);
-        Assert.Contains("Second test snippet.", result);
-        Assert.DoesNotContain("https://example.com", result);
-        Assert.DoesNotContain("Test Result 1", result);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Test Result 1", result[0].Title);
+        Assert.Equal("https://example.com/1", result[0].Url);
+        Assert.Equal("First test snippet.", result[0].Content);
+        Assert.Equal("Test Result 2", result[1].Title);
     }
 
-    [Fact]
-    public async Task Search_WithSummaryFormat_ReturnsSummarizedText()
-    {
-        // Arrange
-        var mockResponse = """
-        {
-            "web": {
-                "results": [
-                    {
-                        "title": "Test Result 1",
-                        "url": "https://example.com/1",
-                        "description": "First test snippet."
-                    },
-                    {
-                        "title": "Test Result 2",
-                        "url": "https://example.com/2",
-                        "description": "Second test snippet."
-                    }
-                ]
-            }
-        }
-        """;
-
-        var mockFactory = CreateMockHttpClientFactory(mockResponse);
-        var config = new ToolConfigurationEntity
-        {
-            ApiKey = "test-key",
-            BaseUrl = "https://api.test.com",
-            Timeout = 30
-        };
-
-        var logger = NullLogger<BraveWebSearch>.Instance;
-        var service = new BraveWebSearch(mockFactory.Object, logger);
-        service.Configure(config);
-
-        // Act
-        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Summary, 5);
-
-        // Assert
-        Assert.NotEmpty(result);
-        Assert.Contains("test query", result, StringComparison.OrdinalIgnoreCase);
-    }
 
     [Fact]
     public async Task Search_LimitsResultsToMaxResults()
@@ -139,11 +99,11 @@ public class BraveWebSearchTests
         {
             "web": {
                 "results": [
-                    {"title": "Result 1", "url": "https://example.com/1", "description": "Snippet 1."},
-                    {"title": "Result 2", "url": "https://example.com/2", "description": "Snippet 2."},
-                    {"title": "Result 3", "url": "https://example.com/3", "description": "Snippet 3."},
-                    {"title": "Result 4", "url": "https://example.com/4", "description": "Snippet 4."},
-                    {"title": "Result 5", "url": "https://example.com/5", "description": "Snippet 5."}
+                    {"title": "Result 1", "url": "https://example.com/1", "content": "Snippet 1."},
+                    {"title": "Result 2", "url": "https://example.com/2", "content": "Snippet 2."},
+                    {"title": "Result 3", "url": "https://example.com/3", "content": "Snippet 3."},
+                    {"title": "Result 4", "url": "https://example.com/4", "content": "Snippet 4."},
+                    {"title": "Result 5", "url": "https://example.com/5", "content": "Snippet 5."}
                 ]
             }
         }
@@ -172,7 +132,7 @@ public class BraveWebSearchTests
     }
 
     [Fact]
-    public async Task Search_WithEmptyResults_ReturnsNoResultsMessage()
+    public async Task Search_WithEmptyResults_ReturnsEmptyList()
     {
         // Arrange
         var mockResponse = """
@@ -196,10 +156,11 @@ public class BraveWebSearchTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5);
+        var result = await service.Search(SearchContext.Create("test query"), 5);
 
         // Assert
-        Assert.Contains("No results found", result);
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -220,7 +181,7 @@ public class BraveWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => service.Search(SearchContext.Create("test query"), SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create("test query"), 5)
         );
     }
 
@@ -242,7 +203,7 @@ public class BraveWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => service.Search(null!, SearchOutputFormat.Snippets, 5)
+            () => service.Search(null!, 5)
         );
     }
 
@@ -264,7 +225,7 @@ public class BraveWebSearchTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => service.Search(SearchContext.Create(""), SearchOutputFormat.Snippets, 5)
+            () => service.Search(SearchContext.Create(""), 5)
         );
     }
 }
@@ -279,7 +240,7 @@ public class WebsearchIntegrationTests
     }
 
     [ConditionalFact("BRAVE_SEARCH_API_KEY")]
-    public async Task Search_WithRealApi_SnippetsFormat_ReturnsResults()
+    public async Task Search_WithRealApi_ReturnsResults()
     {
         // Arrange
         var apiKey = Environment.GetEnvironmentVariable("BRAVE_SEARCH_API_KEY");
@@ -300,12 +261,12 @@ public class WebsearchIntegrationTests
         service.Configure(config);
 
         // Act
-        var result = await service.Search(SearchContext.Create("C# programming"), SearchOutputFormat.Snippets, 3);
+        var result = await service.Search(SearchContext.Create("C# programming"), 3);
 
         // Assert
-        _testOutputHelper.WriteLine($"Search Result (Snippets): {result}");
+        _testOutputHelper.WriteLine($"Search Result Count: {result.Count}");
         Assert.NotEmpty(result);
-        Assert.DoesNotContain("No results found", result);
+        Assert.True(result.Count <= 3);
     }
 
     [ConditionalFact("BRAVE_SEARCH_API_KEY")]
@@ -338,33 +299,5 @@ public class WebsearchIntegrationTests
         Assert.Contains("http", result[0].Url);
     }
 
-    [ConditionalFact("BRAVE_SEARCH_API_KEY")]
-    public async Task Search_WithRealApi_SummaryFormat_ReturnsResults()
-    {
-        // Arrange
-        var apiKey = Environment.GetEnvironmentVariable("BRAVE_SEARCH_API_KEY");
-        Assert.NotNull(apiKey);
-
-        var httpClientFactory = new Mock<IHttpClientFactory>();
-        httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
-
-        var config = new ToolConfigurationEntity
-        {
-            ApiKey = apiKey,
-            BaseUrl = "https://api.search.brave.com/res/v1",
-            Timeout = 30
-        };
-
-        var logger = NullLogger<BraveWebSearch>.Instance;
-        var service = new BraveWebSearch(httpClientFactory.Object, logger);
-        service.Configure(config);
-
-        // Act
-        var result = await service.Search(SearchContext.Create("xUnit testing framework"), SearchOutputFormat.Summary, 3);
-
-        // Assert
-        _testOutputHelper.WriteLine($"Search Result (Summary): {result}");
-        Assert.NotEmpty(result);
-    }
 }
 

@@ -103,7 +103,8 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingProvider.Model = config.Model;
             existingProvider.BaseUrl = config.BaseUrl;
             existingProvider.Timeout = config.Timeout;
-            existingProvider.SearchWeb = config.SearchWeb;
+            existingProvider.RetrievalAugmentedGeneration = config.RetrievalAugmentedGeneration;
+            existingProvider.ServerHasMcpSearch = config.ServerHasMcpSearch;
 
             collection.Update(existingProvider);
             
@@ -131,7 +132,8 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
                 Model = config.Model,
                 BaseUrl = config.BaseUrl,
                 Timeout = config.Timeout,
-                SearchWeb = config.SearchWeb,
+                RetrievalAugmentedGeneration = config.RetrievalAugmentedGeneration,
+                ServerHasMcpSearch = config.ServerHasMcpSearch,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             collection.Insert(newProvider);

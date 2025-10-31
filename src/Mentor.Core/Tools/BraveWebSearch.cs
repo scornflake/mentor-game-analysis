@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Mentor.Core.Data;
@@ -17,13 +16,6 @@ public class BraveWebSearch : IWebSearchTool
     private ToolConfigurationEntity _config = new ToolConfigurationEntity();
     private static readonly ConcurrentDictionary<string, RateLimiter> _rateLimiters = new();
     private RateLimiter? _rateLimiter;
-    
-    public IReadOnlySet<SearchOutputFormat> SupportedModes { get; } = new HashSet<SearchOutputFormat>
-    {
-        SearchOutputFormat.Snippets,
-        SearchOutputFormat.Summary,
-        SearchOutputFormat.Structured
-    };
 
     public BraveWebSearch(IHttpClientFactory httpClientFactory, ILogger<BraveWebSearch> logger)
     {
@@ -196,13 +188,8 @@ public class BraveWebSearch : IWebSearchTool
     }
 
 
-    public async Task<string> Search(SearchContext context, SearchOutputFormat format, int maxResults = 5)
+    public async Task<List<SearchResult>> Search(SearchContext context, int maxResults = 5)
     {
-        if (format == SearchOutputFormat.Structured)
-        {
-            throw new NotSupportedException("Use the 'structured' method call to return structured results.");
-        }
-
         if (context == null)
         {
             throw new ArgumentNullException(nameof(context));
@@ -214,24 +201,19 @@ public class BraveWebSearch : IWebSearchTool
         }
 
         var query = FormQuery(context);
-        _logger.LogInformation("Searching for {query} using format: {format}", query, format);
+        _logger.LogInformation("Searching for {query}", query);
 
         var responseContent = await ExecuteSearchWithRateLimit(query, maxResults);
         var results = responseContent?.Web?.Results;
         if (results == null || results.Count == 0)
         {
-            return "No results found for the given query.";
+            return new List<SearchResult>();
         }
 
         results = results.Take(maxResults).ToList();
         LogResults(query, results);
 
-        return format switch
-        {
-            SearchOutputFormat.Snippets => FormatAsSnippets(results),
-            SearchOutputFormat.Summary => FormatAsSummary(query, results),
-            _ => throw new ArgumentException($"Unknown format: {format}", nameof(format))
-        };
+        return results;
     }
 
     private void LogResults(string query, List<SearchResult> results)
@@ -241,43 +223,7 @@ public class BraveWebSearch : IWebSearchTool
         {
             _logger.LogInformation("Title: {Title}", result.Title);
             _logger.LogInformation("URL: {Url}", result.Url);
-            _logger.LogInformation("Description: {Description}", result.Description);
+            _logger.LogInformation("Description: {Description}", result.Content);
         }
-    }
-
-    private static string FormatAsSnippets(List<SearchResult> results)
-    {
-        var sb = new StringBuilder();
-        foreach (var result in results)
-        {
-            if (!string.IsNullOrWhiteSpace(result.Description))
-            {
-                sb.AppendLine(result.Description);
-            }
-        }
-
-        return sb.ToString().TrimEnd();
-    }
-
-    private static string FormatAsSummary(string query, List<SearchResult> results)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"Search results for '{query}':");
-        sb.AppendLine();
-        sb.AppendLine($"Found {results.Count} result(s):");
-
-        foreach (var result in results)
-        {
-            if (!string.IsNullOrWhiteSpace(result.Description))
-            {
-                // Take first sentence or first 150 characters
-                var snippet = result.Description.Length > 550
-                    ? result.Description[..550] + "..."
-                    : result.Description;
-                sb.AppendLine($"- {snippet}");
-            }
-        }
-
-        return sb.ToString().TrimEnd();
     }
 }

@@ -13,7 +13,8 @@ public class ProviderConfigurationEntity
     public string Model { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = string.Empty;
     public int Timeout { get; set; } = 60;
-    public bool SearchWeb { get; set; } = false;
+    public bool RetrievalAugmentedGeneration { get; set; } = false;
+    public bool ServerHasMcpSearch { get; set; } = false;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 

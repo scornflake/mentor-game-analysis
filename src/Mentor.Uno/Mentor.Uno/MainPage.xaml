@@ -52,16 +52,16 @@
                                 BrowseClick="OnBrowseClick"
                                 ImagePreviewTapped="OnImagePreviewTapped"/>
 
-      <!-- Results Section -->
+      <!-- Results Section (shown when analysis complete and result exists) -->
       <views:AnalysisResultsView Grid.Column="1"
                                   Result="{x:Bind ViewModel.Result, Mode=OneWay}"/>
 
-      <!-- Empty State -->
+      <!-- Empty State (shown when no analysis and no result) -->
       <StackPanel Grid.Column="1"
                   VerticalAlignment="Center"
                   HorizontalAlignment="Center"
                   Spacing="10"
-                  Visibility="{x:Bind ViewModel.Result, Mode=OneWay, Converter={StaticResource InverseNullToVisibilityConverter}}">
+                  Visibility="{x:Bind ViewModel.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
         <TextBlock Text="No analysis results yet"
                    Style="{StaticResource SubtitleTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"

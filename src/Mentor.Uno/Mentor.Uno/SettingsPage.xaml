@@ -249,13 +249,19 @@
                                  InputScope="Number"/>
                       </StackPanel>
 
-                      <!-- SearchWeb Option (OpenAI only) -->
+                      <!-- RAG and MCP Search Options -->
                       <StackPanel Orientation="Horizontal" 
-                                  Spacing="12"
-                                  Visibility="{x:Bind IsOpenAIProvider, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <CheckBox Content="Perform automatic web research"
-                                  IsChecked="{x:Bind SearchWeb, Mode=TwoWay}"
+                                  Spacing="12">
+                        <CheckBox Content="Retrieval Augmented Generation (RAG)"
+                                  IsChecked="{x:Bind RetrievalAugmentedGeneration, Mode=TwoWay}"
+                                  IsEnabled="{x:Bind IsRetrievalAugmentedGenerationEnabled, Mode=OneWay}"
                                   ToolTipService.ToolTip="If enabled, searches and reads articles before analysis. If disabled, LLM decides when to use search tools."/>
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" 
+                                  Spacing="12">
+                        <CheckBox Content="Server has MCP Search"
+                                  IsChecked="{x:Bind ServerHasMcpSearch, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="If enabled, skips setting up local web search tools and expects the LLM server to have MCP search capability. Overrides RAG setting."/>
                       </StackPanel>
                     </StackPanel>
 

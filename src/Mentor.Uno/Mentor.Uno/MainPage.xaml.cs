@@ -1,4 +1,5 @@
 using Windows.Storage.Pickers;
+using Mentor.Uno.Converters;
 using Mentor.Uno.Helpers;
 using Mentor.Uno.Services;
 using Microsoft.UI.Xaml.Input;
@@ -26,6 +27,7 @@ public sealed partial class MainPage : Page
 
         // Add converters to page resources (only converters used directly in MainPage.xaml)
         this.Resources["InverseNullToVisibilityConverter"] = new InverseNullToVisibilityConverter();
+        this.Resources["BoolToVisibilityConverter"] = new BoolToVisibilityConverter();
         
         // Initialize clipboard monitoring
         InitializeClipboardMonitoring();

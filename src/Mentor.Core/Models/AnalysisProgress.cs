@@ -5,12 +5,22 @@ public class AnalysisProgress
     public double TotalPercentage { get; set; }
     public List<AnalysisJob> Jobs { get; set; } = [];
 
+    /// <summary>
+    /// Updates the progress and status of a specific job identified by its tag.
+    /// If the job does not exist, it creates a new job with the provided tag and initializes it.
+    /// Also recalculates the total percentage progress for all jobs.
+    /// </summary>
+    /// <param name="tag">The identifier for the job to update or create.</param>
+    /// <param name="status">The new status to set for the job.</param>
+    /// <param name="progress">The new progress value to set for the job, or null.</param>
     public void UpdateJobProgress(string tag, JobStatus status, double? progress)
     {
         var job = Jobs.FirstOrDefault(j => j.Tag == tag);
         if (job == null)
         {
-            throw new ArgumentException($"Job with tag '{tag}' not found.", nameof(tag));
+            // make a new one
+            job = new AnalysisJob { Tag = tag, Name = $"Job for {tag}", Status = JobStatus.Pending, Progress = 0 };
+            Jobs.Add(job);
         }
 
         job.Status = status;
@@ -76,6 +86,46 @@ public class AnalysisProgress
 
         job.Name = name;
         RecalculateTotalPercentage();
+    }
+
+    public void Merge(AnalysisProgress other)
+    {
+        if (other == null) return;
+        
+        foreach (var otherJob in other.Jobs)
+        {
+            var existingJob = Jobs.FirstOrDefault(j => j.Tag == otherJob.Tag);
+            if (existingJob != null)
+            {
+                // Replace existing job (newer wins)
+                var index = Jobs.IndexOf(existingJob);
+                Jobs[index] = new AnalysisJob
+                {
+                    Tag = otherJob.Tag,
+                    Name = otherJob.Name,
+                    Status = otherJob.Status,
+                    Progress = otherJob.Progress
+                };
+            }
+            else
+            {
+                // Add new job
+                Jobs.Add(new AnalysisJob
+                {
+                    Tag = otherJob.Tag,
+                    Name = otherJob.Name,
+                    Status = otherJob.Status,
+                    Progress = otherJob.Progress
+                });
+            }
+        }
+        
+        RecalculateTotalPercentage();
+    }
+
+    public void AddJob(AnalysisJob analysisJob)
+    {
+        Jobs.Add(analysisJob);
     }
 }
 

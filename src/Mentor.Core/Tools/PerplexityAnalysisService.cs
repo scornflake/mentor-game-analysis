@@ -16,25 +16,22 @@ public class PerplexityAnalysisService: AnalysisService
     {
     }
 
-    public override async Task<Recommendation> AnalyzeAsync(AnalysisRequest request, IProgress<AnalysisProgress>? progress = null, CancellationToken cancellationToken = default)
+    protected override bool UseJsonResponseFormat()
     {
-        request.ValidateRequest();
-        var analysisProgress = new AnalysisProgress
-        {
-            Jobs = new List<AnalysisJob>
-            {
-                new AnalysisJob { Tag = "perplexity", Name = "Talking with Perplexity", Status = JobStatus.InProgress, Progress = 50 }
-            }
-        };
-        analysisProgress.ReportProgress(progress);
+        // perplexity supports structured output natively
+        return true;
+    }
+
+    public override async Task<Recommendation> AnalyzeAsync(AnalysisRequest request, IProgress<AnalysisProgress>? progress = null, IProgress<AIContent>? aiProgress = null, CancellationToken cancellationToken = default)
+    {
+        await base.AnalyzeAsync(request, progress, aiProgress, cancellationToken);
         var systemMessage = GetSystemPrompt(request);
         var userMessage = GetUserMessages(request);
     
-        var messages = new List<ChatMessage> { systemMessage, userMessage };
+        var messages = new List<ChatMessage> { systemMessage };
+        messages.AddRange(userMessage);
+
         var options = await CreateAIOptions();
-        var result = await ExecuteAndParse(messages, options, progress, cancellationToken);
-        analysisProgress.UpdateJobProgress("perplexity", JobStatus.Completed, 100);
-        analysisProgress.ReportProgress(progress);
-        return result;
+        return await ExecuteAndParse(messages, options, progress, aiProgress, cancellationToken);
     }
 }
