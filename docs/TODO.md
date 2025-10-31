@@ -2,8 +2,12 @@
 
 # Improving
 [x] - Get job status working
-- Make perplexity/travily/brave "hidden" from the user settings.
-  - put in a "settings" panel, that has spaces for their API keys
+[x] - Make perplexity/travily/brave "hidden" from the user settings.
+  [x] - put in a "settings" panel, that has spaces for their API keys
+
+- For search, take what we have and ask an LLM to form a search under 400 chars, for research, then use that search.
+- Measure the accuracy of the responses (in text) as to how well they might help us answer the q. If they don't give us anything good, ignore them, request more 
+
 - Put "date" into the query (so LLM knows to look for recent info)
 - For search, are there well known "warframe" sites where we get better, more accurate info?
 - Allow LLM configuration to specify which search engines to use

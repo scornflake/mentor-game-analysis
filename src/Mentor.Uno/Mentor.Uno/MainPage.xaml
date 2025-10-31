@@ -6,6 +6,10 @@
       xmlns:views="using:Mentor.Uno.Views"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
+  <Page.Resources>
+    <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+  </Page.Resources>
+
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
@@ -67,5 +71,146 @@
                    HorizontalAlignment="Center"/>
       </StackPanel>
     </Grid>
+
+    <!-- Error Message Overlay (Full Width Bottom) -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            VerticalAlignment="Bottom"
+            Margin="20,0,20,20"
+            Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
+            BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
+            BorderThickness="1"
+            Padding="20,16"
+            CornerRadius="8"
+            MaxHeight="300"
+            Visibility="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource StringToVisibilityConverter}}">
+      <Border.Shadow>
+        <ThemeShadow />
+      </Border.Shadow>
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header with Icon and Close Button -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <FontIcon Glyph="&#xE783;"
+                      FontSize="20"
+                      Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                      VerticalAlignment="Center"/>
+            <TextBlock Text="Analysis Error"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+          <Button Content="&#xE711;"
+                  FontFamily="Segoe MDL2 Assets"
+                  Click="OnDismissErrorClick"
+                  Style="{StaticResource TextBlockButtonStyle}"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Padding="8"
+                  Margin="-8,0,0,0"/>
+        </Grid>
+
+        <!-- Scrollable Error Message -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      MaxHeight="200">
+          <TextBlock Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                     Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                     TextWrapping="Wrap"
+                     IsTextSelectionEnabled="True"
+                     FontFamily="Consolas"
+                     FontSize="12"/>
+        </ScrollViewer>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="0,12,0,0"
+                    HorizontalAlignment="Right">
+          <Button Content="Copy"
+                  Click="OnCopyErrorMessageClick"
+                  Style="{StaticResource AccentButtonStyle}"
+                  Padding="12,6"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Rejection Message Overlay (Full Width Bottom) -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            VerticalAlignment="Bottom"
+            Margin="20,0,20,20"
+            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+            BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
+            BorderThickness="1"
+            Padding="20,16"
+            CornerRadius="8"
+            MaxHeight="300"
+            Visibility="{x:Bind ViewModel.RejectionMessage, Mode=OneWay, Converter={StaticResource StringToVisibilityConverter}}">
+      <Border.Shadow>
+        <ThemeShadow />
+      </Border.Shadow>
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header with Icon and Close Button -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <FontIcon Glyph="&#xE7BA;"
+                      FontSize="20"
+                      Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                      VerticalAlignment="Center"/>
+            <TextBlock Text="Image Rejected"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+          <Button Content="&#xE711;"
+                  FontFamily="Segoe MDL2 Assets"
+                  Click="OnDismissRejectionClick"
+                  Style="{StaticResource TextBlockButtonStyle}"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Padding="8"
+                  Margin="-8,0,0,0"/>
+        </Grid>
+
+        <!-- Scrollable Rejection Message -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      MaxHeight="200">
+          <TextBlock Text="{x:Bind ViewModel.RejectionMessage, Mode=OneWay}"
+                     Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                     TextWrapping="Wrap"
+                     IsTextSelectionEnabled="True"
+                     FontSize="14"/>
+        </ScrollViewer>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="0,12,0,0"
+                    HorizontalAlignment="Right">
+          <Button Content="Copy"
+                  Click="OnCopyRejectionMessageClick"
+                  Style="{StaticResource AccentButtonStyle}"
+                  Padding="12,6"/>
+        </StackPanel>
+      </Grid>
+    </Border>
   </Grid>
 </Page>

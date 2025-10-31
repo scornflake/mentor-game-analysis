@@ -48,6 +48,21 @@ public class ToolFactory : IToolFactory
             }
             return tool;
         }
+        else if(toolName.ToLower() == KnownSearchTools.Tavily)
+        {
+            var tool = _serviceProvider.GetRequiredKeyedService<IWebSearchTool>(toolName.ToLower());
+            var config = await _configurationRepository.GetToolByNameAsync(toolName);
+            if (config == null)
+            {
+                throw new InvalidOperationException("TavilyWebSearch tool configuration is not found.");
+            }
+            tool.Configure(config);
+            if (tool == null)
+            {
+                throw new InvalidOperationException("TavilyWebSearch service is not registered.");
+            }
+            return tool;
+        }
         else
         {
             throw new NotSupportedException($"Tool type '{toolName}' is not supported.");

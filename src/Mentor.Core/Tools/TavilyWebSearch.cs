@@ -6,14 +6,13 @@ using Mentor.Core.Data;
 using Mentor.Core.Models;
 using Mentor.Core.Serialization;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Mentor.Core.Tools;
 
-public class BraveWebSearch : IWebSearchTool
+public class TavilyWebSearch : IWebSearchTool
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<BraveWebSearch> _logger;
+    private readonly ILogger<TavilyWebSearch> _logger;
     private ToolConfigurationEntity _config = new ToolConfigurationEntity();
     private static readonly ConcurrentDictionary<string, RateLimiter> _rateLimiters = new();
     private RateLimiter? _rateLimiter;
@@ -25,7 +24,7 @@ public class BraveWebSearch : IWebSearchTool
         SearchOutputFormat.Structured
     };
 
-    public BraveWebSearch(IHttpClientFactory httpClientFactory, ILogger<BraveWebSearch> logger)
+    public TavilyWebSearch(IHttpClientFactory httpClientFactory, ILogger<TavilyWebSearch> logger)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _logger = logger;
@@ -35,7 +34,7 @@ public class BraveWebSearch : IWebSearchTool
     {
         _config = configuration;
         
-        // Create or get rate limiter for this API key
+        // Create or get rate limiter for this API key (100 requests per minute)
         if (!string.IsNullOrWhiteSpace(_config.ApiKey))
         {
             _rateLimiter = _rateLimiters.GetOrAdd(_config.ApiKey, key =>
@@ -43,9 +42,9 @@ public class BraveWebSearch : IWebSearchTool
                 _logger.LogDebug("Creating rate limiter for API key: {KeyPrefix}****", key.Substring(0, Math.Min(4, key.Length)));
                 return new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
-                    PermitLimit = 1,
-                    Window = TimeSpan.FromSeconds(1),
-                    SegmentsPerWindow = 1,
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 6,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     QueueLimit = 0 // No queuing, fail immediately if limit exceeded
                 });
@@ -61,7 +60,6 @@ public class BraveWebSearch : IWebSearchTool
             query += $"{context.GameName}, ";
         }
         query += $"Give me accurate information about: {context.Query}";
-        query += ". do not include videos or images in the results.";
         query += ". Prefer recent results.";
         return query;
     }
@@ -81,126 +79,125 @@ public class BraveWebSearch : IWebSearchTool
         var query = FormQuery(context);
         _logger.LogInformation("Searching for {query} using format 'structured'", query);
 
-        ValidateQuery(query, 50, 400);
+        ValidateQuery(query);
 
-        var searchResponse = await ExecuteSearchWithRateLimit(query, maxResults);
-        if (searchResponse?.Web?.Results == null || searchResponse.Web.Results.Count == 0)
+        var searchResponse = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth: "basic", includeAnswer: false);
+        if (searchResponse?.Results == null || searchResponse.Results.Count == 0)
         {
             return new List<SearchResult>();
         }
 
-        var results = searchResponse.Web.Results.Take(maxResults).ToList();
+        var results = searchResponse.Results.Take(maxResults)
+            .Select(r => new SearchResult
+            {
+                Title = r.Title,
+                Url = r.Url,
+                Description = r.Content,
+                Score = r.Score
+            })
+            .ToList();
+            
         LogResults(query, results);
         return results;
     }
 
-    private void ValidateQuery(string query, int maxWords, int maxCharacters) {
+    private void ValidateQuery(string query)
+    {
         if (string.IsNullOrWhiteSpace(query))
         {
             throw new ArgumentException("Query cannot be null or empty", nameof(query));
         }
 
-        if (query.Length > maxCharacters)
-            {
-            throw new ArgumentException($"Query cannot be longer than {maxCharacters} characters", nameof(query));
-        }
-
-        if (query.GetNumberOfWords() > maxWords)
+        // Tavily has a 400 character limit
+        if (query.Length > 400)
         {
-            throw new ArgumentException($"Query cannot be longer than {maxWords} words", nameof(query));
+            throw new ArgumentException("Query cannot be longer than 400 characters", nameof(query));
         }
     }
 
-    private async Task<BraveSearchResponse?> ExecuteSearchWithRateLimit(string query, int maxResults, CancellationToken cancellationToken = default)
+    private async Task<TavilySearchResponse?> ExecuteSearchWithRateLimit(string query, int maxResults, string searchDepth = "basic", bool includeAnswer = false, CancellationToken cancellationToken = default)
     {
         // If no rate limiter configured, execute directly
         if (_rateLimiter == null)
         {
-            return await ExecuteSearch(query, maxResults);
+            return await ExecuteSearch(query, maxResults, searchDepth, includeAnswer);
         }
 
-        // Try to acquire rate limiter permit, retry once if needed
-        for (int attempt = 0; attempt < 2; attempt++)
+        // Try to acquire rate limiter permit
+        using (var lease = await _rateLimiter.AcquireAsync(1, cancellationToken))
         {
-            using (var lease = await _rateLimiter.AcquireAsync(1, cancellationToken))
+            if (lease.IsAcquired)
             {
-                if (lease.IsAcquired)
-                {
-                    _logger.LogDebug("Rate limit acquired for search request");
-                    return await ExecuteSearch(query, maxResults);
-                }
-                
-                if (attempt == 0)
-                {
-                    // Calculate wait time: use RetryAfter if available, otherwise wait full window period
-                    var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue) 
-                        ? retryAfterValue 
-                        : (TimeSpan?)null;
-                    
-                    var waitTime = retryAfter ?? TimeSpan.FromSeconds(1);
-                    
-                    _logger.LogWarning("Rate limit exceeded, waiting {WaitTime}ms before retry", waitTime.TotalMilliseconds);
-                    await Task.Delay(waitTime, cancellationToken);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Rate limit exceeded after retry. Maximum 1 request per second allowed.");
-                }
+                _logger.LogDebug("Rate limit acquired for search request");
+                return await ExecuteSearch(query, maxResults, searchDepth, includeAnswer);
             }
+            
+            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue) 
+                ? retryAfterValue 
+                : (TimeSpan?)null;
+            
+            var waitTime = retryAfter ?? TimeSpan.FromSeconds(1);
+            throw new InvalidOperationException($"Rate limit exceeded. Maximum 100 requests per minute allowed. Retry after {waitTime.TotalSeconds} seconds.");
         }
-
-        // Should never reach here
-        throw new InvalidOperationException("Unexpected rate limiting flow");
     }
 
-    private async Task<BraveSearchResponse?> ExecuteSearch(string query, int maxResults)
+    private async Task<TavilySearchResponse?> ExecuteSearch(string query, int maxResults, string searchDepth, bool includeAnswer)
     {
         var httpClient = _httpClientFactory.CreateClient();
         httpClient.Timeout = TimeSpan.FromSeconds(_config.Timeout);
 
-        // actually we can ignore the base url of the provider here since we know what it is
-        var baseUrl = "https://api.search.brave.com/res/v1/web/search";
+        var baseUrl = "https://api.tavily.com/search";
         
-        var requestUrl = $"{baseUrl}?q={Uri.EscapeDataString(query)}&count={maxResults}";
-        _logger.LogInformation("Executing search with URL: {requestUrl}", requestUrl);
-        // _logger.LogInformation("Using token: {token}", _config.ApiKey);
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-        request.Headers.Add("X-Subscription-Token", _config.ApiKey);
-        request.Headers.Add("Accept", "application/json");
+        _logger.LogInformation("Executing Tavily search with query: {query}", query);
+        
+        var requestBody = new TavilySearchRequest
+        {
+            ApiKey = _config.ApiKey,
+            Query = query,
+            MaxResults = maxResults,
+            SearchDepth = searchDepth,
+            IncludeAnswer = includeAnswer,
+            IncludeImages = false
+        };
+
+        var jsonContent = JsonSerializer.Serialize(requestBody, MentorJsonSerializerContext.CreateOptions());
+        var request = new HttpRequestMessage(HttpMethod.Post, baseUrl)
+        {
+            Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+        };
 
         var response = await httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException($"Brave Search API returned {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            throw new HttpRequestException($"Tavily Search API returned {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
         try
         {
             var jsonOptions = MentorJsonSerializerContext.CreateOptions();
-            var searchResponse = JsonSerializer.Deserialize<BraveSearchResponse>(responseContent, jsonOptions);
+            var searchResponse = JsonSerializer.Deserialize<TavilySearchResponse>(responseContent, jsonOptions);
             return searchResponse;
         }
         catch (JsonException ex)
         {
-            // Save the result for debugging, to an html file
-            var filePath = Path.Combine(AppContext.BaseDirectory, "debug", $"brave_search_{Guid.NewGuid()}.html");
+            // Save the result for debugging
+            var filePath = Path.Combine(AppContext.BaseDirectory, "debug", $"tavily_search_{Guid.NewGuid()}.json");
             Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
             await File.WriteAllTextAsync(filePath, responseContent);
 
-            _logger.LogError("Error deserializing Brave Search response: {ex}", ex);
+            _logger.LogError("Error deserializing Tavily Search response: {ex}", ex);
             _logger.LogInformation("The returned content was: {responseContent}", responseContent);
-            throw new InvalidOperationException("Failed to parse search results from Brave Search API.", ex);
+            throw new InvalidOperationException("Failed to parse search results from Tavily Search API.", ex);
         }
     }
-
 
     public async Task<string> Search(SearchContext context, SearchOutputFormat format, int maxResults = 5)
     {
         if (format == SearchOutputFormat.Structured)
         {
-            throw new NotSupportedException("Use the 'structured' method call to return structured results.");
+            throw new NotSupportedException("Use the 'SearchStructured' method call to return structured results.");
         }
 
         if (context == null)
@@ -216,20 +213,36 @@ public class BraveWebSearch : IWebSearchTool
         var query = FormQuery(context);
         _logger.LogInformation("Searching for {query} using format: {format}", query, format);
 
-        var responseContent = await ExecuteSearchWithRateLimit(query, maxResults);
-        var results = responseContent?.Web?.Results;
+        ValidateQuery(query);
+
+        // For Summary format, use Tavily's answer feature
+        var includeAnswer = format == SearchOutputFormat.Summary;
+        var searchDepth = format == SearchOutputFormat.Summary ? "advanced" : "basic";
+
+        var responseContent = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth, includeAnswer);
+        var results = responseContent?.Results;
+        
         if (results == null || results.Count == 0)
         {
             return "No results found for the given query.";
         }
 
-        results = results.Take(maxResults).ToList();
-        LogResults(query, results);
+        var searchResults = results.Take(maxResults)
+            .Select(r => new SearchResult
+            {
+                Title = r.Title,
+                Url = r.Url,
+                Description = r.Content,
+                Score = r.Score
+            })
+            .ToList();
+            
+        LogResults(query, searchResults);
 
         return format switch
         {
-            SearchOutputFormat.Snippets => FormatAsSnippets(results),
-            SearchOutputFormat.Summary => FormatAsSummary(query, results),
+            SearchOutputFormat.Snippets => FormatAsSnippets(searchResults),
+            SearchOutputFormat.Summary => FormatAsSummary(query, searchResults, responseContent?.Answer),
             _ => throw new ArgumentException($"Unknown format: {format}", nameof(format))
         };
     }
@@ -242,6 +255,10 @@ public class BraveWebSearch : IWebSearchTool
             _logger.LogInformation("Title: {Title}", result.Title);
             _logger.LogInformation("URL: {Url}", result.Url);
             _logger.LogInformation("Description: {Description}", result.Description);
+            if (result.Score.HasValue)
+            {
+                _logger.LogInformation("Score: {Score}", result.Score.Value);
+            }
         }
     }
 
@@ -259,9 +276,17 @@ public class BraveWebSearch : IWebSearchTool
         return sb.ToString().TrimEnd();
     }
 
-    private static string FormatAsSummary(string query, List<SearchResult> results)
+    private static string FormatAsSummary(string query, List<SearchResult> results, string? tavilyAnswer)
     {
         var sb = new StringBuilder();
+        
+        // If Tavily provided an answer, use it as the primary summary
+        if (!string.IsNullOrWhiteSpace(tavilyAnswer))
+        {
+            sb.AppendLine(tavilyAnswer);
+            sb.AppendLine();
+        }
+        
         sb.AppendLine($"Search results for '{query}':");
         sb.AppendLine();
         sb.AppendLine($"Found {results.Count} result(s):");
@@ -270,7 +295,7 @@ public class BraveWebSearch : IWebSearchTool
         {
             if (!string.IsNullOrWhiteSpace(result.Description))
             {
-                // Take first sentence or first 150 characters
+                // Take first 550 characters
                 var snippet = result.Description.Length > 550
                     ? result.Description[..550] + "..."
                     : result.Description;
@@ -281,3 +306,4 @@ public class BraveWebSearch : IWebSearchTool
         return sb.ToString().TrimEnd();
     }
 }
+

@@ -3,6 +3,7 @@ using Mentor.Uno.Helpers;
 using Mentor.Uno.Services;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace Mentor.Uno;
 
@@ -197,6 +198,36 @@ public sealed partial class MainPage : Page
         {
             ViewModel.ErrorMessage = $"Error selecting file: {ex.Message}";
         }
+    }
+
+    private void OnCopyErrorMessageClick(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(ViewModel.ErrorMessage);
+            Clipboard.SetContent(dataPackage);
+        }
+    }
+
+    private void OnDismissErrorClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ErrorMessage = null;
+    }
+
+    private void OnCopyRejectionMessageClick(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(ViewModel.RejectionMessage))
+        {
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(ViewModel.RejectionMessage);
+            Clipboard.SetContent(dataPackage);
+        }
+    }
+
+    private void OnDismissRejectionClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.RejectionMessage = null;
     }
 }
 

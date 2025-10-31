@@ -1,6 +1,7 @@
 using LiteDB;
 using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
+using Mentor.Core.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -224,70 +225,77 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
         var providerCollection = _database.GetCollection<ProviderConfigurationEntity>("providers");
         var toolCollection = _database.GetCollection<ToolConfigurationEntity>("tools");
 
-        // Check if database is empty
-        var hasProviders = providerCollection.Count() > 0;
-        var hasTools = toolCollection.Count() > 0;
-
-        if (hasProviders && hasTools)
+        // Seed individual providers if they don't exist
+        SeedProviderIfNotExists(providerCollection, new ProviderConfigurationEntity
         {
-            return Task.CompletedTask; // Already seeded
-        }
+            Name = KnownProviderTools.Perplexity,
+            ProviderType = "perplexity",
+            Model = "sonar",
+            BaseUrl = "https://api.perplexity.ai",
+            ApiKey = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
-        // Seed providers if empty
-        if (!hasProviders)
+        SeedProviderIfNotExists(providerCollection, new ProviderConfigurationEntity
         {
-            // Seed Perplexity provider
-            var perplexityProvider = new ProviderConfigurationEntity
-            {
-                Name = "Perplexity",
-                ProviderType = "perplexity",
-                Model = "sonar",
-                BaseUrl = "https://api.perplexity.ai",
-                ApiKey = string.Empty,
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-            providerCollection.Insert(perplexityProvider);
+            Name = "Local LLM",
+            ProviderType = "openai",
+            Model = "google/gemma-3-27b",
+            BaseUrl = "http://localhost:1234/v1",
+            ApiKey = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
-            // Seed Local LLM provider
-            var localProvider = new ProviderConfigurationEntity
-            {
-                Name = "Local LLM",
-                ProviderType = "openai",
-                Model = "google/gemma-3-27b",
-                BaseUrl = "http://localhost:1234/v1",
-                ApiKey = string.Empty,
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-            providerCollection.Insert(localProvider);
-        }
-
-        // Seed tools if empty
-        if (!hasTools)
+        // Seed individual tools if they don't exist
+        SeedToolIfNotExists(toolCollection, new ToolConfigurationEntity
         {
-            var braveTool = new ToolConfigurationEntity
-            {
-                ToolName = "Brave",
-                ApiKey = string.Empty,
-                BaseUrl = "https://api.search.brave.com/res/v1/web/search",
-                Timeout = 30,
-                MaxArticleLength = 2000,
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-            toolCollection.Insert(braveTool);
+            ToolName = KnownSearchTools.Brave,
+            ApiKey = string.Empty,
+            BaseUrl = "https://api.search.brave.com/res/v1/web/search",
+            Timeout = 30,
+            MaxArticleLength = 2000,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
-            var articleReaderTool = new ToolConfigurationEntity
-            {
-                ToolName = "article-reader",
-                ApiKey = string.Empty,
-                BaseUrl = string.Empty,
-                Timeout = 30,
-                MaxArticleLength = 2000,
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-            toolCollection.Insert(articleReaderTool);
-        }
+        SeedToolIfNotExists(toolCollection, new ToolConfigurationEntity
+        {
+            ToolName = KnownSearchTools.Tavily,
+            ApiKey = string.Empty,
+            BaseUrl = "https://api.tavily.com/search",
+            Timeout = 30,
+            MaxArticleLength = 2000,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        SeedToolIfNotExists(toolCollection, new ToolConfigurationEntity
+        {
+            ToolName = KnownTools.ArticleReader,
+            ApiKey = string.Empty,
+            BaseUrl = string.Empty,
+            Timeout = 30,
+            MaxArticleLength = 2000,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
         return Task.CompletedTask;
+    }
+
+    private void SeedProviderIfNotExists(ILiteCollection<ProviderConfigurationEntity> collection, ProviderConfigurationEntity provider)
+    {
+        var existing = collection.FindOne(p => p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase));
+        if (existing == null)
+        {
+            collection.Insert(provider);
+        }
+    }
+
+    private void SeedToolIfNotExists(ILiteCollection<ToolConfigurationEntity> collection, ToolConfigurationEntity tool)
+    {
+        var existing = collection.FindOne(t => t.ToolName.Equals(tool.ToolName, StringComparison.OrdinalIgnoreCase));
+        if (existing == null)
+        {
+            collection.Insert(tool);
+        }
     }
 
     public Task<UIStateEntity> GetUIStateAsync()

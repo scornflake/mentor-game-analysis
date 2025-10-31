@@ -17,6 +17,9 @@ dotnet user-secrets init --project tests/Mentor.Core.Tests
 # Set your Brave Search API key
 dotnet user-secrets set "BraveSearch:ApiKey" "YOUR_ACTUAL_API_KEY" --project tests/Mentor.Core.Tests
 
+# Set your Tavily Search API key
+dotnet user-secrets set "TavilySearch:ApiKey" "YOUR_ACTUAL_API_KEY" --project tests/Mentor.Core.Tests
+
 # List configured secrets
 dotnet user-secrets list --project tests/Mentor.Core.Tests
 ```
@@ -31,6 +34,11 @@ Create `tests/Mentor.Core.Tests/appsettings.Development.json` (already in `.giti
     "ApiKey": "YOUR_ACTUAL_API_KEY",
     "BaseUrl": "https://api.search.brave.com/res/v1",
     "Timeout": 30
+  },
+  "TavilySearch": {
+    "ApiKey": "YOUR_ACTUAL_API_KEY",
+    "BaseUrl": "https://api.tavily.com",
+    "Timeout": 30
   }
 }
 ```
@@ -38,11 +46,13 @@ Create `tests/Mentor.Core.Tests/appsettings.Development.json` (already in `.giti
 ### Option 3: Environment Variables
 
 ```bash
-# Set environment variable
+# Set environment variables
 export BRAVE_SEARCH_API_KEY="YOUR_ACTUAL_API_KEY"
+export TAVILY_API_KEY="YOUR_ACTUAL_API_KEY"
 
 # Or on Windows PowerShell
 $env:BRAVE_SEARCH_API_KEY="YOUR_ACTUAL_API_KEY"
+$env:TAVILY_API_KEY="YOUR_ACTUAL_API_KEY"
 ```
 
 **Configuration Priority**: User Secrets → appsettings.Development.json → Environment Variables
@@ -55,9 +65,9 @@ $env:BRAVE_SEARCH_API_KEY="YOUR_ACTUAL_API_KEY"
 - Examples: `AnalysisServiceTests`, `LLMProviderFactoryTests`
 
 ### Integration Tests
-- Make real API calls to external services (Perplexity, Brave Search)
+- Make real API calls to external services (Perplexity, Brave Search, Tavily Search)
 - Skip gracefully if API keys are not configured
-- Located in `AnalysisServiceIntegrationTests` and `WebsearchIntegrationTest`
+- Located in `AnalysisServiceIntegrationTests`, `BraveWebSearchTests`, `TavilyWebSearchTests`, and `WebsearchIntegrationTest`
 
 ## Running Tests
 

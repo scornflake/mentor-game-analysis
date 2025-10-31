@@ -521,6 +521,7 @@ public class Program
         services.AddSingleton<IToolFactory, ToolFactory>();
         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
         services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
+        services.AddKeyedTransient<IWebSearchTool, TavilyWebSearch>(KnownSearchTools.Tavily);
         services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);
         
         return services.BuildServiceProvider();

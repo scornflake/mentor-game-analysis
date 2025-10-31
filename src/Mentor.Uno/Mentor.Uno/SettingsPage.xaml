@@ -36,7 +36,7 @@
         <StackPanel Spacing="16">
           <TextBlock Text="Global Settings"
                      Style="{StaticResource SubtitleTextBlockStyle}"/>
-          <TextBlock Text="Fixed providers and tools that can only have their API keys configured."
+          <TextBlock Text="Fixed providers and tools that can only have their API keys configured. Includes Perplexity, Brave Search, and Tavily Search."
                      FontSize="12"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      Margin="0,0,0,8"/>
@@ -113,6 +113,41 @@
                       <FontIcon Glyph="&#xE7C8;"
                                FontFamily="Segoe MDL2 Assets"
                                Visibility="{x:Bind ViewModel.IsBraveApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </Grid>
+                  </Button>
+                </Grid>
+              </StackPanel>
+
+              <!-- Tavily API Key -->
+              <StackPanel Spacing="8">
+                <TextBlock Text="Tavily Search API Key" FontWeight="SemiBold"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <PasswordBox Grid.Column="0"
+                              Password="{x:Bind ViewModel.TavilyApiKey, Mode=TwoWay}"
+                              Visibility="{x:Bind ViewModel.IsTavilyApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                  <TextBox Grid.Column="0"
+                          Text="{x:Bind ViewModel.TavilyApiKey, Mode=TwoWay}"
+                          Visibility="{x:Bind ViewModel.IsTavilyApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                  <Button Grid.Column="1"
+                          Margin="8,0,0,0"
+                          VerticalAlignment="Center"
+                          Command="{x:Bind ViewModel.ToggleTavilyApiKeyVisibilityCommand}"
+                          Style="{StaticResource TextBlockButtonStyle}"
+                          Background="Transparent"
+                          Padding="8"
+                          MinWidth="40"
+                          MinHeight="40">
+                    <Grid>
+                      <FontIcon Glyph="&#xE890;"
+                               FontFamily="Segoe MDL2 Assets"
+                               Visibility="{x:Bind ViewModel.IsTavilyApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                      <FontIcon Glyph="&#xE7C8;"
+                               FontFamily="Segoe MDL2 Assets"
+                               Visibility="{x:Bind ViewModel.IsTavilyApiKeyVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     </Grid>
                   </Button>
                 </Grid>

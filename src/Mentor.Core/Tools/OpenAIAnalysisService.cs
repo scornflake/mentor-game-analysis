@@ -23,21 +23,21 @@ public class OpenAIAnalysisService : AnalysisService
     {
     }
 
-    [Description("Performs a web search to find relevant information about the query. Returns a concise summary of up to 5 search results. Use this tool when you need a quick overview or summary of information related to game mechanics, builds, strategies, or other topics. Call this tool with a clear, specific search query.")]
+    [Description("Performs a web search to find relevant information about the query. Returns a concise summary of up to 10 search results. Use this tool when you need a quick overview or summary of information related to game mechanics, builds, strategies, or other topics. Call this tool with a clear, specific search query.")]
     async Task<string> SearchTheWebSummary(string query)
     {
         _logger.LogInformation("Performing web search for query: {Query}", query);
         var context = SearchContext.Create(query, _currentRequest?.GameName);
-        var theseResults = await _webSearchTool!.Search(context, SearchOutputFormat.Summary, 5);
+        var theseResults = await _webSearchTool!.Search(context, SearchOutputFormat.Summary, 10);
         return theseResults;
     }
 
-    [Description("Performs a structured web search to find relevant information about the query. Returns up to 5 search results with titles, URLs, descriptions only. Use this tool when you need to find links to relevant articles. The articles themselves are not returned.")]
+    [Description("Performs a structured web search to find relevant information about the query. Returns up to 10 search results with titles, URLs, descriptions only. Use this tool when you need to find links to relevant articles. The articles themselves are not returned.")]
     async Task<IList<SearchResult>> SearchTheWebStructured(string query)
     {
         _logger.LogInformation("Performing structured web search for query: {Query}", query);
         var context = SearchContext.Create(query, _currentRequest?.GameName);
-        var theseResults = await _webSearchTool!.SearchStructured(context, 5);
+        var theseResults = await _webSearchTool!.SearchStructured(context, 10);
         _searchResults.AddRange(theseResults);
         return theseResults;
     }
@@ -70,7 +70,8 @@ public class OpenAIAnalysisService : AnalysisService
         await base.SetupTools();
 
         // this provider currently only supports Brave
-        _webSearchTool = await _toolFactory.GetToolAsync(KnownSearchTools.Brave);
+        // _webSearchTool = await _toolFactory.GetToolAsync(KnownSearchTools.Brave);
+        _webSearchTool = await _toolFactory.GetToolAsync(KnownSearchTools.Tavily);
         if (_webSearchTool == null)
         {
             throw new InvalidOperationException("Web search tool could not be created.");
@@ -88,7 +89,7 @@ public class OpenAIAnalysisService : AnalysisService
         {
             return [
                 AIFunctionFactory.Create(SearchTheWebSummary, options: options),
-                AIFunctionFactory.Create(SearchTheWebStructured, options: options),
+                // AIFunctionFactory.Create(SearchTheWebStructured, options: options),
                 AIFunctionFactory.Create(ReadArticleContent, options: options)
             ];
         }
@@ -163,7 +164,8 @@ public class OpenAIAnalysisService : AnalysisService
 
 
         // search based on the prompt
-        var searchPrompt = "Game: " + request.GameName + ", articles about: " + request.Prompt + ". Provide upto date relevant, accurate information."; ;
+        var searchPrompt = "Game: " + request.GameName + ", articles about: " + request.Prompt; 
+        searchPrompt += ". Do not include from reddit or social media";
         var searchResults = await SearchTheWebStructured(searchPrompt);
 
         // Update search job to completed

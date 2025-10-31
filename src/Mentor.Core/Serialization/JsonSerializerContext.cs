@@ -20,6 +20,9 @@ namespace Mentor.Core.Serialization;
 [JsonSerializable(typeof(IList<SearchResult>))]
 [JsonSerializable(typeof(BraveSearchResponse))]
 [JsonSerializable(typeof(BraveWebResults))]
+[JsonSerializable(typeof(TavilySearchRequest))]
+[JsonSerializable(typeof(TavilySearchResponse))]
+[JsonSerializable(typeof(TavilyResult))]
 internal partial class MentorJsonSerializerContext : JsonSerializerContext
 {
     /// <summary>

@@ -282,12 +282,17 @@ public class ConfigurationRepositoryTests : IDisposable
 
         // Assert
         Assert.NotEmpty(allTools);
-        Assert.Equal(2, allTools.Count);
+        Assert.Equal(3, allTools.Count); // Brave, Tavily, ArticleReader
         
-        var braveTool = allTools.FirstOrDefault(t => t.ToolName == "Brave");
+        var braveTool = allTools.FirstOrDefault(t => t.ToolName == "brave");
         Assert.NotNull(braveTool);
         Assert.Equal("https://api.search.brave.com/res/v1/web/search", braveTool.BaseUrl);
         Assert.Equal(30, braveTool.Timeout);
+        
+        var tavilyTool = allTools.FirstOrDefault(t => t.ToolName == "tavily");
+        Assert.NotNull(tavilyTool);
+        Assert.Equal("https://api.tavily.com/search", tavilyTool.BaseUrl);
+        Assert.Equal(30, tavilyTool.Timeout);
     }
 
     [Fact]
@@ -389,7 +394,7 @@ public class ConfigurationRepositoryTests : IDisposable
         var allTools = await _repository.GetAllToolsAsync();
 
         // Assert
-        Assert.Equal(3, allTools.Count);
+        Assert.Equal(4, allTools.Count); // 3 seeded (Brave, Tavily, ArticleReader) + 1 custom (TestSearch)
     }
 
     [Fact]
@@ -399,11 +404,11 @@ public class ConfigurationRepositoryTests : IDisposable
         await _repository.SeedDefaultsAsync();
 
         // Act
-        var tool = await _repository.GetToolByNameAsync("Brave");
+        var tool = await _repository.GetToolByNameAsync("brave");
 
         // Assert
         Assert.NotNull(tool);
-        Assert.Equal("Brave", tool.ToolName);
+        Assert.Equal("brave", tool.ToolName);
     }
 
     [Fact]

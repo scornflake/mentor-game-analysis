@@ -9,11 +9,14 @@ public interface IWebSearchTool
     Task<IList<SearchResult>> SearchStructured(SearchContext context, int maxResults = 5);
 
     void Configure(ToolConfigurationEntity configuration);
+    
+    IReadOnlySet<SearchOutputFormat> SupportedModes { get; }
 }
 
 public class KnownSearchTools
 {
     public const string Brave = "brave";
+    public const string Tavily = "tavily";
 }
 
 public class KnownProviderTools

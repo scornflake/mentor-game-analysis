@@ -27,6 +27,8 @@ public partial class SettingsPageViewModel : ObservableObject
     [ObservableProperty] private bool _isPerplexityApiKeyVisible = false;
     [ObservableProperty] private string _braveApiKey = string.Empty;
     [ObservableProperty] private bool _isBraveApiKeyVisible = false;
+    [ObservableProperty] private string _tavilyApiKey = string.Empty;
+    [ObservableProperty] private bool _isTavilyApiKeyVisible = false;
 
     public ObservableCollection<ProviderViewModel> Providers { get; } = new();
     public ObservableCollection<ToolViewModel> Tools { get; } = new();
@@ -97,8 +99,9 @@ public partial class SettingsPageViewModel : ObservableObject
         Tools.Clear();
         foreach (var tool in tools)
         {
-            // Filter out fixed tools (Brave)
-            if (tool.ToolName.ToLower() == KnownSearchTools.Brave.ToLower())
+            // Filter out fixed tools (Brave, Tavily)
+            if (tool.ToolName.ToLower() == KnownSearchTools.Brave.ToLower() ||
+                tool.ToolName.ToLower() == KnownSearchTools.Tavily.ToLower())
             {
                 continue;
             }
@@ -155,6 +158,13 @@ public partial class SettingsPageViewModel : ObservableObject
             {
                 BraveApiKey = braveTool.ApiKey;
             }
+
+            // Load Tavily tool API key - if the tool does not exist, create it
+            var tavilyTool = await _configurationRepository.GetToolByNameAsync(KnownSearchTools.Tavily);
+            if (tavilyTool != null)
+            {
+                TavilyApiKey = tavilyTool.ApiKey;
+            }
         }
         catch (Exception ex)
         {
@@ -178,6 +188,14 @@ public partial class SettingsPageViewModel : ObservableObject
         }
     }
 
+    partial void OnTavilyApiKeyChanged(string value)
+    {
+        if (!string.IsNullOrEmpty(value) || !string.IsNullOrEmpty(_tavilyApiKey))
+        {
+            DebounceAndSaveTavilyApiKey();
+        }
+    }
+
     [RelayCommand]
     private void TogglePerplexityApiKeyVisibility()
     {
@@ -188,6 +206,12 @@ public partial class SettingsPageViewModel : ObservableObject
     private void ToggleBraveApiKeyVisibility()
     {
         IsBraveApiKeyVisible = !IsBraveApiKeyVisible;
+    }
+
+    [RelayCommand]
+    private void ToggleTavilyApiKeyVisibility()
+    {
+        IsTavilyApiKeyVisible = !IsTavilyApiKeyVisible;
     }
 
     private void DebounceAndSavePerplexityApiKey()
@@ -227,6 +251,29 @@ public partial class SettingsPageViewModel : ObservableObject
                 if (!token.IsCancellationRequested)
                 {
                     await SaveBraveApiKeyAsync();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when debouncing
+            }
+        }, token);
+    }
+
+    private void DebounceAndSaveTavilyApiKey()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await SaveTavilyApiKeyAsync();
                 }
             }
             catch (TaskCanceledException)
@@ -286,6 +333,32 @@ public partial class SettingsPageViewModel : ObservableObject
         {
             _logger.LogError(ex, "Error saving Brave API key: {ErrorMessage}", ex.Message);
             await ShowErrorAsync($"Failed to save Brave API key: {ex.Message}");
+        }
+    }
+
+    private async Task SaveTavilyApiKeyAsync()
+    {
+        try
+        {
+            // Find Tavily tool
+            var tavilyTool = await _configurationRepository.GetToolByNameAsync(KnownSearchTools.Tavily);
+
+            if (tavilyTool != null)
+            {
+                tavilyTool.ApiKey = TavilyApiKey;
+                await _configurationRepository.SaveToolAsync(tavilyTool);
+                NotifyToolsChanged();
+                await ShowSaveCompleteAsync();
+            }
+            else
+            {
+                _logger.LogWarning("Tavily tool not found when saving API key");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving Tavily API key: {ErrorMessage}", ex.Message);
+            await ShowErrorAsync($"Failed to save Tavily API key: {ex.Message}");
         }
     }
 
