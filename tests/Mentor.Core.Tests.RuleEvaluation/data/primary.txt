@@ -1,0 +1,187 @@
+Acceltra
+Acceltra Prime
+Aeolak
+Afentis
+Alternox
+Ambassador
+Amprex
+Arca Plasmor
+Argonak
+Astilla
+Astilla Prime
+Attica
+Ax-52
+Basmu
+Battacor
+Baza
+Baza Prime
+Boar
+Boar Prime
+Boltor
+Boltor Prime
+Braton
+Braton Prime
+Braton Vandal
+Bubonico
+Burston
+Burston Prime
+Buzlok
+Carmine Penta
+Cedo
+Cedo Prime
+Cernos
+Cernos Prime
+Cinta
+Coda Bassocyst
+Coda Hema
+Coda Sporothrix
+Coda Synapse
+Convectrix
+Corinth
+Corinth Prime
+Daikyu
+Daikyu Prime
+Dera
+Dera Vandal
+Dex Sybaris
+Drakgoon
+Dread
+Efv-5 Jupiter
+Evensong
+Exergis
+Felarx
+Ferrox
+Flux Rifle
+Fulmin
+Fulmin Prime
+Glaxion
+Glaxion Vandal
+Gorgon
+Gorgon Wraith
+Gotva Prime
+Grakata
+Grinlok
+Harpak
+Hek
+Hema
+Higasa
+Hind
+Ignis
+Ignis Wraith
+Javlok
+Karak
+Karak Wraith
+Kohm
+Komorex
+Kuva Bramma
+Kuva Chakkhurr
+Kuva Drakgoon
+Kuva Hek
+Kuva Hind
+Kuva Karak
+Kuva Kohm
+Kuva Ogris
+Kuva Quartakk
+Kuva Sobek
+Kuva Tonkor
+Kuva Zarr
+Lanka
+Latron
+Latron Prime
+Latron Wraith
+Lenz
+Miter
+Mk1-Braton
+Mk1-Paris
+Mk1-Strun
+Mutalist Cernos
+Mutalist Quanta
+Nagantaka
+Nagantaka Prime
+Nataruk
+Ogris
+Opticor
+Opticor Vandal
+Panthera
+Panthera Prime
+Paracyst
+Paris
+Paris Prime
+Penta
+Perigale
+Phage
+Phantasma
+Phantasma Prime
+Phenmor
+Prisma Gorgon
+Prisma Grakata
+Prisma Grinlok
+Prisma Lenz
+Prisma Tetra
+Proboscis Cernos
+Purgator 1
+Quanta
+Quanta Vandal
+Quartakk
+Quellor
+Rakta Cernos
+Rauta
+Reconifex
+Rubico
+Rubico Prime
+Sancti Tigris
+Scourge
+Scourge Prime
+Secura Penta
+Shedu
+Simulor
+Sirocco
+Snipetron
+Snipetron Vandal
+Sobek
+Soma
+Soma Prime
+Sporothrix
+Stahlta
+Steflos
+Stradavar
+Stradavar Prime
+Strun
+Strun Prime
+Strun Wraith
+Supra
+Supra Vandal
+Sybaris
+Sybaris Prime
+Synapse
+Synoid Simulor
+Telos Boltor
+Tenet Arca Plasmor
+Tenet Envoy
+Tenet Ferrox
+Tenet Flux Rifle
+Tenet Glaxion
+Tenet Tetra
+Tenora
+Tenora Prime
+Tetra
+Thornbak
+Tiberon
+Tiberon Prime
+Tigris
+Tigris Prime
+Tonkor
+Torid
+Trumna
+Trumna Prime
+Vadarya Prime
+Vaykor Hek
+Vectis
+Vectis Prime
+Veldt
+Vulkar
+Vulkar Wraith
+Zarr
+Zenith
+Zhuge
+Zhuge Prime

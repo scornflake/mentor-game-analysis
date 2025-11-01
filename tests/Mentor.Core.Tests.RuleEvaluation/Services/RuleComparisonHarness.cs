@@ -15,14 +15,17 @@ public class RuleComparisonHarness
     private readonly ILLMProviderFactory _providerFactory;
     private readonly ILogger _logger;
     private readonly MetricsCalculator _metricsCalculator;
+    private readonly RecommendationCacheService? _cacheService;
 
     public RuleComparisonHarness(
         ILLMProviderFactory providerFactory,
-        ILogger logger)
+        ILogger logger,
+        RecommendationCacheService? cacheService = null)
     {
         _providerFactory = providerFactory ?? throw new ArgumentNullException(nameof(providerFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _metricsCalculator = new MetricsCalculator();
+        _cacheService = cacheService;
     }
 
     /// <summary>
@@ -35,6 +38,7 @@ public class RuleComparisonHarness
         List<string>? ruleFiles = null,
         List<EvaluationCriterion>? evaluationCriteria = null,
         ILLMClient? evaluatorClient = null,
+        bool useCache = true,
         CancellationToken cancellationToken = default)
     {
         if (!File.Exists(screenshotPath))
@@ -58,10 +62,10 @@ public class RuleComparisonHarness
         };
 
         // Run baseline analysis (no rules)
-        var baselineResult = await RunAnalysisAsync(providerConfig, request, rulesEnabled: false, cancellationToken);
+        var baselineResult = await RunAnalysisAsync(providerConfig, request, screenshotPath, rulesEnabled: false, useCache, cancellationToken);
         
         // Run rule-augmented analysis
-        var ruleAugmentedResult = await RunAnalysisAsync(providerConfig, request, rulesEnabled: true, cancellationToken);
+        var ruleAugmentedResult = await RunAnalysisAsync(providerConfig, request, screenshotPath, rulesEnabled: true, useCache, cancellationToken);
 
         // Calculate metrics for both
         var baselineMetrics = _metricsCalculator.CalculateAllMetrics(baselineResult.Recommendation);
@@ -131,6 +135,7 @@ public class RuleComparisonHarness
         List<string>? ruleFiles = null,
         List<EvaluationCriterion>? evaluationCriteria = null,
         ILLMClient? evaluatorClient = null,
+        bool useCache = true,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ComparisonMetrics>();
@@ -139,7 +144,7 @@ public class RuleComparisonHarness
         {
             try
             {
-                var comparison = await CompareAnalysisAsync(path, providerConfig, prompt, ruleFiles, evaluationCriteria, evaluatorClient, cancellationToken);
+                var comparison = await CompareAnalysisAsync(path, providerConfig, prompt, ruleFiles, evaluationCriteria, evaluatorClient, useCache, cancellationToken);
                 results.Add(comparison);
             }
             catch (Exception ex)
@@ -154,39 +159,77 @@ public class RuleComparisonHarness
     private async Task<AnalysisResult> RunAnalysisAsync(
         ProviderConfigurationEntity providerConfig,
         AnalysisRequest request,
+        string screenshotPath,
         bool rulesEnabled,
+        bool useCache,
         CancellationToken cancellationToken)
     {
-        // Create a copy of the config with the desired rules setting
-        var configCopy = new ProviderConfigurationEntity
+        // Try to get from cache if enabled
+        Recommendation? recommendation = null;
+        
+        if (useCache && _cacheService != null)
         {
-            Id = providerConfig.Id,
-            Name = providerConfig.Name,
-            ProviderType = providerConfig.ProviderType,
-            ApiKey = providerConfig.ApiKey,
-            Model = providerConfig.Model,
-            BaseUrl = providerConfig.BaseUrl,
-            Timeout = providerConfig.Timeout,
-            RetrievalAugmentedGeneration = providerConfig.RetrievalAugmentedGeneration,
-            UseGameRules = rulesEnabled,
-            CreatedAt = providerConfig.CreatedAt
-        };
+            recommendation = await _cacheService.TryGetCachedAsync(
+                screenshotPath,
+                request.Prompt,
+                providerConfig.Name,
+                rulesEnabled,
+                request.RuleFiles);
+            
+            if (recommendation != null)
+            {
+                _logger.LogInformation("[cached] Using cached recommendation (rules: {RulesEnabled})", rulesEnabled);
+            }
+        }
 
-        var llmClient = _providerFactory.GetProvider(configCopy);
-        var analysisService = _providerFactory.GetAnalysisService(llmClient);
+        // Generate if not in cache
+        TimeSpan duration = TimeSpan.Zero;
+        if (recommendation == null)
+        {
+            // Create a copy of the config with the desired rules setting
+            var configCopy = new ProviderConfigurationEntity
+            {
+                Id = providerConfig.Id,
+                Name = providerConfig.Name,
+                ProviderType = providerConfig.ProviderType,
+                ApiKey = providerConfig.ApiKey,
+                Model = providerConfig.Model,
+                BaseUrl = providerConfig.BaseUrl,
+                Timeout = providerConfig.Timeout,
+                RetrievalAugmentedGeneration = providerConfig.RetrievalAugmentedGeneration,
+                UseGameRules = rulesEnabled,
+                CreatedAt = providerConfig.CreatedAt
+            };
 
-        var stopwatch = Stopwatch.StartNew();
-        var recommendation = await analysisService.AnalyzeAsync(request, null, null, cancellationToken);
-        stopwatch.Stop();
+            var llmClient = _providerFactory.GetProvider(configCopy);
+            var analysisService = _providerFactory.GetAnalysisService(llmClient);
+
+            var stopwatch = Stopwatch.StartNew();
+            recommendation = await analysisService.AnalyzeAsync(request, null, null, cancellationToken);
+            stopwatch.Stop();
+            duration = stopwatch.Elapsed;
+
+            // Save to cache
+            if (_cacheService != null)
+            {
+                await _cacheService.SaveToCacheAsync(
+                    recommendation,
+                    screenshotPath,
+                    request.Prompt,
+                    providerConfig.Name,
+                    rulesEnabled,
+                    request.RuleFiles);
+            }
+        }
 
         return new AnalysisResult
         {
             Recommendation = recommendation,
             RulesEnabled = rulesEnabled,
             Timestamp = DateTime.UtcNow,
-            Duration = stopwatch.Elapsed,
+            Duration = duration,
             ProviderName = providerConfig.Name,
-            ScreenshotPath = request.ImageData?.SizeInBytes.ToString() ?? "unknown"
+            ScreenshotPath = screenshotPath
         };
     }
 

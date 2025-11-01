@@ -1,4 +1,5 @@
 import Items from '@wfcd/items';
+import fs from 'fs';
 
 // Parse command line arguments
 function parseArgs() {
@@ -7,9 +8,10 @@ function parseArgs() {
     search: null,
     category: null,
     tradable: null,
-    limit: 20,
+    limit: null,
     lookup: null,
     full: false,
+    write: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -41,6 +43,10 @@ function parseArgs() {
       case '-f':
         options.full = true;
         break;
+      case '--write':
+      case '-w':
+        options.write = true;
+        break;
       case '--help':
       case '-h':
         showHelp();
@@ -67,7 +73,8 @@ Options:
   -c, --category <type>    Filter by category (e.g., Warframes, Melee, Primary)
   -t, --tradable           Show only tradable items
   --not-tradable           Show only non-tradable items
-  -l, --limit <number>     Limit number of results (default: 20)
+  -l, --limit <number>     Limit number of results (default: show all)
+  -w, --write              Write item names to a file (category.txt or all.txt)
   -h, --help               Show this help message
 
 Categories:
@@ -195,6 +202,19 @@ function displayItemDetail(item, showFull = false) {
   }
 }
 
+// Write items to a file
+function writeItemsToFile(items, category) {
+  const filename = category ? `${category.toLowerCase()}.txt` : 'all.txt';
+  const names = items.map(item => item.name || 'Unknown').join('\n');
+  
+  try {
+    fs.writeFileSync(filename, names + '\n', 'utf8');
+    console.log(`\nWrote ${items.length} item name(s) to ${filename}`);
+  } catch (error) {
+    console.error(`\nError writing to file: ${error.message}`);
+  }
+}
+
 // Main function
 function main() {
   try {
@@ -230,7 +250,9 @@ function main() {
     
     // Limit results
     const totalResults = results.length;
-    results = results.slice(0, options.limit);
+    if (options.limit !== null) {
+      results = results.slice(0, options.limit);
+    }
     
     // Display results
     if (results.length === 0) {
@@ -245,7 +267,12 @@ function main() {
       
       console.log('\n' + '='.repeat(80));
       
-      if (totalResults > options.limit) {
+      // Write to file if --write flag is set
+      if (options.write) {
+        writeItemsToFile(results, options.category);
+      }
+      
+      if (options.limit !== null && totalResults > options.limit) {
         console.log(`\n(${totalResults - options.limit} more results not shown. Use --limit to see more)`);
       }
     }

@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <None Include="Tests\Data\Wiki\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="data\*.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

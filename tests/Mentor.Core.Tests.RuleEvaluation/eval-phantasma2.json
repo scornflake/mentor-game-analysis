@@ -1,0 +1,100 @@
+{
+  "provider": "perplexity",
+  "evaluator": "claude",
+  "screenshots": [
+    {
+      "path": "../media/phantasma rad build.png",
+      "prompt": "Analyze this Phantasma build and suggest improvements for early steel Path content against grineer",
+      "rules": "Phantasma, Grineer",
+      "evaluationCriteria": [
+        {
+          "criterion": "Prioritizes corrosive or viral as primary elements specifically for Steel Path Grineer armor mitigation",
+          "expectation": "positive",
+          "weight": 1.5
+        },
+        {
+          "criterion": "Explicitly prescribes an armor mitigation plan (e.g., corrosive procs focus, full strip via ability/Helminth, Corrosive Projection, Shattering Impact, Unairu)",
+          "expectation": "positive",
+          "weight": 1.3
+        },
+        {
+          "criterion": "Explains why the shown build is suboptimal versus Grineer (e.g., lacks corrosive/viral focus, low status chance, wrong elemental mix)",
+          "expectation": "positive",
+          "weight": 1.2
+        },
+        {
+          "criterion": "Proposes concrete mod swaps to achieve a corrosive or viral-focused shotgun build (e.g., Toxic Barrage + Shell Shock for corrosive; Toxic Barrage + Frigid Blast for viral)",
+          "expectation": "positive",
+          "weight": 1.1
+        },
+        {
+          "criterion": "Prefers a status-focused path on Phantasma over crit (with rationale tied to Grineer armor scaling)",
+          "expectation": "positive",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Recommends Bane of Grineer / Primed Bane of Grineer for faction-specific scaling",
+          "expectation": "positive",
+          "weight": 0.8
+        },
+        {
+          "criterion": "Acknowledges Steel Path realities (very high armor, Eximus Overguard) and adapts advice accordingly",
+          "expectation": "positive",
+          "weight": 0.8
+        },
+        {
+          "criterion": "Suggests a suitable primary arcane for sustained DPS (e.g., Primary Merciless/Deadhead) with reasoning for Grineer",
+          "expectation": "positive",
+          "weight": 0.5
+        },
+        {
+          "criterion": "Advises avoiding element dilution; keeps to two-element focus for reliable corrosive/viral procs",
+          "expectation": "positive",
+          "weight": 0.7
+        },
+        {
+          "criterion": "Recommends multishot/status helpers appropriate to shotguns (e.g., Galvanized Savvy, Shotgun Savvy) if available",
+          "expectation": "positive",
+          "weight": 0.8
+        },
+        {
+          "criterion": "Recommends heat, radiation, or magnetic as primary elements against Grineer",
+          "expectation": "negative",
+          "weight": 1.3
+        },
+        {
+          "criterion": "Recommends gas or toxin as primary elements against Grineer",
+          "expectation": "negative",
+          "weight": 1.1
+        },
+        {
+          "criterion": "Mentions or optimizes for non-Grineer factions or shields (Corpus, Infested, Corrupted, Sentient) in the recommendations",
+          "expectation": "negative",
+          "weight": 1.5
+        },
+        {
+          "criterion": "Advocates a crit-centric build as the main path for Phantasma versus Grineer",
+          "expectation": "negative",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Suggests mods invalid for shotguns/Phantasma (e.g., Hunter Munitions) or otherwise inapplicable",
+          "expectation": "negative",
+          "weight": 0.9
+        },
+        {
+          "criterion": "Pushes a generalist 'one build for all factions' without Grineer-specific justification",
+          "expectation": "negative",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Suggests removing faction bane in favor of neutral damage for Steel Path Grineer",
+          "expectation": "negative",
+          "weight": 0.8
+        }
+      ]
+    }
+  ]
+}
+
+

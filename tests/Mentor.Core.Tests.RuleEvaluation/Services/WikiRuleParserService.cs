@@ -285,17 +285,17 @@ Respond in JSON format only."),
             sb.AppendLine($"[{characteristic.OriginalIndex}] {characteristic.Text}");
         }
 
-        sb.AppendLine();
-        sb.AppendLine("Provide your response as a JSON object with this structure:");
-        sb.AppendLine(@"{
-  ""categorizations"": [
-    {
-      ""index"": 0,
-      ""category"": ""WeaponSpecific"",
-      ""reasoning"": ""This describes the weapon's primary damage type""
-    }
-  ]
-}");
+//         sb.AppendLine();
+//         sb.AppendLine("Provide your response as a JSON object with this structure:");
+//         sb.AppendLine(@"{
+//   ""categorizations"": [
+//     {
+//       ""index"": 0,
+//       ""category"": ""WeaponSpecific"",
+//       ""reasoning"": ""This describes the weapon's primary damage type""
+//     }
+//   ]
+// }");
 
         return sb.ToString();
     }
