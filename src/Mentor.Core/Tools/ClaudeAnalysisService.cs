@@ -26,14 +26,16 @@ public class ClaudeAnalysisService: AnalysisService
     {
         await base.AnalyzeAsync(request, progress, aiProgress, cancellationToken);
         var systemMessage = GetSystemPrompt(request);
-        // var userMessage = GetUserMessages_ForStreaming(request);
-        var userMessage = GetUserMessages(request);
+        var userMessage = GetUserMessages_ForStreaming(request);
+        // var userMessage = GetUserMessages(request);
     
         var messages = new List<ChatMessage> { systemMessage };
         messages.AddRange(userMessage);
 
         var options = await CreateAIOptions();
-        return await ExecuteAndParse(messages, options, progress, aiProgress, cancellationToken);
+        // for some reason, can't get the output from Claude to go through the ExecuteAndParse method
+        // so do this for now: (which is basically accept text, try to find the json payload inside it, and parse that)
+        return await ExecuteAndParse_ForStreaming(messages, options, progress, aiProgress, cancellationToken);
     }
 }
 
