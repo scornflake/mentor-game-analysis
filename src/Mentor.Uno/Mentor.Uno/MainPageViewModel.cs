@@ -23,6 +23,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly IMessenger _messenger;
     private readonly ILogger<MainPageViewModel> _logger;
     private readonly IImageAnalyzer _imageAnalyzer;
+    private readonly IAnalysisExportService _analysisExportService;
     
     private CancellationTokenSource? _analysisCancellationTokenSource;
     private System.Threading.Timer? _analysisMessageTimer;
@@ -134,6 +135,8 @@ public partial class MainPageViewModel : ObservableObject
 
     [ObservableProperty] private string? _errorMessage;
     
+    [ObservableProperty] private string? _successMessage;
+    
     [ObservableProperty] private string? _rejectionMessage;
     
     [ObservableProperty] private AnalysisProgress? _analysisProgress;
@@ -149,16 +152,18 @@ public partial class MainPageViewModel : ObservableObject
     public bool ShowEmptyState => Result == null && !IsAnalyzing;
     
     private bool _systemIsLoaded = false;
+    private bool _saveAnalysisAutomatically = false;
 
     public ObservableCollection<string> Providers { get; } = new();
 
-    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<MainPageViewModel> logger, IImageAnalyzer imageAnalyzer)
+    public MainPageViewModel(ILLMProviderFactory providerFactory, IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<MainPageViewModel> logger, IImageAnalyzer imageAnalyzer, IAnalysisExportService analysisExportService)
     {
         _providerFactory = providerFactory;
         _configurationRepository = configurationRepository;
         _messenger = messenger;
         _logger = logger;
         _imageAnalyzer = imageAnalyzer;
+        _analysisExportService = analysisExportService;
         // Subscribe to providers changed message
         _messenger.Register<ProvidersChangedMessage>(this, (r, m) =>
         {
@@ -206,6 +211,9 @@ public partial class MainPageViewModel : ObservableObject
             {
                 SelectedProvider = state.LastProvider;
             }
+            
+            // Load SaveAnalysisAutomatically setting
+            _saveAnalysisAutomatically = state.SaveAnalysisAutomatically;
         }
         catch (Exception ex)
         {
@@ -324,7 +332,7 @@ public partial class MainPageViewModel : ObservableObject
             {
                 // Always replace the entire object to ensure UI updates
                 // This triggers PropertyChanged which should cause Binding to re-evaluate
-                _logger.LogInformation("Progress update: {TotalPercentage}%, Jobs: {JobCount}", 
+                _logger.LogTrace("Progress update: {TotalPercentage}%, Jobs: {JobCount}", 
                     progress.TotalPercentage, progress.Jobs.Count);
                 AnalysisProgress = progress;
                 
@@ -402,6 +410,29 @@ public partial class MainPageViewModel : ObservableObject
 
             // Perform analysis
             Result = await analysisService.AnalyzeAsync(request, progressReporter, aiProgressReporter, _analysisCancellationTokenSource.Token);
+            
+            // Auto-export if enabled
+            if (_saveAnalysisAutomatically && Result != null)
+            {
+                try
+                {
+                    var exportRequest = new ExportRequest
+                    {
+                        Recommendation = Result,
+                        ImageData = imageData,
+                        Prompt = Prompt,
+                        GameName = GameName
+                    };
+                    
+                    var exportPath = await _analysisExportService.ExportAnalysisAsync(exportRequest, _analysisCancellationTokenSource.Token);
+                    _logger.LogInformation("Analysis automatically exported to: {ExportPath}", exportPath);
+                }
+                catch (Exception exportEx)
+                {
+                    // Log but don't show error to user - export is a background operation
+                    _logger.LogError(exportEx, "Error auto-exporting analysis");
+                }
+            }
         }
         catch (OperationCanceledException)
         {
@@ -672,6 +703,82 @@ public partial class MainPageViewModel : ObservableObject
     {
         _analysisCancellationTokenSource?.Cancel();
         StopAnalysisMessageCycle();
+    }
+    
+    [RelayCommand]
+    public void OpenSaveFolder()
+    {
+        try
+        {
+            _analysisExportService.OpenSaveFolder();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening save folder");
+            ErrorMessage = $"Failed to open save folder: {ex.Message}";
+        }
+    }
+    
+    [RelayCommand]
+    public async Task SaveAnalysis()
+    {
+        if (Result == null)
+        {
+            ErrorMessage = "No analysis to save";
+            return;
+        }
+        
+        // Get the image data that was used for this analysis
+        RawImage? imageData = null;
+        if (_clipboardImageData != null)
+        {
+            imageData = _clipboardImageData;
+        }
+        else if (!string.IsNullOrWhiteSpace(ImagePath) && File.Exists(ImagePath))
+        {
+            try
+            {
+                var imageBytes = await File.ReadAllBytesAsync(ImagePath);
+                var mimeType = ImageMimeTypeDetector.DetectMimeType(imageBytes, ImagePath);
+                imageData = new RawImage(imageBytes, mimeType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reading image file for save");
+                ErrorMessage = $"Failed to read image: {ex.Message}";
+                return;
+            }
+        }
+        
+        if (imageData == null)
+        {
+            ErrorMessage = "No image available to save with analysis";
+            return;
+        }
+        
+        try
+        {
+            var exportRequest = new ExportRequest
+            {
+                Recommendation = Result,
+                ImageData = imageData,
+                Prompt = Prompt,
+                GameName = GameName
+            };
+            
+            var exportPath = await _analysisExportService.ExportAnalysisAsync(exportRequest);
+            _logger.LogInformation("Analysis manually saved to: {ExportPath}", exportPath);
+            
+            // Show success message briefly
+            SuccessMessage = "Analysis saved successfully!";
+            await Task.Delay(3000);
+            SuccessMessage = null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving analysis");
+            ErrorMessage = $"Failed to save analysis: {ex.Message}";
+        }
     }
 
     partial void OnImagePathChanged(string? value)

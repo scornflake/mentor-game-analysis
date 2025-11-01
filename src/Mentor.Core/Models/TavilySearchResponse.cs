@@ -23,6 +23,10 @@ public class TavilySearchRequest
     
     [JsonPropertyName("include_images")]
     public bool IncludeImages { get; set; }
+    
+    [JsonPropertyName("include_raw_content")]
+    public bool IncludeRawContent { get; set; }
+
 }
 
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicConstructors)]

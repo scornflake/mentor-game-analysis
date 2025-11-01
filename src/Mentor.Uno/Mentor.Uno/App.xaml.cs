@@ -57,6 +57,7 @@ public partial class App : Application
                 services.AddKeyedTransient<IWebSearchTool, TavilyWebSearch>(KnownSearchTools.Tavily);
                 services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);
                 services.AddTransient<IImageAnalyzer, ImageAnalyzer>();
+                services.AddSingleton<IAnalysisExportService, AnalysisExportService>();
 
                 // Register clipboard monitoring service
                 services.AddSingleton<Mentor.Uno.Services.ClipboardMonitor>();

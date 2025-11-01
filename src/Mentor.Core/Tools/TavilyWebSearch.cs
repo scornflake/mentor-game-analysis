@@ -26,7 +26,7 @@ public class TavilyWebSearch : IWebSearchTool
     public void Configure(ToolConfigurationEntity configuration)
     {
         _config = configuration;
-        
+
         // Create or get rate limiter for this API key (100 requests per minute)
         if (!string.IsNullOrWhiteSpace(_config.ApiKey))
         {
@@ -52,6 +52,7 @@ public class TavilyWebSearch : IWebSearchTool
         {
             query += $"{context.GameName}, ";
         }
+
         query += $"Give me accurate information about: {context.Query}";
         query += ". Prefer recent results.";
         return query;
@@ -63,7 +64,7 @@ public class TavilyWebSearch : IWebSearchTool
         {
             throw new ArgumentNullException(nameof(context));
         }
-        
+
         if (string.IsNullOrWhiteSpace(context.Query))
         {
             throw new ArgumentException("Query cannot be null or empty", nameof(context.Query));
@@ -74,7 +75,7 @@ public class TavilyWebSearch : IWebSearchTool
 
         ValidateQuery(query);
 
-        var searchResponse = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth: "basic", includeAnswer: false);
+        var searchResponse = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth: "basic", includeAnswer: false, includeRawContent: false);
         if (searchResponse?.Results == null || searchResponse.Results.Count == 0)
         {
             return new List<SearchResult>();
@@ -89,7 +90,7 @@ public class TavilyWebSearch : IWebSearchTool
                 Score = r.Score
             })
             .ToList();
-            
+
         LogResults(query, results);
         return results;
     }
@@ -108,12 +109,12 @@ public class TavilyWebSearch : IWebSearchTool
         }
     }
 
-    private async Task<TavilySearchResponse?> ExecuteSearchWithRateLimit(string query, int maxResults, string searchDepth = "basic", bool includeAnswer = false, CancellationToken cancellationToken = default)
+    private async Task<TavilySearchResponse?> ExecuteSearchWithRateLimit(string query, int maxResults, string searchDepth = "basic", bool includeAnswer = false, bool includeRawContent = false, CancellationToken cancellationToken = default)
     {
         // If no rate limiter configured, execute directly
         if (_rateLimiter == null)
         {
-            return await ExecuteSearch(query, maxResults, searchDepth, includeAnswer);
+            return await ExecuteSearch(query, maxResults, searchDepth, includeAnswer, includeRawContent);
         }
 
         // Try to acquire rate limiter permit
@@ -122,27 +123,27 @@ public class TavilyWebSearch : IWebSearchTool
             if (lease.IsAcquired)
             {
                 _logger.LogDebug("Rate limit acquired for search request");
-                return await ExecuteSearch(query, maxResults, searchDepth, includeAnswer);
+                return await ExecuteSearch(query, maxResults, searchDepth, includeAnswer, includeRawContent);
             }
-            
-            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue) 
-                ? retryAfterValue 
+
+            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue)
+                ? retryAfterValue
                 : (TimeSpan?)null;
-            
+
             var waitTime = retryAfter ?? TimeSpan.FromSeconds(1);
             throw new InvalidOperationException($"Rate limit exceeded. Maximum 100 requests per minute allowed. Retry after {waitTime.TotalSeconds} seconds.");
         }
     }
 
-    private async Task<TavilySearchResponse?> ExecuteSearch(string query, int maxResults, string searchDepth, bool includeAnswer)
+    private async Task<TavilySearchResponse?> ExecuteSearch(string query, int maxResults, string searchDepth, bool includeAnswer, bool includeRawContent)
     {
         var httpClient = _httpClientFactory.CreateClient();
         httpClient.Timeout = TimeSpan.FromSeconds(_config.Timeout);
 
         var baseUrl = "https://api.tavily.com/search";
-        
+
         _logger.LogInformation("Executing Tavily search with query: {query}", query);
-        
+
         var requestBody = new TavilySearchRequest
         {
             ApiKey = _config.ApiKey,
@@ -150,6 +151,7 @@ public class TavilyWebSearch : IWebSearchTool
             MaxResults = maxResults,
             SearchDepth = searchDepth,
             IncludeAnswer = includeAnswer,
+            IncludeRawContent = includeRawContent,
             IncludeImages = false
         };
 
@@ -192,7 +194,7 @@ public class TavilyWebSearch : IWebSearchTool
         {
             throw new ArgumentNullException(nameof(context));
         }
-        
+
         if (string.IsNullOrWhiteSpace(context.Query))
         {
             throw new ArgumentException("Query cannot be null or empty", nameof(context.Query));
@@ -203,9 +205,9 @@ public class TavilyWebSearch : IWebSearchTool
 
         ValidateQuery(query);
 
-        var responseContent = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth: "basic", includeAnswer: false);
+        var responseContent = await ExecuteSearchWithRateLimit(query, maxResults, searchDepth: "basic", includeAnswer: false, includeRawContent: true);
         var results = responseContent?.Results;
-        
+
         if (results == null || results.Count == 0)
         {
             return new List<SearchResult>();
@@ -216,14 +218,35 @@ public class TavilyWebSearch : IWebSearchTool
             {
                 Title = r.Title,
                 Url = r.Url,
-                Content = r.Content,
+                Content = StripMarkdown(!string.IsNullOrEmpty(r.RawContent) ? r.RawContent : r.Content),
                 Score = r.Score
             })
             .ToList();
-            
+
         LogResults(query, searchResults);
 
         return searchResults;
+    }
+
+    private string StripMarkdown(string maybeMarkdownContent)
+    {
+        if (string.IsNullOrEmpty(maybeMarkdownContent))
+        {
+            return maybeMarkdownContent;
+        }
+
+        var result = maybeMarkdownContent;
+
+        // Remove inline links: [text](url)
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\[([^\]]*)\]\(([^\)]*)\)", string.Empty);
+
+        // Remove reference-style links: [text][ref]
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\[([^\]]*)\]\[([^\]]*)\]", string.Empty);
+
+        // Remove autolinks: <https://example.com>
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"<(https?://[^>]+)>", string.Empty);
+
+        return result;
     }
 
     private void LogResults(string query, List<SearchResult> results)
@@ -233,7 +256,7 @@ public class TavilyWebSearch : IWebSearchTool
         {
             _logger.LogInformation("Title: {Title}", result.Title);
             _logger.LogInformation("URL: {Url}", result.Url);
-            _logger.LogInformation("Description: {Description}", result.Content);
+            _logger.LogInformation("Content: {Description}", result.Content);
             if (result.Score.HasValue)
             {
                 _logger.LogInformation("Score: {Score}", result.Score.Value);
@@ -241,4 +264,3 @@ public class TavilyWebSearch : IWebSearchTool
         }
     }
 }
-

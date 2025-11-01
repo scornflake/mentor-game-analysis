@@ -10,8 +10,22 @@
   
   <ScrollViewer Visibility="{x:Bind Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
     <StackPanel Spacing="16">
-      <TextBlock Text="Analysis Results"
-                 Style="{StaticResource TitleTextBlockStyle}"/>
+      <Grid>
+        <TextBlock Text="Analysis Results"
+                   Style="{StaticResource TitleTextBlockStyle}"
+                   VerticalAlignment="Center"/>
+        <Button HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Command="{x:Bind SaveAnalysisCommand}"
+                Style="{StaticResource AccentButtonStyle}"
+                ToolTipService.ToolTip="Save this analysis to HTML">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <FontIcon Glyph="&#xE74E;" FontSize="16"/>
+            
+            <TextBlock Text="Save"/>
+          </StackPanel>
+        </Button>
+      </Grid>
 
       <!-- Metadata -->
       <StackPanel Spacing="4">
@@ -58,7 +72,7 @@
       <!-- Recommendations -->
       <StackPanel Spacing="8">
         <TextBlock Text="Recommendations" Style="{StaticResource SubtitleTextBlockStyle}"/>
-        <ItemsRepeater ItemsSource="{x:Bind Result.Recommendations, Mode=OneWay}">
+        <ItemsRepeater ItemsSource="{x:Bind SortedRecommendations, Mode=OneWay}">
           <ItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="models:RecommendationItem">
               <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"

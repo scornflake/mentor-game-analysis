@@ -240,6 +240,16 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
 
         SeedProviderIfNotExists(providerCollection, new ProviderConfigurationEntity
         {
+            Name = KnownProviderTools.Claude,
+            ProviderType = "claude",
+            Model = "claude-sonnet-4-5",
+            BaseUrl = "https://api.anthropic.com/v1",
+            ApiKey = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        SeedProviderIfNotExists(providerCollection, new ProviderConfigurationEntity
+        {
             Name = "Local LLM",
             ProviderType = "openai",
             Model = "google/gemma-3-27b",
@@ -327,6 +337,7 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingState.LastProvider = state.LastProvider;
             existingState.LastGameName = state.LastGameName;
             existingState.UpdatedAt = DateTimeOffset.UtcNow;
+            existingState.SaveAnalysisAutomatically = state.SaveAnalysisAutomatically;
             collection.Update(existingState);
         }
         else
@@ -339,7 +350,8 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
                 LastPrompt = state.LastPrompt,
                 LastProvider = state.LastProvider,
                 LastGameName = state.LastGameName,
-                UpdatedAt = DateTimeOffset.UtcNow
+                UpdatedAt = DateTimeOffset.UtcNow,
+                SaveAnalysisAutomatically = state.SaveAnalysisAutomatically
             };
             collection.Insert(newState);
         }
@@ -352,7 +364,8 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
         return Task.FromResult<IList<string>>(new List<string>
         {
             "openai",
-            "perplexity"
+            KnownProviderTools.Perplexity,
+            KnownProviderTools.Claude,
         });
     }
 

@@ -13,6 +13,6 @@ public class Recommendation
 
     public IList<SearchResult> SearchResults { get; set; } = [];
     
-    public string GeneratedAtFormatted => GeneratedAt.ToUniversalTime().ToString("u") ?? "";
+    public string GeneratedAtFormatted => GeneratedAt.ToLocalTime().ToString("g") ?? "";
 }
 

@@ -14,6 +14,7 @@ public partial class SettingsPageViewModel : ObservableObject
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMessenger _messenger;
     private readonly ILogger<SettingsPageViewModel> _logger;
+    private readonly IAnalysisExportService _analysisExportService;
     private readonly DispatcherQueue _queueAtCreationTime;
     private CancellationTokenSource? _debounceCts;
 
@@ -29,16 +30,19 @@ public partial class SettingsPageViewModel : ObservableObject
     [ObservableProperty] private bool _isBraveApiKeyVisible = false;
     [ObservableProperty] private string _tavilyApiKey = string.Empty;
     [ObservableProperty] private bool _isTavilyApiKeyVisible = false;
+    
+    [ObservableProperty] private bool _saveAnalysisAutomatically = false;
 
     public ObservableCollection<ProviderViewModel> Providers { get; } = new();
     public ObservableCollection<ToolViewModel> Tools { get; } = new();
     public ObservableCollection<string> AvailableProviderTypes { get; } = new();
 
-    public SettingsPageViewModel(IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<SettingsPageViewModel> logger)
+    public SettingsPageViewModel(IConfigurationRepository configurationRepository, IMessenger messenger, ILogger<SettingsPageViewModel> logger, IAnalysisExportService analysisExportService)
     {
         _configurationRepository = configurationRepository;
         _messenger = messenger;
         _logger = logger;
+        _analysisExportService = analysisExportService;
         _queueAtCreationTime = DispatcherQueue.GetForCurrentThread();
         
         _ = InitializeAsync();
@@ -165,6 +169,10 @@ public partial class SettingsPageViewModel : ObservableObject
             {
                 TavilyApiKey = tavilyTool.ApiKey;
             }
+            
+            // Load SaveAnalysisAutomatically setting
+            var uiState = await _configurationRepository.GetUIStateAsync();
+            SaveAnalysisAutomatically = uiState.SaveAnalysisAutomatically;
         }
         catch (Exception ex)
         {
@@ -193,6 +201,25 @@ public partial class SettingsPageViewModel : ObservableObject
         if (!string.IsNullOrEmpty(value) || !string.IsNullOrEmpty(_tavilyApiKey))
         {
             DebounceAndSaveTavilyApiKey();
+        }
+    }
+    
+    partial void OnSaveAnalysisAutomaticallyChanged(bool value)
+    {
+        DebounceAndSaveSaveAnalysisAutomatically();
+    }
+    
+    [RelayCommand]
+    private void OpenSaveFolder()
+    {
+        try
+        {
+            _analysisExportService.OpenSaveFolder();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening save folder: {ErrorMessage}", ex.Message);
+            _ = ShowErrorAsync($"Failed to open save folder: {ex.Message}");
         }
     }
 
@@ -282,6 +309,29 @@ public partial class SettingsPageViewModel : ObservableObject
             }
         }, token);
     }
+    
+    private void DebounceAndSaveSaveAnalysisAutomatically()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await SaveSaveAnalysisAutomaticallyAsync();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when debouncing
+            }
+        }, token);
+    }
 
     private async Task SavePerplexityApiKeyAsync()
     {
@@ -359,6 +409,22 @@ public partial class SettingsPageViewModel : ObservableObject
         {
             _logger.LogError(ex, "Error saving Tavily API key: {ErrorMessage}", ex.Message);
             await ShowErrorAsync($"Failed to save Tavily API key: {ex.Message}");
+        }
+    }
+    
+    private async Task SaveSaveAnalysisAutomaticallyAsync()
+    {
+        try
+        {
+            var uiState = await _configurationRepository.GetUIStateAsync();
+            uiState.SaveAnalysisAutomatically = SaveAnalysisAutomatically;
+            await _configurationRepository.SaveUIStateAsync(uiState);
+            await ShowSaveCompleteAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving SaveAnalysisAutomatically setting: {ErrorMessage}", ex.Message);
+            await ShowErrorAsync($"Failed to save setting: {ex.Message}");
         }
     }
 

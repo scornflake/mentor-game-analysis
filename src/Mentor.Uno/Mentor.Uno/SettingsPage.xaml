@@ -157,6 +157,44 @@
           </Border>
         </StackPanel>
 
+        <!-- Export Settings Section -->
+        <StackPanel Spacing="16">
+          <TextBlock Text="Export Settings"
+                     Style="{StaticResource SubtitleTextBlockStyle}"/>
+          <TextBlock Text="Configure automatic export of analysis results to HTML files."
+                     FontSize="12"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     Margin="0,0,0,8"/>
+          
+          <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Padding="16">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              
+              <ToggleSwitch Grid.Column="0"
+                            Header="Save Automatically"
+                            IsOn="{x:Bind ViewModel.SaveAnalysisAutomatically, Mode=TwoWay}"
+                            ToolTipService.ToolTip="When enabled, analysis results will be automatically exported to HTML files in Documents/Mentor/Saved Analysis after each successful analysis."/>
+              
+              <Button Grid.Column="1"
+                      Command="{x:Bind ViewModel.OpenSaveFolderCommand}"
+                      VerticalAlignment="Center"
+                      ToolTipService.ToolTip="Opens the folder where analysis results are saved (Documents/Mentor/Saved Analysis)">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <FontIcon Glyph="&#xE8B7;" FontSize="16"/>
+                  <TextBlock Text="Open Save Folder"/>
+                </StackPanel>
+              </Button>
+            </Grid>
+          </Border>
+        </StackPanel>
+
         <!-- LLM Providers Section -->
         <StackPanel Spacing="16">
           <Grid>

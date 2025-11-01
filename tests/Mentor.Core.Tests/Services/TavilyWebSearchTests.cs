@@ -298,6 +298,293 @@ public class TavilyWebSearchTests
             () => service.Search(SearchContext.Create(longQuery), 5)
         );
     }
+
+    [Fact]
+    public async Task Search_StripMarkdown_RemovesInlineLinks()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "Check out [this link](https://example.com) for more info.",
+                    "raw_content": "Check out [this link](https://example.com) for more info.",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("Check out  for more info.", result[0].Content);
+        Assert.DoesNotContain("[this link]", result[0].Content);
+        Assert.DoesNotContain("(https://example.com)", result[0].Content);
+    }
+
+    [Fact]
+    public async Task Search_StripMarkdown_RemovesMultipleInlineLinks()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "Visit [site A](https://a.com) and [site B](https://b.com) today.",
+                    "raw_content": "Visit [site A](https://a.com) and [site B](https://b.com) today.",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("Visit  and  today.", result[0].Content);
+    }
+
+    [Fact]
+    public async Task Search_StripMarkdown_RemovesReferenceStyleLinks()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "Check the [documentation][docs] for details.",
+                    "raw_content": "Check the [documentation][docs] for details.",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("Check the  for details.", result[0].Content);
+        Assert.DoesNotContain("[documentation][docs]", result[0].Content);
+    }
+
+    [Fact]
+    public async Task Search_StripMarkdown_RemovesAutolinks()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "Visit <https://example.com> for more.",
+                    "raw_content": "Visit <https://example.com> for more.",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("Visit  for more.", result[0].Content);
+        Assert.DoesNotContain("<https://example.com>", result[0].Content);
+    }
+
+    [Fact]
+    public async Task Search_StripMarkdown_PreservesOtherMarkdown()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "**Bold** text with [link](https://example.com) and *italic* content.",
+                    "raw_content": "**Bold** text with [link](https://example.com) and *italic* content.",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("**Bold** text with  and *italic* content.", result[0].Content);
+        Assert.Contains("**Bold**", result[0].Content);
+        Assert.Contains("*italic*", result[0].Content);
+        Assert.DoesNotContain("[link]", result[0].Content);
+    }
+
+    [Fact]
+    public async Task Search_StripMarkdown_HandlesTextWithoutLinks()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "Plain text without any links.",
+                    "raw_content": "Plain text without any links.",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("Plain text without any links.", result[0].Content);
+    }
+
+    [Fact]
+    public async Task Search_StripMarkdown_HandlesEmptyContent()
+    {
+        // Arrange
+        var mockResponse = """
+        {
+            "query": "test query",
+            "results": [
+                {
+                    "title": "Test Result",
+                    "url": "https://example.com",
+                    "content": "",
+                    "raw_content": "",
+                    "score": 0.95
+                }
+            ]
+        }
+        """;
+
+        var mockFactory = CreateMockHttpClientFactory(mockResponse);
+        var config = new ToolConfigurationEntity
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://api.tavily.com",
+            Timeout = 30
+        };
+
+        var logger = NullLogger<TavilyWebSearch>.Instance;
+        var service = new TavilyWebSearch(mockFactory.Object, logger);
+        service.Configure(config);
+
+        // Act
+        var result = await service.Search(SearchContext.Create("test query"), 5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("", result[0].Content);
+    }
 }
 
 public class TavilyWebSearchIntegrationTests

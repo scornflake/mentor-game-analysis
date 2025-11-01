@@ -12,6 +12,7 @@ public class UIStateEntity
     public string? LastPrompt { get; set; }
     public string? LastProvider { get; set; }
     public string? LastGameName { get; set; }
+    public bool SaveAnalysisAutomatically { get; set; } = false;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 

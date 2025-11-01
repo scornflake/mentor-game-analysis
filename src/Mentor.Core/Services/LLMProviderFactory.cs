@@ -40,12 +40,18 @@ public class LLMProviderFactory : ILLMProviderFactory
             analysisLogging.LogInformation("Creating AnalysisService for Perplexity provider.");
             return new PerplexityAnalysisService(llmClient, analysisLogging, toolFactory);
         }
+        else if (providerName == "claude")
+        {
+            var analysisLogging = _serviceProvider.GetRequiredService<ILogger<ClaudeAnalysisService>>();
+            analysisLogging.LogInformation("Creating AnalysisService for Claude provider.");
+            return new ClaudeAnalysisService(llmClient, analysisLogging, toolFactory);
+        }
         throw new NotSupportedException($"AnalysisService does not support provider '{providerName}'.");
     }
 
     private void ValidateProviderName(string providerName)
     {
-        if (providerName != "openai" && providerName != "perplexity")
+        if (providerName != "openai" && providerName != "perplexity" && providerName != "claude")
         {
             throw new NotSupportedException($"AnalysisService does not support provider '{providerName}'.");
         }
@@ -83,6 +89,7 @@ public class LLMProviderFactory : ILLMProviderFactory
         {
             "openai" => CreateOpenAIClient(config),
             "perplexity" => CreatePerplexityClient(config),
+            "claude" => CreateClaudeClient(config),
             _ => throw new ArgumentException(
                 $"Provider type '{config.ProviderType}' does not have an implementation.",
                 nameof(config))
@@ -130,6 +137,34 @@ public class LLMProviderFactory : ILLMProviderFactory
         };
 
         // Perplexity uses OpenAI-compatible API
+        var openAIClient = new ChatClient(config.Model, credential, options);
+
+        // Wrap with middleware
+        var newClient = openAIClient.AsIChatClient()
+            .AsBuilder()
+            .UseLogging()
+            .Build(_serviceProvider);
+
+        return newClient;
+    }
+
+    private IChatClient CreateClaudeClient(ProviderConfigurationEntity config)
+    {
+        // Claude requires an API key
+        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            throw new InvalidOperationException(
+                "API key for Claude provider is required.");
+        }
+
+        var credential = new ApiKeyCredential(config.ApiKey);
+
+        var options = new OpenAIClientOptions
+        {
+            Endpoint = new Uri(config.BaseUrl),
+        };
+
+        // Claude uses OpenAI-compatible API
         var openAIClient = new ChatClient(config.Model, credential, options);
 
         // Wrap with middleware

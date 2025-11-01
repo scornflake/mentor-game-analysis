@@ -20,6 +20,7 @@ public class KnownSearchTools
 public class KnownProviderTools
 {
     public const string Perplexity = "perplexity";
+    public const string Claude = "claude";
 }
 
 public class KnownTools

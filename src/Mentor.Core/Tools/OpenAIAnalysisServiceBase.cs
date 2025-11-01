@@ -40,8 +40,8 @@ public abstract class OpenAIAnalysisServiceBase : AnalysisService
     /// Performs a web search to find relevant information about the query
     /// </summary>
     [Description(
-        "Performs a web search to find relevant information about the query. Returns a concise summary of up to 10 search results. Use this tool when you need a quick overview or summary of information related to game mechanics, builds, strategies, or other topics. Call this tool with a clear, specific search query.")]
-    protected async Task<string> SearchTheWebSummary(string query)
+        "Performs a web search to find relevant information about the query. Returns a concise summary of up to 10 search results. Use this tool when you need actual content.")]
+    protected async Task<string> SearchTheWebSummary([Description("The search query to perform.")] string query)
     {
         _logger.LogInformation("Performing web search for query: {Query}", query);
         var context = SearchContext.Create(query, _currentRequest?.GameName);
@@ -61,6 +61,15 @@ public abstract class OpenAIAnalysisServiceBase : AnalysisService
         _logger.LogInformation("Reading article content from URL: {Url}", url);
         var articleReader = await _toolFactory.GetArticleReaderAsync();
         return await articleReader.ReadArticleAsync(url);
+    }
+
+    protected override async Task<ChatOptions> CreateAIOptions()
+    {
+        var options = await base.CreateAIOptions();
+        // add tools
+        options.Tools = await SetupSearchAndArticleTools();
+        options.ToolMode = ChatToolMode.RequireAny;
+        return options;
     }
 
     /// <summary>

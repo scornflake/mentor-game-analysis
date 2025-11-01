@@ -62,10 +62,7 @@ public class SearchResultFormatter
             if (!string.IsNullOrWhiteSpace(result.Content))
             {
                 // Take first 550 characters for summary format
-                var snippet = result.Content.Length > 550
-                    ? result.Content[..550] + "..."
-                    : result.Content;
-                sb.AppendLine($"- {snippet}");
+                sb.AppendLine($"- {result.Content}");
             }
         }
 
