@@ -39,18 +39,46 @@ public static class ConfigurationRepositoryExtensions
 public class ConfigurationRepository : IConfigurationRepository, IDisposable
 {
     private readonly LiteDatabase _database;
+    private static readonly object _mapperLock = new object();
+    private static bool _mapperInitialized = false;
 
     public ConfigurationRepository(string? databasePath = null)
     {
+        // Ensure BsonMapper is initialized once in a thread-safe manner
+        // This prevents race conditions when running tests in parallel
+        if (!_mapperInitialized)
+        {
+            lock (_mapperLock)
+            {
+                if (!_mapperInitialized)
+                {
+                    var mapper = BsonMapper.Global;
+                    
+                    // Pre-register all entity types to avoid race conditions
+                    mapper.Entity<ProviderConfigurationEntity>()
+                        .Id(x => x.Id);
+                    
+                    mapper.Entity<ToolConfigurationEntity>()
+                        .Id(x => x.Id);
+                    
+                    mapper.Entity<UIStateEntity>()
+                        .Id(x => x.Id);
+                    
+                    mapper.Entity<WindowStateEntity>()
+                        .Id(x => x.WindowName);
+                    
+                    _mapperInitialized = true;
+                }
+            }
+        }
+        
         var path = databasePath ?? "mentor.db";
         _database = new LiteDatabase(path);
-        
         
         var collection = _database.GetCollection<ProviderConfigurationEntity>("providers");
         collection.EnsureIndex(x => x.Id);
         var toolsCollection = _database.GetCollection<ToolConfigurationEntity>("tools");
         toolsCollection.EnsureIndex(x => x.Id);
-
     }
 
     public Task<ProviderConfigurationEntity?> GetProviderByNameAsync(string name)
@@ -104,7 +132,6 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
             existingProvider.BaseUrl = config.BaseUrl;
             existingProvider.Timeout = config.Timeout;
             existingProvider.RetrievalAugmentedGeneration = config.RetrievalAugmentedGeneration;
-            existingProvider.ServerHasMcpSearch = config.ServerHasMcpSearch;
 
             collection.Update(existingProvider);
             
@@ -133,7 +160,6 @@ public class ConfigurationRepository : IConfigurationRepository, IDisposable
                 BaseUrl = config.BaseUrl,
                 Timeout = config.Timeout,
                 RetrievalAugmentedGeneration = config.RetrievalAugmentedGeneration,
-                ServerHasMcpSearch = config.ServerHasMcpSearch,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             collection.Insert(newProvider);

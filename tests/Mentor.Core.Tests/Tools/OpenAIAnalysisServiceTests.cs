@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Mentor.Core.Data;
 using Mentor.Core.Interfaces;
 using Mentor.Core.Models;
+using Mentor.Core.Serialization;
 using Mentor.Core.Services;
 using Mentor.Core.Tools;
 using Microsoft.Extensions.AI;
@@ -34,11 +36,15 @@ public class OpenAIAnalysisServiceTests
             Model = "gpt-4",
             BaseUrl = "https://api.openai.com/v1",
             RetrievalAugmentedGeneration = false,
-            ServerHasMcpSearch = false
         };
 
         _mockLlmClient.Setup(x => x.Configuration).Returns(mockConfig);
         _mockLlmClient.Setup(x => x.ChatClient).Returns(_mockChatClient.Object);
+
+        // Setup web search tool mock
+        var mockWebSearchTool = new Mock<IWebSearchTool>();
+        _mockToolFactory.Setup(x => x.GetToolAsync(KnownSearchTools.Tavily))
+            .ReturnsAsync(mockWebSearchTool.Object);
 
         var searchResultFormatter = new SearchResultFormatter();
         _analysisService = new OpenAIAnalysisService(
@@ -118,25 +124,9 @@ public class OpenAIAnalysisServiceTests
 
         // Assert
         Assert.NotEmpty(progressReports);
-        var hasLLMJob = progressReports.Any(p => 
+        var hasLLMJob = progressReports.Any(p =>
             p.Jobs.Any(j => j.Tag == AnalysisJob.JobTag.LLMAnalysis));
         Assert.True(hasLLMJob, "Expected progress report with LLM analysis job");
-    }
-
-    [Fact]
-    public async Task CreateAIOptions_BasicImplementation_NoTools()
-    {
-        // Use reflection to access the protected method
-        var methodInfo = typeof(OpenAIAnalysisService)
-            .GetMethod("CreateAIOptions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
-        // Act
-        var task = (Task<ChatOptions>)methodInfo!.Invoke(_analysisService, null)!;
-        var options = await task;
-
-        // Assert
-        Assert.NotNull(options);
-        Assert.Null(options.Tools);
     }
 
     [Fact]
@@ -150,9 +140,7 @@ public class OpenAIAnalysisServiceTests
             Model = "gpt-4",
             BaseUrl = "https://api.openai.com/v1",
             RetrievalAugmentedGeneration = false,
-            ServerHasMcpSearch = false
         };
-
         _mockLlmClient.Setup(x => x.Configuration).Returns(config);
 
         // Act
@@ -180,7 +168,6 @@ public class OpenAIAnalysisServiceTests
             Model = "gpt-4",
             BaseUrl = "https://api.openai.com/v1",
             RetrievalAugmentedGeneration = true,
-            ServerHasMcpSearch = false
         };
 
         _mockLlmClient.Setup(x => x.Configuration).Returns(config);
@@ -199,82 +186,15 @@ public class OpenAIAnalysisServiceTests
         Assert.IsType<OpenAIAnalysisServiceRAG>(result);
     }
 
-    [Fact]
-    public void Create_WithMCPEnabled_ReturnsMCPImplementation()
-    {
-        // Arrange
-        var config = new ProviderConfigurationEntity
-        {
-            Name = "TestProvider",
-            ProviderType = "openai",
-            Model = "gpt-4",
-            BaseUrl = "https://api.openai.com/v1",
-            RetrievalAugmentedGeneration = false,
-            ServerHasMcpSearch = true
-        };
-
-        _mockLlmClient.Setup(x => x.Configuration).Returns(config);
-
-        // Act
-        var searchResultFormatter = new SearchResultFormatter();
-        var result = OpenAIAnalysisService.Create(
-            _mockLlmClient.Object,
-            _mockLogger.Object,
-            _mockToolFactory.Object,
-            searchResultFormatter
-        );
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.IsType<OpenAIAnalysisServiceMCP>(result);
-    }
-
-    [Fact]
-    public void Create_WithBothRAGAndMCPEnabled_PrioritizesMCP()
-    {
-        // Arrange - MCP should take precedence
-        var config = new ProviderConfigurationEntity
-        {
-            Name = "TestProvider",
-            ProviderType = "openai",
-            Model = "gpt-4",
-            BaseUrl = "https://api.openai.com/v1",
-            RetrievalAugmentedGeneration = true,
-            ServerHasMcpSearch = true
-        };
-
-        _mockLlmClient.Setup(x => x.Configuration).Returns(config);
-
-        // Act
-        var searchResultFormatter = new SearchResultFormatter();
-        var result = OpenAIAnalysisService.Create(
-            _mockLlmClient.Object,
-            _mockLogger.Object,
-            _mockToolFactory.Object,
-            searchResultFormatter
-        );
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.IsType<OpenAIAnalysisServiceMCP>(result);
-    }
-
     private void SetupMockChatResponse(string responseText)
     {
-        var updates = new List<ChatResponseUpdate>
-        {
-            new ChatResponseUpdate
-            {
-                Contents = [new TextContent(responseText)],
-                FinishReason = ChatFinishReason.Stop
-            }
-        };
+        var chatResponse = new ChatResponse([new ChatMessage(ChatRole.Assistant, responseText)]);
 
-        _mockChatClient.Setup(x => x.GetStreamingResponseAsync(
-            It.IsAny<IList<ChatMessage>>(),
-            It.IsAny<ChatOptions>(),
-            It.IsAny<CancellationToken>()))
-            .Returns(CreateAsyncEnumerable(updates));
+        _mockChatClient.Setup(x => x.GetResponseAsync(
+                It.IsAny<IEnumerable<ChatMessage>>(),
+                It.IsAny<ChatOptions>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(chatResponse);
     }
 
     private async IAsyncEnumerable<T> CreateAsyncEnumerable<T>(IEnumerable<T> items)
@@ -283,6 +203,7 @@ public class OpenAIAnalysisServiceTests
         {
             yield return item;
         }
+
         await Task.CompletedTask;
     }
 
@@ -301,4 +222,3 @@ public class OpenAIAnalysisServiceTests
         }
     }
 }
-

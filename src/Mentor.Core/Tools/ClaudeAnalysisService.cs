@@ -26,13 +26,14 @@ public class ClaudeAnalysisService: AnalysisService
     {
         await base.AnalyzeAsync(request, progress, aiProgress, cancellationToken);
         var systemMessage = GetSystemPrompt(request);
-        var userMessage = GetUserMessages_ForStreaming(request);
+        // var userMessage = GetUserMessages_ForStreaming(request);
+        var userMessage = GetUserMessages(request);
     
         var messages = new List<ChatMessage> { systemMessage };
         messages.AddRange(userMessage);
 
         var options = await CreateAIOptions();
-        return await ExecuteAndParse_ForStreaming(messages, options, progress, aiProgress, cancellationToken);
+        return await ExecuteAndParse(messages, options, progress, aiProgress, cancellationToken);
     }
 }
 

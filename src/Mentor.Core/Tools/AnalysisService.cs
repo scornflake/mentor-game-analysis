@@ -213,110 +213,110 @@ public abstract class AnalysisService : IAnalysisService
         }
     }
 
-    protected virtual async Task<Recommendation> ExecuteAndParse_ForStreaming(List<ChatMessage> messages, ChatOptions options, IProgress<AnalysisProgress>? progress = null, IProgress<AIContent>? aiProgress = null, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Starting LLM streaming request with {ToolCount} tools available", options.Tools?.Count ?? 0);
-        foreach (var message in messages)
-        {
-            _logger.LogDebug("Message Role: {Role}, Content: {Content}", message.Role, message.Contents);
-        }
-
-        // UpdateJobProgress will create a job if it doesn't exist
-        _analysisProgress?.UpdateJobProgress(AnalysisJob.JobTag.LLMAnalysis, JobStatus.InProgress, 0);
-        _analysisProgress?.ReportProgress(progress);
-
-        try
-        {
-            var updates = new List<ChatResponseUpdate>();
-            var textBuilder = new StringBuilder();
-
-            // Stream the completion to get real-time feedback
-            // await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken);
-            await foreach (var update in _llmClient.ChatClient.GetStreamingResponseAsync(messages, options, cancellationToken))
-            {
-                updates.Add(update);
-
-                // Report all content to aiProgress for UI display
-                foreach (var content in update.Contents)
-                {
-                    aiProgress?.Report(content);
-
-                    // Accumulate text for parsing
-                    if (content is TextContent textContent && !string.IsNullOrEmpty(textContent.Text))
-                    {
-                        textBuilder.Append(textContent.Text);
-                    }
-                }
-            }
-
-            // Log final completion statistics
-            var finalUpdate = updates.LastOrDefault();
-            if (finalUpdate != null)
-            {
-                _logger.LogInformation("LLM streaming completed. Finish reason: {Reason}", finalUpdate.FinishReason);
-            }
-
-            // Collect all text for parsing
-            var fullText = textBuilder.ToString();
-            _logger.LogDebug("Full response text length: {Length} chars", fullText.Length);
-
-            // Extract the JSON response from the text. We want the text between the <findings>...</findings> tags.
-            var jsonText = await ExtractJsonFromResponse(fullText);
-            if (string.IsNullOrEmpty(jsonText))
-            {
-                _logger.LogError("No JSON found in response");
-                return new Recommendation
-                {
-                    Analysis = "No analysis provided",
-                    Summary = "Nothing found in response from LLM server. Please check it's logs.",
-                    Recommendations = [],
-                    Confidence = 0.0
-                };
-            }
-
-            // Parse the JSON response from the text
-            var jsonOptions = MentorJsonSerializerContext.CreateOptions();
-            LLMResponse jsonResponse;
-            try
-            {
-                jsonResponse = JsonSerializer.Deserialize<LLMResponse>(jsonText, jsonOptions)
-                               ?? throw new InvalidOperationException("Failed to deserialize LLM response");
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogError(ex, "Failed to parse LLM response as JSON. Response text: {Text}",
-                    jsonText.Length > 500 ? jsonText.Substring(0, 500) + "..." : jsonText);
-                throw;
-            }
-
-            return new Recommendation
-            {
-                Analysis = jsonResponse.Analysis ?? "No analysis provided",
-                Summary = jsonResponse.Summary ?? "No summary provided",
-                Recommendations = jsonResponse.Recommendations?.Select(r => new RecommendationItem
-                {
-                    Priority = ParsePriority(r.Priority),
-                    Action = r.Action ?? string.Empty,
-                    Reasoning = r.Reasoning ?? string.Empty,
-                    Context = r.Context ?? string.Empty,
-                    ReferenceLink = r.ReferenceLink ?? string.Empty
-                }).ToList() ?? [],
-                Confidence = jsonResponse.Confidence,
-                GeneratedAt = DateTime.UtcNow,
-                ProviderUsed = _llmClient.Configuration.Name
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error executing and parsing LLM response");
-            throw;
-        }
-        finally
-        {
-            _analysisProgress?.UpdateJobProgress(AnalysisJob.JobTag.LLMAnalysis, JobStatus.Completed, 100);
-            _analysisProgress?.ReportProgress(progress);
-        }
-    }
+    // protected virtual async Task<Recommendation> ExecuteAndParse_ForStreaming(List<ChatMessage> messages, ChatOptions options, IProgress<AnalysisProgress>? progress = null, IProgress<AIContent>? aiProgress = null, CancellationToken cancellationToken = default)
+    // {
+    //     _logger.LogInformation("Starting LLM streaming request with {ToolCount} tools available", options.Tools?.Count ?? 0);
+    //     foreach (var message in messages)
+    //     {
+    //         _logger.LogDebug("Message Role: {Role}, Content: {Content}", message.Role, message.Contents);
+    //     }
+    //
+    //     // UpdateJobProgress will create a job if it doesn't exist
+    //     _analysisProgress?.UpdateJobProgress(AnalysisJob.JobTag.LLMAnalysis, JobStatus.InProgress, 0);
+    //     _analysisProgress?.ReportProgress(progress);
+    //
+    //     try
+    //     {
+    //         var updates = new List<ChatResponseUpdate>();
+    //         var textBuilder = new StringBuilder();
+    //
+    //         // Stream the completion to get real-time feedback
+    //         // await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, cancellationToken);
+    //         await foreach (var update in _llmClient.ChatClient.GetStreamingResponseAsync(messages, options, cancellationToken))
+    //         {
+    //             updates.Add(update);
+    //
+    //             // Report all content to aiProgress for UI display
+    //             foreach (var content in update.Contents)
+    //             {
+    //                 aiProgress?.Report(content);
+    //
+    //                 // Accumulate text for parsing
+    //                 if (content is TextContent textContent && !string.IsNullOrEmpty(textContent.Text))
+    //                 {
+    //                     textBuilder.Append(textContent.Text);
+    //                 }
+    //             }
+    //         }
+    //
+    //         // Log final completion statistics
+    //         var finalUpdate = updates.LastOrDefault();
+    //         if (finalUpdate != null)
+    //         {
+    //             _logger.LogInformation("LLM streaming completed. Finish reason: {Reason}", finalUpdate.FinishReason);
+    //         }
+    //
+    //         // Collect all text for parsing
+    //         var fullText = textBuilder.ToString();
+    //         _logger.LogDebug("Full response text length: {Length} chars", fullText.Length);
+    //
+    //         // Extract the JSON response from the text. We want the text between the <findings>...</findings> tags.
+    //         var jsonText = await ExtractJsonFromResponse(fullText);
+    //         if (string.IsNullOrEmpty(jsonText))
+    //         {
+    //             _logger.LogError("No JSON found in response");
+    //             return new Recommendation
+    //             {
+    //                 Analysis = "No analysis provided",
+    //                 Summary = "Nothing found in response from LLM server. Please check it's logs.",
+    //                 Recommendations = [],
+    //                 Confidence = 0.0
+    //             };
+    //         }
+    //
+    //         // Parse the JSON response from the text
+    //         var jsonOptions = MentorJsonSerializerContext.CreateOptions();
+    //         LLMResponse jsonResponse;
+    //         try
+    //         {
+    //             jsonResponse = JsonSerializer.Deserialize<LLMResponse>(jsonText, jsonOptions)
+    //                            ?? throw new InvalidOperationException("Failed to deserialize LLM response");
+    //         }
+    //         catch (JsonException ex)
+    //         {
+    //             _logger.LogError(ex, "Failed to parse LLM response as JSON. Response text: {Text}",
+    //                 jsonText.Length > 500 ? jsonText.Substring(0, 500) + "..." : jsonText);
+    //             throw;
+    //         }
+    //
+    //         return new Recommendation
+    //         {
+    //             Analysis = jsonResponse.Analysis ?? "No analysis provided",
+    //             Summary = jsonResponse.Summary ?? "No summary provided",
+    //             Recommendations = jsonResponse.Recommendations?.Select(r => new RecommendationItem
+    //             {
+    //                 Priority = ParsePriority(r.Priority),
+    //                 Action = r.Action ?? string.Empty,
+    //                 Reasoning = r.Reasoning ?? string.Empty,
+    //                 Context = r.Context ?? string.Empty,
+    //                 ReferenceLink = r.ReferenceLink ?? string.Empty
+    //             }).ToList() ?? [],
+    //             Confidence = jsonResponse.Confidence,
+    //             GeneratedAt = DateTime.UtcNow,
+    //             ProviderUsed = _llmClient.Configuration.Name
+    //         };
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Error executing and parsing LLM response");
+    //         throw;
+    //     }
+    //     finally
+    //     {
+    //         _analysisProgress?.UpdateJobProgress(AnalysisJob.JobTag.LLMAnalysis, JobStatus.Completed, 100);
+    //         _analysisProgress?.ReportProgress(progress);
+    //     }
+    // }
 
     /// <summary>
     /// Extracts the JSON response from the provided text, looking for <findings>...</findings> or ```json ... ```

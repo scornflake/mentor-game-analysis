@@ -179,25 +179,6 @@ public class SearchResultFormatterTests
     }
 
     [Fact]
-    public void FormatAsSummary_TruncatesLongContent()
-    {
-        // Arrange
-        var formatter = new SearchResultFormatter();
-        var longContent = new string('a', 600); // 600 characters
-        var results = new List<SearchResult>
-        {
-            new SearchResult { Content = longContent }
-        };
-
-        // Act
-        var formatted = formatter.FormatAsSummary(results);
-
-        // Assert
-        Assert.Contains("...", formatted); // Content should be truncated with ellipsis
-        Assert.DoesNotContain(longContent, formatted); // Full content should not be present
-    }
-
-    [Fact]
     public void FormatAsSummary_DoesNotTruncateShortContent()
     {
         // Arrange

@@ -27,7 +27,6 @@ public partial class ProviderViewModel : ObservableObject
         _baseUrl = config.BaseUrl;
         _timeout = config.Timeout;
         _retrievalAugmentedGeneration = config.RetrievalAugmentedGeneration;
-        _serverHasMcpSearch = config.ServerHasMcpSearch;
     }
 
     public ProviderViewModel()
@@ -53,7 +52,6 @@ public partial class ProviderViewModel : ObservableObject
             BaseUrl = BaseUrl,
             Timeout = Timeout,
             RetrievalAugmentedGeneration = RetrievalAugmentedGeneration,
-            ServerHasMcpSearch = ServerHasMcpSearch
         };
     }
 

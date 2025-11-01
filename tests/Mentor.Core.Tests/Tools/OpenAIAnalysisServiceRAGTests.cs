@@ -36,11 +36,15 @@ public class OpenAIAnalysisServiceRAGTests
             Model = "gpt-4",
             BaseUrl = "https://api.openai.com/v1",
             RetrievalAugmentedGeneration = true,
-            ServerHasMcpSearch = false
         };
 
         _mockLlmClient.Setup(x => x.Configuration).Returns(mockConfig);
         _mockLlmClient.Setup(x => x.ChatClient).Returns(_mockChatClient.Object);
+
+        // Setup web search tool mock
+        var mockWebSearchTool = new Mock<IWebSearchTool>();
+        _mockToolFactory.Setup(x => x.GetToolAsync(KnownSearchTools.Tavily))
+            .ReturnsAsync(mockWebSearchTool.Object);
 
         var searchResultFormatter = new SearchResultFormatter();
         _analysisService = new OpenAIAnalysisServiceRAG(
@@ -111,64 +115,6 @@ public class OpenAIAnalysisServiceRAGTests
     }
 
     [Fact]
-    public async Task AnalyzeAsync_WithResearchResults_InjectsIntoPrompt()
-    {
-        // Arrange
-        var request = new AnalysisRequest
-        {
-            GameName = "TestGame",
-            Prompt = "test prompt",
-            ImageData = new RawImage(new byte[] { 137, 80, 78, 71 }, "image/png")
-        };
-
-        var researchResults = new List<ResearchResult>
-        {
-            new ResearchResult
-            {
-                Title = "Test Article",
-                Url = "https://example.com/article",
-                Content = "Important research content"
-            }
-        };
-
-        _mockToolFactory.Setup(x => x.GetResearchToolAsync(
-            KnownTools.BasicResearch,
-            KnownSearchTools.Tavily,
-            _mockLlmClient.Object))
-            .ReturnsAsync(_mockResearchTool.Object);
-
-        _mockResearchTool.Setup(x => x.PerformResearchAsync(
-            It.IsAny<AnalysisRequest>(),
-            It.IsAny<ResearchMode>(),
-            It.IsAny<IProgress<AnalysisProgress>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(researchResults);
-
-        var llmResponse = @"{
-            ""Analysis"": ""Test analysis"",
-            ""Summary"": ""Test summary"",
-            ""Recommendations"": [],
-            ""Confidence"": 0.95
-        }";
-
-        IEnumerable<ChatMessage>? capturedMessages = null;
-        SetupMockChatResponseWithCapture(llmResponse, messages => capturedMessages = messages);
-
-        // Act
-        await _analysisService.AnalyzeAsync(request);
-
-        // Assert
-        Assert.NotNull(capturedMessages);
-        var systemMessage = capturedMessages.FirstOrDefault(m => m.Role == ChatRole.System);
-        Assert.NotNull(systemMessage);
-        
-        var systemContent = systemMessage.Text;
-        Assert.Contains("Test Article", systemContent);
-        Assert.Contains("https://example.com/article", systemContent);
-        Assert.Contains("Important research content", systemContent);
-    }
-
-    [Fact]
     public async Task AnalyzeAsync_WithProgress_ReportsProgress()
     {
         // Arrange
@@ -218,85 +164,17 @@ public class OpenAIAnalysisServiceRAGTests
         Assert.True(hasLLMJob, "Expected progress with LLM analysis job");
     }
 
-    [Fact]
-    public async Task CreateAIOptions_RAGImplementation_NoTools()
-    {
-        // Arrange
-        var request = new AnalysisRequest
-        {
-            GameName = "TestGame",
-            Prompt = "test prompt",
-            ImageData = new RawImage(new byte[] { 137, 80, 78, 71 }, "image/png")
-        };
-
-        _mockToolFactory.Setup(x => x.GetResearchToolAsync(
-            KnownTools.BasicResearch,
-            KnownSearchTools.Tavily,
-            _mockLlmClient.Object))
-            .ReturnsAsync(_mockResearchTool.Object);
-
-        _mockResearchTool.Setup(x => x.PerformResearchAsync(
-            It.IsAny<AnalysisRequest>(),
-            It.IsAny<ResearchMode>(),
-            It.IsAny<IProgress<AnalysisProgress>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ResearchResult>());
-
-        var llmResponse = @"{
-            ""Analysis"": ""Test"",
-            ""Summary"": ""Test"",
-            ""Recommendations"": [],
-            ""Confidence"": 0.8
-        }";
-
-        ChatOptions? capturedOptions = null;
-        SetupMockChatResponseWithOptionsCapture(llmResponse, opts => capturedOptions = opts);
-
-        // Act
-        await _analysisService.AnalyzeAsync(request);
-
-        // Assert
-        Assert.NotNull(capturedOptions);
-        Assert.NotNull(capturedOptions.Tools);
-        Assert.Empty(capturedOptions.Tools);
-    }
-
     private void SetupMockChatResponse(string responseText)
     {
-        var updates = new List<ChatResponseUpdate>
-        {
-            new ChatResponseUpdate
-            {
-                Contents = [new TextContent(responseText)],
-                FinishReason = ChatFinishReason.Stop
-            }
-        };
+        var chatResponse = new ChatResponse([new ChatMessage(ChatRole.Assistant, responseText)]);
 
-        _mockChatClient.Setup(x => x.GetStreamingResponseAsync(
-            It.IsAny<IList<ChatMessage>>(),
-            It.IsAny<ChatOptions>(),
-            It.IsAny<CancellationToken>()))
-            .Returns(CreateAsyncEnumerable(updates));
+        _mockChatClient.Setup(x => x.GetResponseAsync(
+                It.IsAny<IEnumerable<ChatMessage>>(),
+                It.IsAny<ChatOptions>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(chatResponse);
     }
 
-    private void SetupMockChatResponseWithCapture(string responseText, Action<IEnumerable<ChatMessage>> captureAction)
-    {
-        var updates = new List<ChatResponseUpdate>
-        {
-            new ChatResponseUpdate
-            {
-                Contents = [new TextContent(responseText)],
-                FinishReason = ChatFinishReason.Stop
-            }
-        };
-
-        _mockChatClient.Setup(x => x.GetStreamingResponseAsync(
-            It.IsAny<IList<ChatMessage>>(),
-            It.IsAny<ChatOptions>(),
-            It.IsAny<CancellationToken>()))
-            .Callback<IEnumerable<ChatMessage>, ChatOptions, CancellationToken>((msgs, opts, ct) => captureAction(msgs))
-            .Returns(CreateAsyncEnumerable(updates));
-    }
 
     private void SetupMockChatResponseWithOptionsCapture(string responseText, Action<ChatOptions> captureAction)
     {

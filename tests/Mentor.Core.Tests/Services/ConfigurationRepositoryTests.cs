@@ -24,7 +24,7 @@ public class ConfigurationRepositoryTests : IDisposable
 
         // Assert
         Assert.NotEmpty(allProviders);
-        Assert.Equal(2, allProviders.Count);
+        Assert.Equal(3, allProviders.Count);
         
         var perplexity = allProviders.FirstOrDefault(p => p.ProviderType == "perplexity");
         Assert.NotNull(perplexity);
@@ -270,7 +270,7 @@ public class ConfigurationRepositoryTests : IDisposable
         var allProviders = await _repository.GetAllProvidersAsync();
 
         // Assert
-        Assert.Equal(3, allProviders.Count);
+        Assert.Equal(4, allProviders.Count);
     }
 
     [Fact]
@@ -434,37 +434,11 @@ public class ConfigurationRepositoryTests : IDisposable
         Assert.NotEmpty(providerTypes);
         Assert.Contains("openai", providerTypes);
         Assert.Contains("perplexity", providerTypes);
-        Assert.Equal(2, providerTypes.Count);
+        Assert.Equal(3, providerTypes.Count);
     }
 
     [Fact]
-    public async Task SaveProviderAsync_WithRAGAndMcpSearchProperties_SavesAndRetrievesCorrectly()
-    {
-        // Arrange
-        var config = new ProviderConfigurationEntity
-        {
-            Name = "TestProvider",
-            ProviderType = "openai",
-            ApiKey = "test-key",
-            Model = "gpt-4o",
-            BaseUrl = "https://api.openai.com/v1",
-            Timeout = 60,
-            RetrievalAugmentedGeneration = true,
-            ServerHasMcpSearch = true
-        };
-
-        // Act
-        await _repository.SaveProviderAsync(config);
-        var savedProvider = await _repository.GetProviderByNameAsync("TestProvider");
-
-        // Assert
-        Assert.NotNull(savedProvider);
-        Assert.True(savedProvider.RetrievalAugmentedGeneration);
-        Assert.True(savedProvider.ServerHasMcpSearch);
-    }
-
-    [Fact]
-    public async Task SaveProviderAsync_WithRAGAndMcpSearchDefaultValues_SavesCorrectly()
+    public async Task SaveProviderAsync_WithRAG_SavesCorrectly()
     {
         // Arrange
         var config = new ProviderConfigurationEntity
@@ -475,7 +449,6 @@ public class ConfigurationRepositoryTests : IDisposable
             Model = "gpt-4o",
             BaseUrl = "https://api.openai.com/v1",
             Timeout = 60
-            // RetrievalAugmentedGeneration and ServerHasMcpSearch will use defaults (false)
         };
 
         // Act
@@ -485,7 +458,6 @@ public class ConfigurationRepositoryTests : IDisposable
         // Assert
         Assert.NotNull(savedProvider);
         Assert.False(savedProvider.RetrievalAugmentedGeneration);
-        Assert.False(savedProvider.ServerHasMcpSearch);
     }
 
     public void Dispose()

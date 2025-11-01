@@ -36,7 +36,6 @@ public class OpenAIAnalysisServiceBaseTests
             Model = "gpt-4",
             BaseUrl = "https://api.openai.com/v1",
             RetrievalAugmentedGeneration = false,
-            ServerHasMcpSearch = false
         };
 
         _mockLlmClient.Setup(x => x.Configuration).Returns(mockConfig);

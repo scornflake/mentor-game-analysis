@@ -61,7 +61,6 @@ public class SearchResultFormatter
         {
             if (!string.IsNullOrWhiteSpace(result.Content))
             {
-                // Take first 550 characters for summary format
                 sb.AppendLine($"- {result.Content}");
             }
         }

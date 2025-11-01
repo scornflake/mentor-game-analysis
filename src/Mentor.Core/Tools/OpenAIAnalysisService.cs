@@ -26,13 +26,6 @@ public class OpenAIAnalysisService : OpenAIAnalysisServiceBase
         IToolFactory toolFactory,
         SearchResultFormatter searchResultFormatter)
     {
-        // Check ServerHasMcpSearch first - MCP takes precedence
-        if (llmClient.Configuration.ServerHasMcpSearch)
-        {
-            logger.LogInformation("Creating OpenAIAnalysisServiceMCP for MCP-enabled server");
-            return new OpenAIAnalysisServiceMCP(llmClient, logger, toolFactory, searchResultFormatter);
-        }
-
         // Then check RetrievalAugmentedGeneration
         if (llmClient.Configuration.RetrievalAugmentedGeneration)
         {
