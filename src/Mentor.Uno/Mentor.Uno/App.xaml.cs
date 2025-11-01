@@ -170,6 +170,12 @@ public partial class App : Application
         //MainWindow.SetWindowIcon();
 
         MainWindow = new Window();
+        
+        // Set window title with version
+        var version = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetName().Version?.ToString(3) ?? "1.0.0";
+        MainWindow.Title = $"Mentor - Game Analysis v{version}";
+        
         //_host = await builder.NavigateAsync<MainPage>();
 
         var repo = _host.Services.GetRequiredService<IConfigurationRepository>();

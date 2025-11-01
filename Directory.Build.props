@@ -1,0 +1,60 @@
+<Project>
+  <PropertyGroup>
+    <!-- Version Configuration - Single Source of Truth -->
+    <!-- Major.Minor version - edit this to change the base version -->
+    <VersionPrefix>1.0</VersionPrefix>
+    
+    <!-- 
+      Build number is automatically appended from git commit count during build.
+      Final version format: Major.Minor.BuildNumber (e.g., 1.0.39)
+      
+      To change the version:
+      1. Update VersionPrefix above (e.g., to "1.1" or "2.0")
+      2. Commit the change
+      3. Build number will auto-increment with each commit
+    -->
+    
+    <!-- Common properties for all projects -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- Company and product info -->
+    <Company>Neil Clayton</Company>
+    <Product>Mentor - Game Analysis</Product>
+    <Copyright>Copyright © 2025 Neil Clayton</Copyright>
+  </PropertyGroup>
+
+  <!-- Auto-calculate build number from git at build time -->
+  <Target Name="GetBuildNumber" BeforeTargets="BeforeBuild;CoreCompile">
+    <PropertyGroup>
+      <!-- Default build number if git is not available -->
+      <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
+    </PropertyGroup>
+    
+    <!-- Try to get git commit count -->
+    <Exec Command="git rev-list --count HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitCount" />
+      <Output TaskParameter="ExitCode" PropertyName="GitExitCode" />
+    </Exec>
+    
+    <!-- Use git commit count if available, otherwise use 0 -->
+    <PropertyGroup>
+      <BuildNumber Condition="'$(GitExitCode)' == '0' And '$(GitCommitCount)' != ''">$(GitCommitCount)</BuildNumber>
+      <BuildNumber Condition="'$(GITHUB_RUN_NUMBER)' != ''">$(GITHUB_RUN_NUMBER)</BuildNumber>
+      
+      <!-- Construct the version strings -->
+      <Version>$(VersionPrefix).$(BuildNumber)</Version>
+      <AssemblyVersion>$(VersionPrefix).$(BuildNumber)</AssemblyVersion>
+      <FileVersion>$(VersionPrefix).$(BuildNumber)</FileVersion>
+      <InformationalVersion>$(VersionPrefix).$(BuildNumber)</InformationalVersion>
+      
+      <!-- For Uno Platform apps -->
+      <ApplicationDisplayVersion>$(VersionPrefix).$(BuildNumber)</ApplicationDisplayVersion>
+      <ApplicationVersion>$(BuildNumber)</ApplicationVersion>
+    </PropertyGroup>
+    
+    <Message Text="Building version: $(Version)" Importance="high" />
+  </Target>
+</Project>
+

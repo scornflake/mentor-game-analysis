@@ -17,11 +17,9 @@
         <ApplicationTitle>Mentor - Game Analysis</ApplicationTitle>
         <!-- App Identifier -->
         <ApplicationId>com.mentor.uno</ApplicationId>
-        <!-- Versions -->
-        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-        <ApplicationVersion>1</ApplicationVersion>
+        <!-- Versions are inherited from Directory.Build.props at repository root -->
         <!-- Package Publisher -->
-        <ApplicationPublisher>Neil CLayton</ApplicationPublisher>
+        <ApplicationPublisher>Neil Clayton</ApplicationPublisher>
         <!-- Package Description -->
         <Description>Mentor - Game Analysis</Description>
         <!--

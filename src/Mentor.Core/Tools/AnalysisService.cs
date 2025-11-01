@@ -172,7 +172,8 @@ public abstract class AnalysisService : IAnalysisService
 
         try
         {
-            var chatResponse = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, options, true, cancellationToken);
+            var jsonOptions = MentorJsonSerializerContext.CreateOptions();
+            var chatResponse = await _llmClient.ChatClient.GetResponseAsync<LLMResponse>(messages, jsonOptions, options, true, cancellationToken);
             var jsonResponse = chatResponse.Result;
             return new Recommendation
             {
