@@ -32,6 +32,7 @@ public class RuleComparisonHarness
         string screenshotPath,
         ProviderConfigurationEntity providerConfig,
         string prompt = "Analyze this Warframe build and suggest improvements",
+        List<string>? ruleFiles = null,
         List<EvaluationCriterion>? evaluationCriteria = null,
         ILLMClient? evaluatorClient = null,
         CancellationToken cancellationToken = default)
@@ -52,7 +53,8 @@ public class RuleComparisonHarness
         {
             ImageData = imageData,
             Prompt = prompt,
-            GameName = "Warframe"
+            GameName = "Warframe",
+            RuleFiles = ruleFiles ?? new List<string>()
         };
 
         // Run baseline analysis (no rules)
@@ -126,6 +128,7 @@ public class RuleComparisonHarness
         IEnumerable<string> screenshotPaths,
         ProviderConfigurationEntity providerConfig,
         string prompt = "Analyze this Warframe build and suggest improvements",
+        List<string>? ruleFiles = null,
         List<EvaluationCriterion>? evaluationCriteria = null,
         ILLMClient? evaluatorClient = null,
         CancellationToken cancellationToken = default)
@@ -136,7 +139,7 @@ public class RuleComparisonHarness
         {
             try
             {
-                var comparison = await CompareAnalysisAsync(path, providerConfig, prompt, evaluationCriteria, evaluatorClient, cancellationToken);
+                var comparison = await CompareAnalysisAsync(path, providerConfig, prompt, ruleFiles, evaluationCriteria, evaluatorClient, cancellationToken);
                 results.Add(comparison);
             }
             catch (Exception ex)

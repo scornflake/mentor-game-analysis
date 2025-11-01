@@ -28,10 +28,15 @@ public class GameRuleRepositoryTests : IDisposable
         Directory.CreateDirectory(_testRulesDirectory);
         CreateTestRulesFile();
         
-        // Mock the path service to return our test directory
+        // Mock the path service to return our test directory (case-insensitive)
         _mockUserDataPathService
-            .Setup(x => x.GetRulesPath("warframe"))
+            .Setup(x => x.GetRulesPath(It.IsAny<string>()))
             .Returns(_testRulesDirectory);
+        
+        // Mock EnsureDirectoryExists to actually create the directory
+        _mockUserDataPathService
+            .Setup(x => x.EnsureDirectoryExists(It.IsAny<string>()))
+            .Callback<string>(path => Directory.CreateDirectory(path));
         
         _repository = new GameRuleRepository(_mockLogger.Object, _mockUserDataPathService.Object);
     }
@@ -76,7 +81,7 @@ public class GameRuleRepositoryTests : IDisposable
     public async Task LoadRulesAsync_ReturnsRules_FromFileSystem()
     {
         // Act
-        var rules = await _repository.LoadRulesAsync();
+        var rules = await _repository.LoadRulesAsync("warframe", new List<string> { "WarframeRules" });
 
         // Assert
         Assert.NotNull(rules);
@@ -88,7 +93,7 @@ public class GameRuleRepositoryTests : IDisposable
     public async Task LoadRulesAsync_AllRulesHaveRequiredProperties()
     {
         // Act
-        var rules = await _repository.LoadRulesAsync();
+        var rules = await _repository.LoadRulesAsync("warframe", new List<string> { "WarframeRules" });
 
         // Assert
         Assert.All(rules, rule => 
@@ -100,21 +105,21 @@ public class GameRuleRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task LoadRulesAsync_CachesResults()
+    public async Task LoadRulesAsync_ReturnsEmptyList_WhenNoRuleFilesSpecified()
     {
         // Act
-        var rules1 = await _repository.LoadRulesAsync();
-        var rules2 = await _repository.LoadRulesAsync();
+        var rules = await _repository.LoadRulesAsync("warframe", new List<string>());
 
-        // Assert - should be same instance (cached)
-        Assert.Same(rules1, rules2);
+        // Assert - should return empty list when no rule files specified
+        Assert.NotNull(rules);
+        Assert.Empty(rules);
     }
 
     [Fact]
     public async Task GetRulesForGameAsync_ReturnsAllRules()
     {
         // Act
-        var rules = await _repository.GetRulesForGameAsync("Warframe");
+        var rules = await _repository.GetRulesForGameAsync("Warframe", new List<string> { "WarframeRules" });
 
         // Assert
         Assert.NotEmpty(rules);
@@ -124,8 +129,9 @@ public class GameRuleRepositoryTests : IDisposable
     public async Task GetRulesForGameAsync_IgnoresGameNameParameter()
     {
         // Act - GameName parameter is now ignored since the field was removed
-        var warframeRules = await _repository.GetRulesForGameAsync("Warframe");
-        var otherRules = await _repository.GetRulesForGameAsync("SomeOtherGame");
+        var ruleFiles = new List<string> { "WarframeRules" };
+        var warframeRules = await _repository.GetRulesForGameAsync("Warframe", ruleFiles);
+        var otherRules = await _repository.GetRulesForGameAsync("SomeOtherGame", ruleFiles);
 
         // Assert - both calls return the same rules
         Assert.Equal(warframeRules.Count, otherRules.Count);
@@ -135,7 +141,7 @@ public class GameRuleRepositoryTests : IDisposable
     public async Task GetFormattedRulesAsync_ReturnsFormattedString()
     {
         // Act
-        var formatted = await _repository.GetFormattedRulesAsync("Warframe");
+        var formatted = await _repository.GetFormattedRulesAsync("Warframe", new List<string> { "WarframeRules" });
 
         // Assert
         Assert.NotNull(formatted);
@@ -147,7 +153,7 @@ public class GameRuleRepositoryTests : IDisposable
     public async Task GetFormattedRulesAsync_ContainsRuleContent()
     {
         // Act
-        var formatted = await _repository.GetFormattedRulesAsync("Warframe");
+        var formatted = await _repository.GetFormattedRulesAsync("Warframe", new List<string> { "WarframeRules" });
 
         // Assert
         Assert.Contains("status", formatted.ToLower());
@@ -158,7 +164,7 @@ public class GameRuleRepositoryTests : IDisposable
     public async Task GetFormattedRulesAsync_ReturnsRulesRegardlessOfGameName()
     {
         // Act - GameName parameter is now ignored since the field was removed
-        var formatted = await _repository.GetFormattedRulesAsync("UnknownGame");
+        var formatted = await _repository.GetFormattedRulesAsync("UnknownGame", new List<string> { "WarframeRules" });
 
         // Assert - returns rules anyway
         Assert.NotEmpty(formatted);
@@ -176,7 +182,7 @@ public class GameRuleRepositoryTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => _repository.SaveRulesAsync(null!, "weapon", rules)
+            () => _repository.SaveRulesAsync(null!, "weapons", "testweapon", rules)
         );
     }
 
@@ -191,7 +197,7 @@ public class GameRuleRepositoryTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => _repository.SaveRulesAsync(string.Empty, "weapon", rules)
+            () => _repository.SaveRulesAsync(string.Empty, "weapons", "testweapon", rules)
         );
     }
 
@@ -206,7 +212,7 @@ public class GameRuleRepositoryTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => _repository.SaveRulesAsync("warframe", null!, rules)
+            () => _repository.SaveRulesAsync("warframe", "weapons", null!, rules)
         );
     }
 
@@ -221,7 +227,7 @@ public class GameRuleRepositoryTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => _repository.SaveRulesAsync("warframe", string.Empty, rules)
+            () => _repository.SaveRulesAsync("warframe", "weapons", string.Empty, rules)
         );
     }
 
@@ -230,7 +236,7 @@ public class GameRuleRepositoryTests : IDisposable
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => _repository.SaveRulesAsync("warframe", "weapon", null!)
+            () => _repository.SaveRulesAsync("warframe", "weapons", "testweapon", null!)
         );
     }
 
@@ -242,7 +248,7 @@ public class GameRuleRepositoryTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => _repository.SaveRulesAsync("warframe", "weapon", rules)
+            () => _repository.SaveRulesAsync("warframe", "weapons", "testweapon", rules)
         );
     }
 
@@ -260,10 +266,10 @@ public class GameRuleRepositoryTests : IDisposable
             .Returns(_testRulesDirectory);
 
         // Act
-        await _repository.SaveRulesAsync("testgame", "testweapon", rules);
+        await _repository.SaveRulesAsync("testgame", "weapons", "testweapon", rules);
 
         // Assert
-        var savedFilePath = Path.Combine(_testRulesDirectory, "testweapon.json");
+        var savedFilePath = Path.Combine(_testRulesDirectory, "weapons", "testweapon.json");
         Assert.True(File.Exists(savedFilePath));
 
         var savedJson = await File.ReadAllTextAsync(savedFilePath);
@@ -275,6 +281,65 @@ public class GameRuleRepositoryTests : IDisposable
         Assert.NotNull(savedRules);
         Assert.Single(savedRules);
         Assert.Equal("test-003", savedRules[0].RuleId);
+    }
+
+    [Fact]
+    public async Task SaveRulesAsync_ThrowsArgumentException_WhenTypeIsNull()
+    {
+        // Arrange
+        var rules = new List<GameRule>
+        {
+            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test" }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _repository.SaveRulesAsync("warframe", null!, "testweapon", rules)
+        );
+    }
+
+    [Fact]
+    public async Task SaveRulesAsync_ThrowsArgumentException_WhenTypeIsEmpty()
+    {
+        // Arrange
+        var rules = new List<GameRule>
+        {
+            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test" }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _repository.SaveRulesAsync("warframe", string.Empty, "testweapon", rules)
+        );
+    }
+
+    [Fact]
+    public async Task LoadRulesAsync_FindsRulesInSubfolders()
+    {
+        // Arrange - create a subfolder structure
+        var weaponsDir = Path.Combine(_testRulesDirectory, "weapons");
+        Directory.CreateDirectory(weaponsDir);
+        
+        var testRules = new List<GameRule>
+        {
+            new() { RuleId = "wf-weapon-001", RuleText = "Weapon test rule", Category = "Weapons" }
+        };
+
+        var json = JsonSerializer.Serialize(testRules, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+        await File.WriteAllTextAsync(Path.Combine(weaponsDir, "Acceltra.json"), json);
+
+        // Act
+        var rules = await _repository.LoadRulesAsync("warframe", new List<string> { "Acceltra" });
+
+        // Assert
+        Assert.NotNull(rules);
+        Assert.Single(rules);
+        Assert.Equal("wf-weapon-001", rules[0].RuleId);
     }
 }
 

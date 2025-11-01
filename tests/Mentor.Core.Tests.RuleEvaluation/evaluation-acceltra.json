@@ -5,6 +5,7 @@
     {
       "path": "../media/acceltra prime rad build.png",
       "prompt": "Analyze this Acceltra Prime build and suggest improvements for early steel Path content against grineer",
+      "rules": "Acceltra_Prime, Grineer",
       "evaluationCriteria": [
         {
           "criterion": "Should recommend corrosive or viral damage types for Grineer armor in Steel Path",

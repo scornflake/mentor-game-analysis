@@ -13,6 +13,7 @@ using Mentor.Core.Tests.RuleEvaluation.Models;
 [JsonSerializable(typeof(CategoryAssignment))]
 [JsonSerializable(typeof(MediaWikiApiResponse))]
 [JsonSerializable(typeof(ParsedGameRule))]
+[JsonSerializable(typeof(EnemyInfoResponse))]
 internal partial class RuleEvaluationJsonSerializerContext : JsonSerializerContext
 {
     public static JsonSerializerOptions CreateOptions()

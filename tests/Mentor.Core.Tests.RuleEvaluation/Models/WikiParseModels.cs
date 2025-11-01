@@ -32,12 +32,12 @@ public class MediaWikiText
 /// <summary>
 /// Individual characteristic extracted from wiki before categorization
 /// </summary>
-public class WikiCharacteristic
+public class WikiContent
 {
     public string Text { get; set; } = string.Empty;
     public int OriginalIndex { get; set; }
     public int IndentLevel { get; set; }
-    public List<WikiCharacteristic> Children { get; set; } = new();
+    public List<WikiContent> Children { get; set; } = new();
 }
 
 /// <summary>
@@ -77,5 +77,14 @@ public class ParsedGameRule
     
     [JsonPropertyName("Children")]
     public List<ParsedGameRule> Children { get; set; } = new();
+}
+
+/// <summary>
+/// LLM response containing extracted enemy information
+/// </summary>
+public class EnemyInfoResponse
+{
+    [JsonPropertyName("enemyInfo")]
+    public List<WikiContent> EnemyInfo { get; set; } = new();
 }
 

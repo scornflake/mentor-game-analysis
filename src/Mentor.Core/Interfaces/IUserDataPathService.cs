@@ -25,6 +25,12 @@ public interface IUserDataPathService
     string GetSavedAnalysisPath();
 
     /// <summary>
+    /// Gets the path for storing cache files.
+    /// </summary>
+    /// <returns>Path to cache directory (e.g., AppData/Local/Mentor/Cache)</returns>
+    string GetCachePath();
+
+    /// <summary>
     /// Ensures the specified directory exists, creating it if necessary.
     /// </summary>
     /// <param name="path">Path to ensure exists</param>

@@ -1,0 +1,38 @@
+{
+  "provider": "perplexity",
+  "evaluator": "claude",
+  "screenshots": [
+    {
+      "path": "../media/phantasma rad build.png",
+      "prompt": "Analyze this Phantasma build and suggest improvements for early steel Path content against grineer",
+      "rules": "Phantasma, Grineer",
+      "evaluationCriteria": [
+        {
+          "criterion": "Should recommend corrosive or viral damage types for Grineer armor in Steel Path",
+          "expectation": "positive",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Should NOT recommend heat, radiation, or magnetic damage as primary damage types",
+          "expectation": "negative",
+          "weight": 0.8
+        },
+        {
+          "criterion": "Should mention that current build isn't optimal because it doesn't prioritise corrosive",
+          "expectation": "positive",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Should recommend mods to swap out to make the build more effective",
+          "expectation": "positive",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Should tell the user why the build isn't optimal",
+          "expectation": "positive",
+          "weight": 1.0
+        }
+      ]
+    }
+  ]
+}

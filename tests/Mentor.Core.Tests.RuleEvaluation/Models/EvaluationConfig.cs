@@ -17,6 +17,7 @@ public class ScreenshotConfig
 {
     public string Path { get; set; } = string.Empty;
     public string Prompt { get; set; } = string.Empty;
+    public string Rules { get; set; } = string.Empty;
     public List<EvaluationCriterion> EvaluationCriteria { get; set; } = new();
 }
 

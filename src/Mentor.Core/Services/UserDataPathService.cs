@@ -56,6 +56,13 @@ public class UserDataPathService : IUserDataPathService
         return analysisPath;
     }
 
+    public string GetCachePath()
+    {
+        // AppData/Local/Mentor/Cache
+        var cachePath = Path.Combine(_basePath, "Cache");
+        return cachePath;
+    }
+
     public void EnsureDirectoryExists(string path)
     {
         if (string.IsNullOrWhiteSpace(path))

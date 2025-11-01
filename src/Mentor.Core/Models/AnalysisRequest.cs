@@ -7,6 +7,7 @@ public class AnalysisRequest
     public RawImage ImageData { get; set; } = null!;
     public string Prompt { get; set; } = string.Empty;
     public string GameName { get; set; } = string.Empty;
+    public List<string> RuleFiles { get; set; } = new();
 
     public void ValidateRequest()
     {

@@ -79,7 +79,9 @@ public class WikiContentExtractorServiceTests
     [Theory]
     [MemberData(nameof(GetWikiTestFiles))]
     public void ExtractCharacteristics_WithRealWikiContent_ExtractsExpectedCharacteristics(
-        string fileName, 
+#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
+        string fileName,
+#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
         string wikitext, 
         List<ExpectedCharacteristic> expectedCharacteristics,
         string[] unexpectedCharacteristics)
@@ -106,7 +108,7 @@ public class WikiContentExtractorServiceTests
     /// <summary>
     /// Recursively verify that a characteristic matches the expected structure
     /// </summary>
-    private void AssertCharacteristicMatches(ExpectedCharacteristic expected, WikiCharacteristic actual)
+    private void AssertCharacteristicMatches(ExpectedCharacteristic expected, WikiContent actual)
     {
         Assert.Equal(expected.Text, actual.Text);
         
@@ -125,11 +127,11 @@ public class WikiContentExtractorServiceTests
     /// <summary>
     /// Flatten all text from hierarchical structure for unexpected text checks
     /// </summary>
-    private List<string> FlattenAllText(List<WikiCharacteristic> characteristics)
+    private List<string> FlattenAllText(List<WikiContent> characteristics)
     {
         var allText = new List<string>();
         
-        void Flatten(WikiCharacteristic characteristic)
+        void Flatten(WikiContent characteristic)
         {
             allText.Add(characteristic.Text);
             foreach (var child in characteristic.Children)

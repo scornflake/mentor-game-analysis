@@ -42,18 +42,65 @@
     },
     {
       "text": "Innate Naramon and Madurai polarities."
+    },
+    {
+      "text": "Advantages over other Primary weapons (excluding modular weapons):",
+      "children": [
+        {
+          "text": "Very high overall status chance."
+        },
+        {
+          "text": "Fastest reload speed of all primary shotguns."
+        },
+        {
+          "text": "No damage fall-off."
+        }
+      ]
+    },
+    {
+      "text": "Disadvantages over other Primary weapons (excluding modular weapons):",
+      "children": [
+        {
+          "text": "Lowest critical chance of all shotguns."
+        },
+        {
+          "text": "Primary Fire:",
+          "children": [
+            {
+              "text": "Damage ramps up from 15% to 100% over 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays back to 15% over 2 seconds."
+            },
+            {
+              "text": "Innate punch through does not apply to surfaces, requiring punch through mods."
+            },
+            {
+              "text": "Limited range of 20 meters."
+            }
+          ]
+        },
+        {
+          "text": "Alternate Fire:",
+          "children": [
+            {
+              "text": "Projectile has travel time with heavy arcing."
+            },
+            {
+              "text": "Explosion inflicts self-stagger."
+            },
+            {
+              "text": "Explosion has a headshot multiplier of 1x and cannot trigger headshot conditions."
+            },
+            {
+              "text": "Explosion has linear Damage Falloff from 100% to 50% from central impact."
+            }
+          ]
+        },
+        {
+          "text": "Low Ammo Pickup."
+        }
+      ]
     }
   ],
   "unexpected": [
-    "Very high overall status chance",
-    "Fastest reload speed",
-    "Damage ramps up from 15% to 100%",
-    "Innate punch through does not apply to surfaces",
-    "Limited range of 20 meters",
-    "Projectile has travel time",
-    "self-stagger",
-    "headshot multiplier",
-    "Damage Falloff",
-    "Ammo Pickup"
+    "Comparisons"
   ]
 }

@@ -85,16 +85,42 @@
           ]
         }
       ]
+    },
+    {
+      "text": "Disadvantages over other Primary weapons (excluding modular weapons):",
+      "children": [
+        {
+          "text": "Primary Fire:",
+          "children": [
+            {
+              "text": "Has linear damage falloff from 100% to 3% from 26m to 52m target distance (distances are affected by Projectile Speed)."
+            }
+          ]
+        },
+        {
+          "text": "Alternate Fire:",
+          "children": [
+            {
+              "text": "Glaive has travel time."
+            },
+            {
+              "text": "Only one glaive (or set of glaives with multishot) can be active at a time, and takes approximately five seconds or 11 bounces to return."
+            },
+            {
+              "text": "Will not launch glaive with 0 shotgun ammo. At least 1 round is needed, though it will not be consumed."
+            },
+            {
+              "text": "Explosion inflicts self-stagger."
+            },
+            {
+              "text": "Explosion has a headshot multiplier of 1x and cannot trigger headshot conditions."
+            }
+          ]
+        }
+      ]
     }
   ],
   "unexpected": [
-    "High magazine size",
-    "Tied with",
-    "No Damage Falloff",
-    "damage falloff from 100% to 3%",
-    "Glaive has travel time",
-    "Only one glaive",
-    "self-stagger",
-    "headshot multiplier"
+    "Comparisons"
   ]
 }

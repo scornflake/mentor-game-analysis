@@ -42,15 +42,18 @@ public abstract class AnalysisService : IAnalysisService
         // Inject game rules if enabled
         if (_llmClient.Configuration.UseGameRules && 
             _gameRuleRepository != null && 
-            !string.IsNullOrEmpty(request.GameName))
+            !string.IsNullOrEmpty(request.GameName) &&
+            request.RuleFiles != null &&
+            request.RuleFiles.Count > 0)
         {
             try
             {
-                var rulesText = _gameRuleRepository.GetFormattedRulesAsync(request.GameName).GetAwaiter().GetResult();
+                var rulesText = _gameRuleRepository.GetFormattedRulesAsync(request.GameName, request.RuleFiles).GetAwaiter().GetResult();
                 if (!string.IsNullOrEmpty(rulesText))
                 {
                     msg += "\n\n" + rulesText;
-                    _logger.LogInformation("Injected game rules for {GameName} into system prompt", request.GameName);
+                    _logger.LogInformation("Injected game rules for {GameName} into system prompt from {Count} file(s): {Files}", 
+                        request.GameName, request.RuleFiles.Count, string.Join(", ", request.RuleFiles));
                 }
             }
             catch (Exception ex)

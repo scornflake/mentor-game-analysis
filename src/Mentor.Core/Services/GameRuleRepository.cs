@@ -10,8 +10,6 @@ public class GameRuleRepository
 {
     private readonly ILogger<GameRuleRepository> _logger;
     private readonly IUserDataPathService _userDataPathService;
-    private List<GameRule>? _cachedRules;
-    private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     public GameRuleRepository(ILogger<GameRuleRepository> logger, IUserDataPathService userDataPathService)
     {
@@ -19,39 +17,42 @@ public class GameRuleRepository
         _userDataPathService = userDataPathService ?? throw new ArgumentNullException(nameof(userDataPathService));
     }
 
-    public async Task<List<GameRule>> LoadRulesAsync()
+    public async Task<List<GameRule>> LoadRulesAsync(string gameName, List<string> ruleFiles)
     {
-        // Return cached rules if available
-        if (_cachedRules != null)
+        if (ruleFiles == null || ruleFiles.Count == 0)
         {
-            return _cachedRules;
+            _logger.LogInformation("No rule files specified, returning empty list");
+            return new List<GameRule>();
         }
 
-        // Use lock to prevent multiple simultaneous loads
-        await _loadLock.WaitAsync();
-        try
+        _logger.LogInformation("Loading game rules from {Count} file(s): {Files}", 
+            ruleFiles.Count, string.Join(", ", ruleFiles));
+
+        var allRules = new List<GameRule>();
+        var rulesDirectory = _userDataPathService.GetRulesPath(gameName);
+
+        foreach (var ruleFile in ruleFiles)
         {
-            // Double-check after acquiring lock
-            if (_cachedRules != null)
+            // Search recursively for the rule file
+            var searchPattern = $"{ruleFile}.json";
+            var matchingFiles = Directory.GetFiles(rulesDirectory, searchPattern, SearchOption.AllDirectories);
+
+            if (matchingFiles.Length == 0)
             {
-                return _cachedRules;
-            }
-
-            _logger.LogInformation("Loading game rules from user data folder");
-
-            // Get the rules path from the service
-            var rulesDirectory = _userDataPathService.GetRulesPath("warframe");
-            var rulesFilePath = Path.Combine(rulesDirectory, "WarframeRules.json");
-
-            if (!File.Exists(rulesFilePath))
-            {
-                _logger.LogError("Rules file not found at: {FilePath}", rulesFilePath);
+                _logger.LogError("Rules file not found: {FileName} in {Directory}", searchPattern, rulesDirectory);
                 throw new InvalidOperationException(
-                    $"Could not find rules file at: {rulesFilePath}. " +
-                    $"Please ensure WarframeRules.json exists in the user data folder. " +
-                    $"Expected location: {rulesDirectory}");
+                    $"Could not find rules file: {searchPattern}. " +
+                    $"Please ensure {ruleFile}.json exists in the user data folder or its subfolders. " +
+                    $"Searched location: {rulesDirectory}");
             }
 
+            if (matchingFiles.Length > 1)
+            {
+                _logger.LogWarning("Multiple files found for {FileName}: {Files}. Using first match.", 
+                    searchPattern, string.Join(", ", matchingFiles));
+            }
+
+            var rulesFilePath = matchingFiles[0];
             var json = await File.ReadAllTextAsync(rulesFilePath);
 
             var jsonOptions = new JsonSerializerOptions
@@ -66,28 +67,25 @@ public class GameRuleRepository
                 throw new InvalidOperationException($"Failed to deserialize game rules from JSON at: {rulesFilePath}");
             }
 
-            _cachedRules = rules;
             _logger.LogInformation("Loaded {Count} game rules from {FilePath}", rules.Count, rulesFilePath);
-
-            return _cachedRules;
+            allRules.AddRange(rules);
         }
-        finally
-        {
-            _loadLock.Release();
-        }
-    }
 
-    public async Task<List<GameRule>> GetRulesForGameAsync(string gameName)
-    {
-        // Since GameName field has been removed, just return all rules
-        // The gameName parameter is kept for API compatibility
-        var allRules = await LoadRulesAsync();
+        _logger.LogInformation("Total rules loaded: {Count}", allRules.Count);
         return allRules;
     }
 
-    public async Task<string> GetFormattedRulesAsync(string gameName)
+    public async Task<List<GameRule>> GetRulesForGameAsync(string gameName, List<string> ruleFiles)
     {
-        var rules = await GetRulesForGameAsync(gameName);
+        // Since GameName field has been removed, just return all rules
+        // The gameName parameter is kept for API compatibility
+        var allRules = await LoadRulesAsync(gameName, ruleFiles);
+        return allRules;
+    }
+
+    public async Task<string> GetFormattedRulesAsync(string gameName, List<string> ruleFiles)
+    {
+        var rules = await GetRulesForGameAsync(gameName, ruleFiles);
         
         if (rules.Count == 0)
         {
@@ -132,16 +130,21 @@ public class GameRuleRepository
         }
     }
 
-    public async Task SaveRulesAsync(string gameName, string weaponName, List<GameRule> rules)
+    public async Task SaveRulesAsync(string gameName, string type, string thingName, List<GameRule> rules)
     {
         if (string.IsNullOrWhiteSpace(gameName))
         {
             throw new ArgumentException("Game name cannot be null or empty", nameof(gameName));
         }
 
-        if (string.IsNullOrWhiteSpace(weaponName))
+        if (string.IsNullOrWhiteSpace(type))
         {
-            throw new ArgumentException("Weapon name cannot be null or empty", nameof(weaponName));
+            throw new ArgumentException("Type cannot be null or empty", nameof(type));
+        }
+
+        if (string.IsNullOrWhiteSpace(thingName))
+        {
+            throw new ArgumentException("Thing name cannot be null or empty", nameof(thingName));
         }
 
         if (rules == null || rules.Count == 0)
@@ -149,11 +152,12 @@ public class GameRuleRepository
             throw new ArgumentException("Rules list cannot be null or empty", nameof(rules));
         }
 
-        // Get the rules directory from the service
+        // Get the rules directory from the service and add type subfolder
         var rulesDirectory = _userDataPathService.GetRulesPath(gameName);
-        _userDataPathService.EnsureDirectoryExists(rulesDirectory);
+        var typeDirectory = Path.Combine(rulesDirectory, type);
+        _userDataPathService.EnsureDirectoryExists(typeDirectory);
 
-        var filePath = Path.Combine(rulesDirectory, $"{weaponName}.json");
+        var filePath = Path.Combine(typeDirectory, $"{thingName}.json");
         
         _logger.LogInformation("Saving {Count} rules to {FilePath}", rules.Count, filePath);
 
