@@ -99,8 +99,7 @@ Available categories:
 
 For each characteristic, provide:
 1. The category that best fits
-2. A confidence score (0.0-1.0) - use 0.95 for clear facts, lower for inferences
-3. Brief reasoning for your choice
+2. Brief reasoning for your choice
 
 Respond in JSON format only."),
             new(ChatRole.User, prompt)
@@ -145,7 +144,9 @@ Respond in JSON format only."),
         sb.AppendLine("Categorize the following Warframe weapon characteristics:");
         sb.AppendLine();
 
-        foreach (var characteristic in characteristics)
+        // Flatten the hierarchy for LLM processing
+        var flatCharacteristics = FlattenCharacteristics(characteristics);
+        foreach (var characteristic in flatCharacteristics)
         {
             sb.AppendLine($"[{characteristic.OriginalIndex}] {characteristic.Text}");
         }
@@ -157,13 +158,36 @@ Respond in JSON format only."),
     {
       ""index"": 0,
       ""category"": ""WeaponSpecific"",
-      ""confidence"": 0.95,
       ""reasoning"": ""This describes the weapon's primary damage type""
     }
   ]
 }");
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Flatten hierarchical characteristics for LLM processing
+    /// </summary>
+    private List<WikiCharacteristic> FlattenCharacteristics(List<WikiCharacteristic> characteristics)
+    {
+        var flat = new List<WikiCharacteristic>();
+        
+        void Flatten(WikiCharacteristic characteristic)
+        {
+            flat.Add(characteristic);
+            foreach (var child in characteristic.Children)
+            {
+                Flatten(child);
+            }
+        }
+
+        foreach (var characteristic in characteristics)
+        {
+            Flatten(characteristic);
+        }
+
+        return flat;
     }
 
 
@@ -173,34 +197,70 @@ Respond in JSON format only."),
         RuleCategorization categorizations,
         List<GameRule> existingRules)
     {
-        var parsedRules = new List<ParsedGameRule>();
-        
         // Build a map of category to next available ID
         var categoryCounters = BuildCategoryCounters(existingRules);
 
-        foreach (var categorization in categorizations.Categorizations)
+        // Create a map of index to categorization
+        var categorizationMap = categorizations.Categorizations.ToDictionary(c => c.Index);
+
+        // Build hierarchical rules
+        var parsedRules = new List<ParsedGameRule>();
+        foreach (var characteristic in characteristics)
         {
-            // Find the corresponding characteristic
-            var characteristic = characteristics.FirstOrDefault(c => c.OriginalIndex == categorization.Index);
-            if (characteristic == null)
+            var rule = BuildRuleHierarchy(characteristic, categorizationMap, categoryCounters, null);
+            if (rule != null)
             {
-                _logger.LogWarning("Could not find characteristic for index {Index}", categorization.Index);
-                continue;
+                parsedRules.Add(rule);
             }
-
-            // Generate unique rule ID
-            var ruleId = GenerateRuleId(categorization.Category, categoryCounters);
-
-            parsedRules.Add(new ParsedGameRule
-            {
-                RuleId = ruleId,
-                RuleText = characteristic.Text,
-                Category = categorization.Category,
-                Confidence = categorization.Confidence
-            });
         }
 
         return parsedRules;
+    }
+
+    /// <summary>
+    /// Recursively build hierarchical game rules from characteristics
+    /// </summary>
+    private ParsedGameRule? BuildRuleHierarchy(
+        WikiCharacteristic characteristic,
+        Dictionary<int, CategoryAssignment> categorizationMap,
+        Dictionary<string, int> categoryCounters,
+        string? parentCategory)
+    {
+        // Find categorization for this characteristic
+        if (!categorizationMap.TryGetValue(characteristic.OriginalIndex, out var categorization))
+        {
+            _logger.LogWarning("Could not find categorization for index {Index}", characteristic.OriginalIndex);
+            return null;
+        }
+
+        // Use parent's category if not explicitly categorized, otherwise use LLM's category
+        var category = categorization.Category;
+        if (string.IsNullOrEmpty(category) && !string.IsNullOrEmpty(parentCategory))
+        {
+            category = parentCategory;
+        }
+
+        // Generate unique rule ID
+        var ruleId = GenerateRuleId(category, categoryCounters);
+
+        var rule = new ParsedGameRule
+        {
+            RuleId = ruleId,
+            RuleText = characteristic.Text,
+            Category = category
+        };
+
+        // Process children
+        foreach (var child in characteristic.Children)
+        {
+            var childRule = BuildRuleHierarchy(child, categorizationMap, categoryCounters, category);
+            if (childRule != null)
+            {
+                rule.Children.Add(childRule);
+            }
+        }
+
+        return rule;
     }
 
     private Dictionary<string, int> BuildCategoryCounters(List<GameRule> existingRules)

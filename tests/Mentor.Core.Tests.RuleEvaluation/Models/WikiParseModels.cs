@@ -36,6 +36,8 @@ public class WikiCharacteristic
 {
     public string Text { get; set; } = string.Empty;
     public int OriginalIndex { get; set; }
+    public int IndentLevel { get; set; }
+    public List<WikiCharacteristic> Children { get; set; } = new();
 }
 
 /// <summary>
@@ -55,9 +57,6 @@ public class CategoryAssignment
     [JsonPropertyName("category")]
     public string Category { get; set; } = string.Empty;
     
-    [JsonPropertyName("confidence")]
-    public double Confidence { get; set; }
-    
     [JsonPropertyName("reasoning")]
     public string? Reasoning { get; set; }
 }
@@ -76,7 +75,7 @@ public class ParsedGameRule
     [JsonPropertyName("Category")]
     public string Category { get; set; } = string.Empty;
     
-    [JsonPropertyName("Confidence")]
-    public double Confidence { get; set; }
+    [JsonPropertyName("Children")]
+    public List<ParsedGameRule> Children { get; set; } = new();
 }
 

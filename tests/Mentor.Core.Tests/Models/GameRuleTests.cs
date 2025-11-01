@@ -13,15 +13,15 @@ public class GameRuleTests
         {
             RuleId = Guid.NewGuid().ToString(),
             RuleText = "Cedo Prime has 100% status chance - prioritize status mods",
-            Category = "StatusMechanics",
-            Confidence = 0.95
+            Category = "StatusMechanics"
         };
 
         // Assert
         Assert.NotNull(rule.RuleId);
         Assert.Equal("Cedo Prime has 100% status chance - prioritize status mods", rule.RuleText);
         Assert.Equal("StatusMechanics", rule.Category);
-        Assert.Equal(0.95, rule.Confidence);
+        Assert.NotNull(rule.Children);
+        Assert.Empty(rule.Children);
     }
 
     [Fact]
@@ -32,8 +32,7 @@ public class GameRuleTests
         {
             RuleId = "test-rule-123",
             RuleText = "Hunter Munitions synergizes with high crit weapons",
-            Category = "Synergies",
-            Confidence = 0.85
+            Category = "Synergies"
         };
 
         // Act
@@ -53,8 +52,7 @@ public class GameRuleTests
         {
             "RuleId": "test-rule-456",
             "RuleText": "Corrosive damage is effective against Grineer armor",
-            "Category": "DamageTypes",
-            "Confidence": 0.9
+            "Category": "DamageTypes"
         }
         """;
 
@@ -66,17 +64,78 @@ public class GameRuleTests
         Assert.Equal("test-rule-456", rule.RuleId);
         Assert.Equal("Corrosive damage is effective against Grineer armor", rule.RuleText);
         Assert.Equal("DamageTypes", rule.Category);
-        Assert.Equal(0.9, rule.Confidence);
     }
 
     [Fact]
-    public void GameRule_DefaultConfidence_IsZero()
+    public void GameRule_CanHaveChildren()
     {
         // Arrange & Act
-        var rule = new GameRule();
+        var parent = new GameRule
+        {
+            RuleId = "parent-rule",
+            RuleText = "Primary fire shoots beams",
+            Category = "WeaponSpecific"
+        };
+
+        var child1 = new GameRule
+        {
+            RuleId = "child-rule-1",
+            RuleText = "Pinpoint accuracy",
+            Category = "WeaponSpecific"
+        };
+
+        var child2 = new GameRule
+        {
+            RuleId = "child-rule-2",
+            RuleText = "Innate multishot",
+            Category = "WeaponSpecific"
+        };
+
+        parent.Children.Add(child1);
+        parent.Children.Add(child2);
 
         // Assert
-        Assert.Equal(0.0, rule.Confidence);
+        Assert.Equal(2, parent.Children.Count);
+        Assert.Equal("child-rule-1", parent.Children[0].RuleId);
+        Assert.Equal("child-rule-2", parent.Children[1].RuleId);
+    }
+
+    [Fact]
+    public void GameRule_HierarchicalStructure_CanBeSerialized()
+    {
+        // Arrange
+        var parent = new GameRule
+        {
+            RuleId = "wf-weapon-001",
+            RuleText = "Primary fire shoots continuous beams",
+            Category = "WeaponSpecific",
+            Children = new List<GameRule>
+            {
+                new GameRule
+                {
+                    RuleId = "wf-weapon-001-a",
+                    RuleText = "Pinpoint accuracy",
+                    Category = "WeaponSpecific"
+                },
+                new GameRule
+                {
+                    RuleId = "wf-weapon-001-b",
+                    RuleText = "Innate multishot of 6 beams",
+                    Category = "WeaponSpecific"
+                }
+            }
+        };
+
+        // Act
+        var json = JsonSerializer.Serialize(parent, new JsonSerializerOptions { WriteIndented = true });
+        var deserialized = JsonSerializer.Deserialize<GameRule>(json);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal("wf-weapon-001", deserialized.RuleId);
+        Assert.Equal(2, deserialized.Children.Count);
+        Assert.Equal("wf-weapon-001-a", deserialized.Children[0].RuleId);
+        Assert.Equal("Pinpoint accuracy", deserialized.Children[0].RuleText);
     }
 }
 

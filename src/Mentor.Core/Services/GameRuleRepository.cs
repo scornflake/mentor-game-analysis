@@ -106,14 +106,30 @@ public class GameRuleRepository
         foreach (var group in groupedRules)
         {
             sb.AppendLine($"## {group.Key}");
-            foreach (var rule in group.OrderByDescending(r => r.Confidence))
+            foreach (var rule in group)
             {
-                sb.AppendLine($"- {rule.RuleText}");
+                FormatRuleHierarchy(sb, rule, 0);
             }
             sb.AppendLine();
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Recursively format a rule and its children with proper indentation
+    /// </summary>
+    private void FormatRuleHierarchy(StringBuilder sb, GameRule rule, int indentLevel)
+    {
+        // Create indentation (2 spaces per level)
+        var indent = new string(' ', indentLevel * 2);
+        sb.AppendLine($"{indent}- {rule.RuleText}");
+
+        // Format children with increased indentation
+        foreach (var child in rule.Children)
+        {
+            FormatRuleHierarchy(sb, child, indentLevel + 1);
+        }
     }
 
     public async Task SaveRulesAsync(string gameName, string weaponName, List<GameRule> rules)

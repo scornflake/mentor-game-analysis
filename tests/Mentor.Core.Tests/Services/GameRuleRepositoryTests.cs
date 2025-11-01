@@ -44,15 +44,13 @@ public class GameRuleRepositoryTests : IDisposable
             {
                 RuleId = "wf-test-001",
                 RuleText = "Test rule for status mechanics",
-                Category = "StatusMechanics",
-                Confidence = 0.95
+                Category = "StatusMechanics"
             },
             new GameRule
             {
                 RuleId = "wf-test-002",
                 RuleText = "Test rule for damage types",
-                Category = "DamageTypes",
-                Confidence = 0.90
+                Category = "DamageTypes"
             }
         };
 
@@ -173,7 +171,7 @@ public class GameRuleRepositoryTests : IDisposable
         // Arrange
         var rules = new List<GameRule>
         {
-            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test", Confidence = 0.9 }
+            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test" }
         };
 
         // Act & Assert
@@ -188,7 +186,7 @@ public class GameRuleRepositoryTests : IDisposable
         // Arrange
         var rules = new List<GameRule>
         {
-            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test", Confidence = 0.9 }
+            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test" }
         };
 
         // Act & Assert
@@ -203,7 +201,7 @@ public class GameRuleRepositoryTests : IDisposable
         // Arrange
         var rules = new List<GameRule>
         {
-            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test", Confidence = 0.9 }
+            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test" }
         };
 
         // Act & Assert
@@ -218,7 +216,7 @@ public class GameRuleRepositoryTests : IDisposable
         // Arrange
         var rules = new List<GameRule>
         {
-            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test", Confidence = 0.9 }
+            new() { RuleId = "test-001", RuleText = "Test rule", Category = "Test" }
         };
 
         // Act & Assert
@@ -254,7 +252,7 @@ public class GameRuleRepositoryTests : IDisposable
         // Arrange
         var rules = new List<GameRule>
         {
-            new() { RuleId = "test-003", RuleText = "New test rule", Category = "Test", Confidence = 0.85 }
+            new() { RuleId = "test-003", RuleText = "New test rule", Category = "Test" }
         };
 
         _mockUserDataPathService

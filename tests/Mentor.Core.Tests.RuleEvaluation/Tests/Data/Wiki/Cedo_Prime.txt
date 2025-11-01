@@ -1,0 +1,99 @@
+{{Top|Lotus|Tenno|Tenno|Weapon|Weapon|Weapon}}
+{{WeaponInfoboxAutomatic}}
+{{Codex|A golden shotgun, forged for those who deliver judgment.}}
+'''Cedo Prime''' is the [[Prime]]d counterpart of the {{Weapon|Cedo}} alchemical shotgun, acting as a direct upgrade. Cedo Prime was released alongside {{WF|Lavos Prime}} and {{Weapon|Dual Zoren Prime}}.
+
+==Characteristics==
+*This weapon deals primarily {{D|Puncture}} damage.
+*Deals '''+60%''' bonus damage per unique status effect on target.
+** On the Primary Fire, this bonus is '''additive''' to all base damage bonuses, such as [[Point Blank]] and [[Galvanized Savvy]].
+** On '''direct hits''' from the Alternate Fire glaive, this bonus is additive with [[Galvanized Savvy]], and '''multiplicative''' to normal base damage bonuses like [[Point Blank]]. See [[Condition Overload (Mechanic)]] for more info.
+** On '''explosions''' from the Alternate Fire glaive, this bonus does '''not''' apply.
+*Primary Fire shoots wide-spread, close-ranged buckshot in a fully automatic fashion.
+**Innate 0.8 meter [[punch through]].
+**Innate [[multishot]] of 7 pellets.
+*[[Alternate Fire]] launches a glaive that explodes in a '''6''' meter radius on impact with a surface or enemy and bounces up to '''11''' times.
+**Direct hit and explosion apply status separately.
+*** Direct hit deals {{D|Slash}} damage and has the listed status chance of '''50%''', affected by status chance bonuses and modded elements.
+*** Explosion deals {{D|Blast}} damage and applies two separate '''guaranteed''' procs. The number of procs '''cannot''' be increased with status chance bonuses.
+**** The first proc can be any element modded onto the weapon, or the innate {{D|Blast}} damage. The chance for each element follows normal status weighting rules.
+**** The second proc has an even chance to be any of the following; {{D|Heat}}, {{D|Cold}}, {{D|Electricity}}, or {{D|Toxin}}.
+**Explosion does not need direct line of sight to deal damage and will penetrate walls.
+**Consumes no ammo.
+**[[Multishot]] affects the number of glaives released per use, each with their own trajectory.
+*Innate {{M|Shotgun Ammo Mutation}} effect when used by Lavos.
+*Innate two {{Pol|Madurai}} and one {{Pol|Vazarin}} polarities.
+
+{{Advantages|
+*High magazine size.
+*Alternate Fire:
+**Tied with {{Weapon|Corinth Prime}}'s alt fire and {{Weapon|Trumna}}'s alt fire for the second highest status chance of all primary launchers, behind {{Weapon|1=Bubonico}}'s alt fire.
+**No [[Damage Falloff]].
+}}
+
+{{Disadvantages|
+*Primary Fire:
+**Has linear damage falloff from 100% to 3% from 26m to 52m target distance (distances are affected by [[Projectile Speed]]).
+*Alternate Fire:
+**Glaive has travel time.
+**Only one glaive (or set of glaives with multishot) can be active at a time, and takes approximately five<!--value needs testing--> seconds or 11 bounces to return.
+**Will not launch glaive with 0 shotgun ammo. At least 1 round is needed, though it will not be consumed.
+**Explosion inflicts [[Stagger|self-stagger]].
+**Explosion has a [[Enemy Body Parts|headshot]] multiplier of 1x and cannot trigger headshot conditions.
+}}
+{{WeaponComparison|Cedo}}
+*Alternate Fire:
+**Higher base critical chance (10.00% vs. 2.00%)
+**Higher base critical multiplier (2.0x vs. 1.40x)
+**Higher projectile speed (75m/s vs. 60m/s)
+
+==Acquisition==
+{{PrimeTable}}
+{{BuildAutomatic|type=Weapon}}
+
+==Notes==
+*The primary fire's bonus damage from individual status effects stacks additively with base damage mods and arcanes such as {{M|Point Blank}}, {{M|Blaze}}, {{Arcane|Primary Merciless}}, {{Arcane|Primary Dexterity}}, {{Arcane|Arcane Rage}}, {{Arcane|Arcane Primary Charger}}.
+*Despite not consuming ammo when fired or to deal damage, the alt fire cannot be fired if the gun runs out of ammo.
+*Tapping alternate fire once will return the glaive(s). Holding the alt fire or tapping multiple times does not reduce the return time.
+
+==Tips==
+*The [[Alternate Fire]]'s ability to rapidly proc multiple different status effects greatly synergizes with {{WF|Lavos}}'s {{A|Catalyze}}, its own primary fire, {{M|Galvanized Savvy}}, and melee weapons modded with {{M|Condition Overload}}.
+*Despite the Primary Fire's low status chance, its high critical chance and critical damage multiplier make {{M|Hunter Munitions}} worth installing, which in turn allows for a free boost to the Primary Fire's damage even without any glaives launched.
+*Installing [[Fatal Acceleration]] or [[Galvanized Acceleration]] or otherwise increasing [[Projectile Speed]] results in homing issues and faster glaive return, radically reducing the effectiveness of the [[Alternate Fire]].
+
+==Trivia==
+*The name ''Cedo'' may be from the Latin ''[https://en.wiktionary.org/wiki/cedo#Latin cedo]'', which can mean "I cede, yield".
+
+==Known Bugs==
+* {{M|Galvanized Savvy}} and the innate '''60%''' effect are multiplicative to base damage sources on direct hits from alt-fire.
+* Cedo Prime and its normal variant, {{Weapon|Cedo}}'s [[Alternate Fire]] stops exploding, bouncing correctly and applying random HECT status after a few minutes into the mission, if the player is not the host.
+
+==Media==
+<gallery widths="300" position="center" spacing="small">
+CedoPrimeDualZorenPrime.jpg
+</gallery>
+
+{{SkinGallery}}
+
+==Patch History==
+{{Scrollbox/Article|
+{{ver|38.0.12}}
+*Reduced the speed of the Cedo Prime glaive from 105 m/s down to 75 m/s.
+**We wanted to increase the flight speed of Cedo Prime's alt fire, enabling it to hit more enemies and return to the gun faster so that it could be fired more often. This made the auto-homing feature have a harder time steering to hit enemies, and despite giving it a sharper turning radius to compensate, it still tended to sometimes bounce out of large groups of enemies.
+**The base Cedo glaive has a projectile speed of 60 m/s. Cedo Prime glaive had a speed of 105 m/s, and this hotfix brings it down to 75 m/s, hopefully striking a balance between the intention of more bounces quickly, and the ability to bounce multiple times the way a Cedo glaive is known to do!
+*Fixed Cedo Prime's signature trait not applying to Lavos Prime.
+*Fixed Cedo Prime's signature trait converting 100% of secondary ammo instead of the intended 50%.
+
+{{ver|38.0.11}}
+*Fixed Cedo Prime gaining ammo at the start of their reload instead of the end.
+
+{{ver|38.0.10}}
+*Introduced.
+}}
+
+== See Also ==
+
+* {{WF|Lavos}}
+* {{WF|Lavos Prime}}
+* {{Weapon|Cedo}}, the base counterpart.
+{{WeaponNav}}

@@ -1,0 +1,59 @@
+{
+  "expected": [
+    {
+      "text": "This weapon deals primarily Radiation damage."
+    },
+    {
+      "text": "Primary fire shoots six continuous beams.",
+      "children": [
+        {
+          "text": "Pinpoint accuracy."
+        },
+        {
+          "text": "Innate multishot of 6 beams."
+        },
+        {
+          "text": "Tied with Convectrix and Phage for the highest fire rate of all shotguns."
+        },
+        {
+          "text": "Consumes 0.5 ammo per tick of damage."
+        },
+        {
+          "text": "Innate Infinite Body Punch Through."
+        }
+      ]
+    },
+    {
+      "text": "Alternate Fire charges the weapon to fire a large plasma bomb that explodes in a 4.8 meter radius, which then releases 5 seeking projectiles.",
+      "children": [
+        {
+          "text": "The longer the charge is held down, the more damage is dealt by the explosion and its projectiles."
+        },
+        {
+          "text": "Plasma bomb and seeking projectiles have a guaranteed Impact proc."
+        },
+        {
+          "text": "Initial hit and explosion apply status separately."
+        },
+        {
+          "text": "Explosion does not need direct line of sight to deal damage and will penetrate walls."
+        }
+      ]
+    },
+    {
+      "text": "Innate Naramon and Madurai polarities."
+    }
+  ],
+  "unexpected": [
+    "Very high overall status chance",
+    "Fastest reload speed",
+    "Damage ramps up from 15% to 100%",
+    "Innate punch through does not apply to surfaces",
+    "Limited range of 20 meters",
+    "Projectile has travel time",
+    "self-stagger",
+    "headshot multiplier",
+    "Damage Falloff",
+    "Ammo Pickup"
+  ]
+}

@@ -1,0 +1,191 @@
+{{For|the similarly-named [[Arcane Enhancement]]|Arcane Phantasm}}
+{{Top|Enemy|Sentient|Sentient|Weapon|Weapons|Weapons}}
+{{WeaponInfoboxAutomatic}}
+{{Codex|Irradiate enemies with a continuous stream of deadly plasma. Charging secondary fire releases a glob of plasma that erupts with homing bomblets on impact. Increased Magazine Capacity when wielded by Revenant.}}
+The '''Phantasma''' is {{WF|Revenant}}'s [[Signature Weapon|signature]] shotgun that fires deadly focused beams of {{D|Radiation}} that also deals {{D|Impact}} damage. Its [[Alternate Fire]] manually charges and launches a large plasma bomb that explodes into 5 additional homing projectiles, dealing more damage the longer the alt-fire is charged. It also possesses a higher magazine size when used by Revenant.
+
+==Characteristics==
+*This weapon deals primarily {{D|Radiation}} damage.
+*Primary fire shoots six continuous beams.
+**Pinpoint [[accuracy]].
+**Innate [[multishot]] of 6 beams.
+**Tied with {{Weapon|Convectrix}} and {{Weapon|Phage}} for the highest [[fire rate]] of all shotguns.
+**Consumes 0.5 ammo per tick of damage.
+**Innate [[Infinite Body Punch Through]].
+*[[Alternate Fire]] charges the weapon to fire a large plasma bomb that explodes in a '''4.8''' meter radius, which then releases '''5''' seeking projectiles.
+**The longer the charge is held down, the more damage is dealt by the explosion and its projectiles.
+**Plasma bomb and seeking projectiles have a guaranteed {{D|Impact}} proc.
+**Initial hit and explosion apply status separately.
+**Explosion does not need direct line of sight to deal damage and will penetrate walls.
+*Innate {{Pol|Naramon}} and {{Pol|Madurai}} polarities.
+
+{{Advantages|
+*Very high overall [[status chance]].
+*Fastest [[reload speed]] of all primary shotguns.
+*No damage fall-off.
+}}
+
+{{Disadvantages|
+*Lowest [[critical chance]] of all shotguns.
+*Primary Fire:
+**Damage ramps up from 15% to 100% over 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays back to 15% over 2 seconds.
+**Innate [[punch through]] does not apply to surfaces, requiring [[punch through]] mods.
+**Limited range of 20 meters.
+*Alternate Fire:
+**Projectile has travel time with heavy arcing.
+**Explosion inflicts [[Stagger|self-stagger]].
+**Explosion has a [[headshot]] multiplier of 1x and cannot trigger headshot conditions.
+**Explosion has linear [[Damage Falloff]] from 100% to 50% from central impact.
+*Low [[Ammo Pickup]].
+}}
+
+{{WeaponComparison|Phantasma Prime}}
+**Lower range (20m vs. 25m)
+
+==Acquisition==
+The Phantasma's blueprint can be purchased from the [[Market]].
+
+{{BuildAutomatic|type=Weapon}}
+It can be sold for '''7,500'''.
+
+==Notes==
+*When wielded by {{WF|Revenant}}/{{WF|Revenant Prime}}, the Phantasma's magazine size is increased by '''4''' rounds, for a total of '''15''' rounds.
+*Multiple beams hitting the target at the same time will combine into a single damage tick, similar to the {{Weapon|Phage}}.
+**Like other [[Continuous Weapon]]s, combined beams will also combine the chance for [[Status Effect|status]] procs per ammo used, resulting in 133.2% combined status chance before any mods.
+**[[Multishot]] mods, such as [[Hell's Chamber]], appear to give slightly less of an effect than they should. Instead of scaling off of an innate value of 6.0, they scale off of a value of 5.0. This means that Hell's Chamber will increase the value from 6.0 to 12.0.
+*The alt-fire charge attack discharges a ball of plasma that explodes in a '''5'''-meter radius on contact with an enemy or object.
+**Plasma ball deals '''15''' {{D|Impact}} damage upon impact and '''73''' {{D|Radiation}} damage in the explosion. Both ball impact and AoE apply  guaranteed {{D|Impact}} status procs.
+***[[Multishot]] affects the number of plasma orbs spawned.
+***Upon explosion, '''5''' bomblets will be scattered into the air and begin homing in on nearby targets. Each bomblet deals '''3''' {{D|Impact}} damage upon impact and '''18''' {{D|Radiation}} damage in the explosion. Bomblet impact has a guaranteed {{D|Stagger}} and AoE applies a guaranteed {{D|Impact}} proc.
+*Charging consumes ammo, up to a full magazine on full charge.
+**Damage dealt by the plasma bomb is directly proportional to the amount of ammo consumed during the charge.
+*The charge rate is '''not''' affected by fire rate mods.
+**Charge rate consumes a set 11 ammo per second. Modding to increase magazine capacity will allow a longer total charge, and thus more damage.
+**In the event the appropriate [[Void Fissure#Reactant Buff|Reactant Buff]] grants the Phantasma infinite ammo, the charge will only consume up to the Phantasma's maximum magazine size.
+
+==Trivia==
+*''Phantasma'' (φάντασμα) is [[wikipedia:Ancient Greek|Ancient Greek]] for "ghost" or "apparition", and is the basis of the words "phantom" and "phantasm".
+**Phantasma can also be seen as a portmanteau of "phantom" and "plasma".
+*The Phantasma is the fourth [[Sentient]] weapon that players can wield (following {{Weapon|War}}, {{Weapon|Broken War}}, and [[Amp]]s). It is also the first Sentient weapon to be a primary weapon, and the first one to be themed specifically around the [[Plains of Eidolon|Eidolons]] rather than normal Sentients.
+**The Phantasma is also the first weapon to require [[Sentient Core]]s to craft.
+*The Phantasma is the first weapon to have an [[Alternate Fire]] that grants the user an option to tap, or press and hold for as long as desired (or until the entire magazine is consumed).
+
+==Known Bugs==
+*Alt firing then reloading immediately after will do a soundless Braton reload animation.
+*Ammo cost of charge increases as magazine depletes. For example, it may consume 2/2/2/3/3/4/6 ammo throughout a magazine.
+*Charged damage is reduced by -1 for each additional ammo consumed by the incremental auto-charge as magazine depletes.
+*{{M|Galvanized Savvy}} is multiplicative to base damage sources on direct hits from bomblets.
+
+==Media==
+<gallery widths="300" position="center" spacing="small">
+PhantasmPreview.jpg
+Revenant Weapon.jpg
+Phantasma (1).png|Phantasma as it appears in the arsenal
+Phantasma (2).png
+Phantasma (3).png
+</gallery>
+
+{{VideoGallery
+|{{YouTube|gnG-m5Q8Qbw|size=300px}}
+|{{YouTube|FmQtNjo9Yvk|size=300px}}
+|{{YouTube|7FydHZ9QQwE|size=300px}}
+}}
+
+==Patch History==
+{{Scrollbox/Article|
+{{ver|32}}
+;Ammo Changes
+
+We understand the power fantasy of these weapons is very popular for some, so our first approach was to keep them powerful, but limit how often they can be used by making changes to ammo pick-up.
+
+'''''Ammo Pickup Overrides'''''<br/>
+The following weapons now have ammo pickup overrides, meaning they gain less from picking up ammo. This mostly applies to AoE weapons, in hopes that players will become more deliberate with their aim to make the most of their Ammo pools. The following lists the specific ammo pick up overrides per weapon category.
+
+'''Primary Weapon Ammo Pick Up Overrides'''
+
+15 Ammo per Pick Up: 
+*Phantasma
+
+;Headshot Damage Changes
+
+During playtesting, the ammo changes alone weren’t enough to significantly change things for AoE weapons. So instead of tightening these values to be overly restrictive, we chose to address other factors that make these weapons so strong, such as headshot damage. 
+
+Our approach here is two-fold, to reduce the impact of headshots for AOE weapons, but to also make precision headshots pack a larger punch overall.
+
+*Radial damage no longer gains extra headshot damage or triggers headshot conditions.
+**This is primarily targeted at the Ignis Wraith - as a “flamethrower” weapon, it’s hard to imagine a blanket of elements being precise enough to target weak points specifically. Explosive projectiles themselves can still land headshots, so there is still a reason to aim with most weapons for maximum damage.
+
+{{ver|28.0.2}}
+*Fixed for Phantasma secondary fire explosion not making sound.
+
+{{ver|27.3.8}}
+*Fixed the Phantasma requiring an Orokin Catalyst to unlock its Exilus Slot instead of an Exilus Adapter.
+
+{{ver|27.2.2}}
+;AoE Weapon Radial Fall Off Changes:
+Reduced the following AoE weapons Radial Damage Falloff from central impact that were all previously 90%:
+*Phantasma: 50%
+
+;Fixes:
+*Fixed the Phantasma not having the new ‘Status’ calculations. It also has multiple fire iterations and are valid for large Status Chance like Shotguns received at their base to address the new Status logic.
+
+{{ver|27.2}}
+;Self Damage Changes:
+We are getting rid of Self Damage and replacing it with something else: instead of Self Damage, it’s now ‘Stagger’. This change completely removes the chance of killing yourself, and instead now creates scenarios where you will interrupt yourself - or ‘Stagger’ - to varying degrees if you aren’t careful. 
+
+The degrees of Self-Interrupt start with a small stumble all the way to full knockdown depending on how close you are to the center of explosion. Any Mods referring to Self Damage will be converted to acknowledge Stagger.
+
+With this Self-Interrupt system, we have added dozens of new recovery animations that harness a ninja-like recovery experience. By pressing ‘Jump’ at the correct time, you can execute a ninja-skill-based knockdown recovery to ALL in-game knockdowns. This ninja recovery window is indicated by a glowing FX on your Warframe.
+
+In the original Dev Workshop, we said:<br />
+''As a result of this overall systemic change, Weapons with Stagger will be getting approximately a 20% buff in Damage, with any weapons with AOE receiving a 50% Radial Damage Falloff from central impact.''
+
+This is no longer accurate after continued testing. What we are doing now is:
+
+No damage buffs have been added, but any weapons with AOE are receiving ~20% increase in Radius. Additionally, AOE weapons are receiving a 90% Radial Damage Falloff from central impact. This means on the very outer section of the explosion Radius 10% of the Damage will be dealt. Tactics will be deadly - aim true, Tenno. 
+
+''Why: Several players brought up the history of the Tonkor and we want to make sure we ship this change in a place that’s conservative in its starting point from a balance perspective. The complete removal of Self Damage does change the pace of destruction with some of the game’s most powerful weapons, so we want to make sure we can iterate upwardly instead of releasing a bonanza of explosions with no other choices.''
+
+;Greater than 100% Status having meaning:
+Shotguns have a unique Role here based on a very patch-work history with how they interact with Status Chance. A Shotgun that shoots 99% Status Chance would give you 35% (roughly) status per pellet. 100% Status Gives you 100% Status per pellet. This huge jump in performance happens with just a 1% gain - why? Well, to answer that we have to look at our choice to make what the UI conveys reality. It would feel broken to shoot a Shotgun with 100% Status and not see a perfect spread of Effects. In reality, to make Status consistent we have to treat Shotguns as a special case. 
+
+Shotguns as a special case means we have buffed the Status Chance of all Shotguns by x3 or greater. The UI now behaves to show the reality that you are determining Status Chance per pellet.
+*(Undocumented) Status chance per projectile increased from 7.4% to 22.2%.
+
+{{ver|24.6}}
+*Having a ‘signature’ weapon now actually benefits you!
+**Phantasma: Has 15 magazine when wielded by Revenant.﻿
+
+{{ver|23.10}}
+*Phantasma’s Alt Fire homing projectile amount is no longer based on charge time. Alt Fire now releases 5 total homing projectiles.
+*Phantasma’s Alt Fire damage per projectile now scales based on charge time.
+
+{{ver|23.8}}
+*Fixed inability to equip Sinister Reach on the Phantasma.
+
+{{ver|23.6}}
+*Phantasma alt-fire will now seek targets in all directions, instead of behind the projectile.
+
+{{ver|23.5.0}}
+*Introduced.
+}}
+{{ver/Lu|23.6.2}}
+
+==See Also==
+*{{Weapon|Tatsu}}, {{WF|Revenant}}'s signature two-handed nikana.
+
+{{WeaponNav}}
+[[de:Phantasma]]
+[[es:Phantasma]]
+[[pt:Phantasma]]
+[[fr:Phantasma]]
+[[Category:Update 23]]
+[[Category:Sentient]]
+[[Category:Weapons]]
+[[Category:Primary Weapons]]
+[[Category:Radiation Damage Weapons]]
+[[Category:Continuous Weapons]]
+[[Category:Shotgun]]
+[[Category:Signature Weapons]]
+[[Category:Revenant]]
+[[uk:Фантазма]]

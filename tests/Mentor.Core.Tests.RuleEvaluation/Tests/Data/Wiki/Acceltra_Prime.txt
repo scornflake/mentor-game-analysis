@@ -1,0 +1,59 @@
+{{Top|Lotus|Tenno|Tenno|Weapon|Weapon|Weapon}}
+{{WeaponInfoboxAutomatic}}
+{{Codex|Engage your enemies with deadly speed. This weapon reloads faster when its wielder sprints, faster still with Gauss}}
+'''Acceltra Prime''' is the [[Prime]]d counterpart of the {{Weapon|Acceltra}} micro-missile launcher, sporting increased damage, [[Critical Chance]], [[Critical Multiplier]], [[Status Chance]], explosion radius, and [[Reload Speed]], at the expense of some [[Fire Rate]]. Acceltra Prime was released alongside {{WF|Gauss Prime}} and {{Weapon|Akarius Prime}}.
+
+==Characteristics==
+*This weapon deals primarily {{D|Puncture}} and {{D|Impact}} damage.
+*Rockets have a minimum arming distance of '''7''' meters and explode in a '''5''' meter radius after impacting a surface or enemy.
+**Initial hit and explosion apply status separately.
+**Explosion does not need direct line of sight to deal damage and will penetrate walls.
+**Can benefit from {{M|Firestorm}} ({{M|Primed Firestorm|Primed}}) and {{M|Cautious Shot}}.
+*Rocket direct impacts have a guaranteed {{D|Impact}} proc.
+*Reloading while [[Maneuvers#Sprinting|sprinting]] gives a '''+25%''' [[reload speed]] bonus ('''+50%''' when used by {{WF|Gauss}}/{{WF|Gauss Prime}}).
+
+{{Advantages|
+}}
+
+{{Disadvantages|
+}}
+
+{{WeaponComparison|Acceltra}}
+
+==Acquisition==
+{{PrimeTable}}
+{{BuildAutomatic|type=Weapon}}
+
+==Notes==
+*While sprinting, reload speed is increased by '''25%''', or '''50%''' when used by {{WF|Gauss}}/{{WF|Gauss Prime}}. Without other mods, sprinting reload speed is '''1.4''' seconds, or '''1.2''' seconds with Gauss.
+*The Acceltra Prime's rockets have a minimum arming distance of '''7''' meters, meaning that they will not explode if they make contact with objects or enemies within that range, and thus making the Acceltra Prime safe to use in close quarters combat.
+**Arming distance is '''unaffected''' by [[Projectile Speed]].
+**Regardless, it's still possible to deal self-stagger if the wielder is moving fast enough (either through [[Maneuvers]] and/or using certain [[Abilities]]) to catch up to the rockets.
+
+==Trivia==
+*The mechanics of the Acceltra Prime are similar to [[wikipedia:Gyrojet|Gyrojet]] firearms, which were developed in the 1960s and also fired small rockets that armed themselves as they traveled out of the gun. In real life, accuracy and reliability issues meant that the Gyrojets never entered mass production.
+*The "fins" on the Acceltra's barrel are where the rockets are stored, and hatches on top of them open up while firing or reloading.
+
+==Media==
+<gallery widths="300" position="center" spacing="small">
+File:AcceltraPrimeAkariusPrime Poster.jpeg|Poster of Acceltra Prime and Akarius Prime
+File:GaussPrime Screenshot.png|Official Promotional Screenshot of Prime Access
+File:Warframe-acceltra-prime-relics.jpeg
+</gallery>
+
+{{SkinGallery}}
+
+==Patch History==
+{{Scrollbox/Article|
+{{ver|38}}
+*Fixed an issue with Acceltra Prime’s impact sound mixing.
+
+{{ver|35.5}}
+*Fixed Acceltra Prime build requirements descriptions incorrectly referencing Disruption missions.
+
+{{ver|35.0.9}}
+*Introduced.
+}}
+
+{{WeaponNav}}
+[[es:Acceltra Prime]]

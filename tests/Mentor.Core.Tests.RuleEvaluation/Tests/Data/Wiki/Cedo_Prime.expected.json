@@ -1,0 +1,100 @@
+{
+  "expected": [
+    {
+      "text": "This weapon deals primarily Puncture damage."
+    },
+    {
+      "text": "Deals +60% bonus damage per unique status effect on target.",
+      "children": [
+        {
+          "text": "On the Primary Fire, this bonus is additive to all base damage bonuses, such as Point Blank and Galvanized Savvy."
+        },
+        {
+          "text": "On direct hits from the Alternate Fire glaive, this bonus is additive with Galvanized Savvy, and multiplicative to normal base damage bonuses like Point Blank. See Condition Overload (Mechanic) for more info."
+        },
+        {
+          "text": "On explosions from the Alternate Fire glaive, this bonus does not apply."
+        }
+      ]
+    },
+    {
+      "text": "Primary Fire shoots wide-spread, close-ranged buckshot in a fully automatic fashion.",
+      "children": [
+        {
+          "text": "Innate 0.8 meter punch through."
+        },
+        {
+          "text": "Innate multishot of 7 pellets."
+        }
+      ]
+    },
+    {
+      "text": "Alternate Fire launches a glaive that explodes in a 6 meter radius on impact with a surface or enemy and bounces up to 11 times.",
+      "children": [
+        {
+          "text": "Direct hit and explosion apply status separately.",
+          "children": [
+            {
+              "text": "Direct hit deals Slash damage and has the listed status chance of 50%, affected by status chance bonuses and modded elements."
+            },
+            {
+              "text": "Explosion deals Blast damage and applies two separate guaranteed procs. The number of procs cannot be increased with status chance bonuses.",
+              "children": [
+                {
+                  "text": "The first proc can be any element modded onto the weapon, or the innate Blast damage. The chance for each element follows normal status weighting rules."
+                },
+                {
+                  "text": "The second proc has an even chance to be any of the following; Heat, Cold, Electricity, or Toxin."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Explosion does not need direct line of sight to deal damage and will penetrate walls."
+        },
+        {
+          "text": "Consumes no ammo."
+        },
+        {
+          "text": "Multishot affects the number of glaives released per use, each with their own trajectory."
+        }
+      ]
+    },
+    {
+      "text": "Innate Shotgun Ammo Mutation effect when used by Lavos."
+    },
+    {
+      "text": "Innate two Madurai and one Vazarin polarities."
+    },
+    {
+      "text": "Advantages over other Primary weapons (excluding modular weapons):",
+      "children": [
+        {
+          "text": "High magazine size."
+        },
+        {
+          "text": "Alternate Fire:",
+          "children": [
+            {
+              "text": "Tied with Corinth Prime's alt fire and Trumna's alt fire for the second highest status chance of all primary launchers, behind Bubonico's alt fire."
+            },
+            {
+              "text": "No Damage Falloff."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "unexpected": [
+    "High magazine size",
+    "Tied with",
+    "No Damage Falloff",
+    "damage falloff from 100% to 3%",
+    "Glaive has travel time",
+    "Only one glaive",
+    "self-stagger",
+    "headshot multiplier"
+  ]
+}

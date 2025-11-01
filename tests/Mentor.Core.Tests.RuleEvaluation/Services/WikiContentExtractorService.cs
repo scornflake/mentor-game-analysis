@@ -2,6 +2,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Mentor.Core.Tests.RuleEvaluation.Models;
 using Microsoft.Extensions.Logging;
+using WikiClientLibrary.Client;
+using WikiClientLibrary.Sites;
+using WikiClientLibrary.Pages;
 
 namespace Mentor.Core.Tests.RuleEvaluation.Services;
 
@@ -12,12 +15,30 @@ public class WikiContentExtractorService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<WikiContentExtractorService> _logger;
-    private const string MediaWikiApiBase = "https://wiki.warframe.com/api.php";
+    private const string WikiApiEndpoint = "https://wiki.warframe.com/api.php";
+    private WikiSite? _wikiSite;
 
     public WikiContentExtractorService(HttpClient httpClient, ILogger<WikiContentExtractorService> logger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    /// <summary>
+    /// Get or create the WikiSite instance
+    /// </summary>
+    private async Task<WikiSite> GetWikiSiteAsync()
+    {
+        if (_wikiSite == null)
+        {
+            var wikiClient = new WikiClient
+            {
+                ClientUserAgent = "MentorApp/1.0 (https://github.com/yourusername/mentor; contact@example.com)"
+            };
+            _wikiSite = new WikiSite(wikiClient, WikiApiEndpoint);
+            await _wikiSite.Initialization;
+        }
+        return _wikiSite;
     }
 
     /// <summary>
@@ -30,8 +51,8 @@ public class WikiContentExtractorService
         var pageName = ExtractPageNameFromUrl(wikiUrl);
         _logger.LogInformation("Extracting characteristics from wiki page: {PageName}", pageName);
 
-        var htmlContent = await FetchWikiPageAsync(pageName, cancellationToken);
-        var characteristics = ExtractCharacteristics(htmlContent);
+        var wikitext = await FetchWikiPageAsync(pageName, cancellationToken);
+        var characteristics = ExtractCharacteristics(wikitext);
 
         _logger.LogInformation("Extracted {Count} characteristics from {PageName}", characteristics.Count, pageName);
         return characteristics;
@@ -55,90 +76,158 @@ public class WikiContentExtractorService
     }
 
     /// <summary>
-    /// Fetch wiki page HTML content from MediaWiki API
+    /// Fetch wiki page wikitext content using WikiClientLibrary
     /// </summary>
     public async Task<string> FetchWikiPageAsync(string pageName, CancellationToken cancellationToken = default)
     {
-        // Use MediaWiki API to get parsed HTML
-        var url = $"{MediaWikiApiBase}?action=parse&format=json&page={Uri.EscapeDataString(pageName)}";
+        _logger.LogDebug("Fetching wiki page: {PageName}", pageName);
         
-        _logger.LogDebug("Fetching wiki page from: {Url}", url);
+        var wikiSite = await GetWikiSiteAsync();
+        var page = new WikiPage(wikiSite, pageName);
         
-        // Set User-Agent header - MediaWiki requires this to identify the application
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("User-Agent", "MentorApp/1.0 (https://github.com/yourusername/mentor; contact@example.com)");
-        
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await page.RefreshAsync(PageQueryOptions.FetchContent, cancellationToken);
 
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        var apiResponse = JsonSerializer.Deserialize<MediaWikiApiResponse>(json);
-
-        if (apiResponse?.Parse?.Text?.Content == null)
+        if (page.Content == null)
         {
             throw new InvalidOperationException($"Failed to fetch wiki page: {pageName}");
         }
 
-        return apiResponse.Parse.Text.Content;
+        _logger.LogDebug("Fetched wikitext for {PageName} ({Length} chars)", pageName, page.Content.Length);
+        return page.Content;
     }
 
     /// <summary>
-    /// Extract characteristics from HTML content
+    /// Extract characteristics from wikitext content
     /// </summary>
-    public List<WikiCharacteristic> ExtractCharacteristics(string htmlContent)
+    public List<WikiCharacteristic> ExtractCharacteristics(string wikitext)
     {
-        var characteristics = new List<WikiCharacteristic>();
-        
-        // Find the Characteristics section
-        // Look for <h2> or <h3> tag with "Characteristics" text
+        // Find the Characteristics section in wikitext
+        // Look for == Characteristics == header
+        // Stop at next section (==), template ({{), or end of string
         var characteristicsMatch = Regex.Match(
-            htmlContent,
-            @"<h[23][^>]*>\s*<span[^>]*>\s*Characteristics\s*</span>.*?</h[23]>(.*?)(?=<h[23]|$)",
-            RegexOptions.Singleline | RegexOptions.IgnoreCase
+            wikitext,
+            @"==\s*Characteristics\s*==(.*?)(?=^==\s*\w|^\{\{[A-Z]|\z)",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Multiline
         );
 
         if (!characteristicsMatch.Success)
         {
-            _logger.LogWarning("Could not find Characteristics section in HTML");
-            return characteristics;
+            _logger.LogWarning("Could not find Characteristics section in wikitext");
+            return new List<WikiCharacteristic>();
         }
 
         var characteristicsSection = characteristicsMatch.Groups[1].Value;
 
-        // Extract all list items from the section
-        var listItemMatches = Regex.Matches(characteristicsSection, @"<li[^>]*>(.*?)</li>", RegexOptions.Singleline);
+        // Extract all list items with their indentation levels
+        // Match lines that start with one or more asterisks
+        var listItemMatches = Regex.Matches(characteristicsSection, @"(?:^|\n)(\*+)\s*(.+?)(?=\n|$)", RegexOptions.Multiline);
 
-        int index = 0;
+        var flatList = new List<(int level, string text, int index)>();
+        int globalIndex = 0;
+
         foreach (Match match in listItemMatches)
         {
-            var itemHtml = match.Groups[1].Value;
+            var asterisks = match.Groups[1].Value;
+            var indentLevel = asterisks.Length;
+            var itemText = match.Groups[2].Value;
             
-            // Clean up HTML tags and decode entities
-            var cleanedText = CleanHtmlText(itemHtml);
+            // Clean up wikitext markup
+            var cleanedText = CleanWikitextMarkup(itemText);
             
-            // Skip empty or very short characteristics
-            if (string.IsNullOrWhiteSpace(cleanedText) || cleanedText.Length < 10)
+            // Skip only truly empty characteristics
+            if (string.IsNullOrWhiteSpace(cleanedText))
             {
                 continue;
             }
 
-            characteristics.Add(new WikiCharacteristic
-            {
-                Text = cleanedText,
-                OriginalIndex = index++
-            });
+            flatList.Add((indentLevel, cleanedText, globalIndex++));
         }
 
-        return characteristics;
+        // Build hierarchical tree from flat list
+        return BuildHierarchy(flatList);
     }
 
     /// <summary>
-    /// Clean HTML text by removing tags and decoding entities
+    /// Build hierarchical tree from flat list of characteristics with indent levels
     /// </summary>
-    private string CleanHtmlText(string html)
+    private List<WikiCharacteristic> BuildHierarchy(List<(int level, string text, int index)> flatList)
     {
-        // Remove HTML tags
-        var text = Regex.Replace(html, @"<[^>]+>", " ");
+        var rootCharacteristics = new List<WikiCharacteristic>();
+        var stack = new Stack<(WikiCharacteristic characteristic, int level)>();
+
+        foreach (var (level, text, index) in flatList)
+        {
+            var characteristic = new WikiCharacteristic
+            {
+                Text = text,
+                OriginalIndex = index,
+                IndentLevel = level
+            };
+
+            // Pop stack until we find the parent level
+            while (stack.Count > 0 && stack.Peek().level >= level)
+            {
+                stack.Pop();
+            }
+
+            if (stack.Count == 0)
+            {
+                // This is a root-level item
+                rootCharacteristics.Add(characteristic);
+            }
+            else
+            {
+                // This is a child of the item on top of the stack
+                stack.Peek().characteristic.Children.Add(characteristic);
+            }
+
+            // Push current item onto stack
+            stack.Push((characteristic, level));
+        }
+
+        return rootCharacteristics;
+    }
+
+    /// <summary>
+    /// Clean wikitext markup to plain text
+    /// </summary>
+    private string CleanWikitextMarkup(string wikitext)
+    {
+        var text = wikitext;
+        
+        // Handle templates {{template|param1|param2|...}}
+        // Extract display text: if template has multiple params, use the last one as display text
+        // Otherwise use the first param
+        text = Regex.Replace(text, @"\{\{[^}|]+\|([^}]+)\}\}", match =>
+        {
+            var content = match.Groups[1].Value;
+            // Split by pipe and take the last part (display text)
+            var parts = content.Split('|');
+            return parts[parts.Length - 1];
+        });
+        
+        // Remove any remaining templates (those without pipes)
+        text = Regex.Replace(text, @"\{\{[^}]*\}\}", " ");
+        
+        // Convert wiki links [[Page|Display]] to Display, or [[Page]] to Page
+        text = Regex.Replace(text, @"\[\[(?:[^|\]]+\|)?([^\]]+)\]\]", "$1");
+        
+        // Remove bold/italic markup
+        text = text.Replace("'''", "");  // Bold
+        text = text.Replace("''", "");   // Italic
+        
+        // Remove external links [http://url text] to text
+        text = Regex.Replace(text, @"\[https?://[^\s\]]+ ([^\]]+)\]", "$1");
+        
+        // Remove remaining external links [http://url]
+        text = Regex.Replace(text, @"\[https?://[^\]]+\]", "");
+        
+        // Remove HTML tags (some wikitext may contain HTML)
+        text = Regex.Replace(text, @"<[^>]+>", " ");
+        
+        // Remove references <ref>...</ref>
+        text = Regex.Replace(text, @"<ref[^>]*>.*?</ref>", "", RegexOptions.Singleline);
+        text = Regex.Replace(text, @"<ref[^>]*/>", "");
         
         // Decode common HTML entities
         text = text

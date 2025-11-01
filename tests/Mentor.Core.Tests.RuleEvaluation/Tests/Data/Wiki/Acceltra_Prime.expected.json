@@ -1,0 +1,34 @@
+{
+  "expected": [
+    {
+      "text": "This weapon deals primarily Puncture and Impact damage."
+    },
+    {
+      "text": "Rockets have a minimum arming distance of 7 meters and explode in a 5 meter radius after impacting a surface or enemy.",
+      "children": [
+        {
+          "text": "Initial hit and explosion apply status separately."
+        },
+        {
+          "text": "Explosion does not need direct line of sight to deal damage and will penetrate walls."
+        },
+        {
+          "text": "Can benefit from Firestorm (Primed) and Cautious Shot."
+        }
+      ]
+    },
+    {
+      "text": "Rocket direct impacts have a guaranteed Impact proc."
+    },
+    {
+      "text": "Reloading while sprinting gives a +25% reload speed bonus (+50% when used by Gauss/Gauss Prime)."
+    }
+  ],
+  "unexpected": [
+    "Very high",
+    "Tied with",
+    "damage fall-off",
+    "Lowest critical",
+    "headshot multiplier"
+  ]
+}
