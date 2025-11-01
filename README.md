@@ -46,7 +46,7 @@ Also, this is a "real project" where I can play around with AI tool calling, age
 
 - Perplexity and Claude providers work pretty good
 - Local "openai compatible" - work. Sort of ... [with many caveats](docs/Local%20LLMS.md).
-- The AI "tool calling" and "agentic-ness" leave a lot to be desired. But hey, v1 is out and actually does something useful!
+- The AI "tool calling" and "agentic-ness" leave a lot to be desired. But hey, v1 is out and actually does something useful (maybe!)
 
 ## Quick Start
 
