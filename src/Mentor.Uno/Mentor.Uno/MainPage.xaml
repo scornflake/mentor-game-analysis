@@ -43,6 +43,12 @@
           <Button Content="⚙ Settings"
                   Click="OnSettingsClick"
                   Style="{StaticResource TextBlockButtonStyle}"/>
+          <Border Width="1" 
+                  Background="{ThemeResource CardStrokeColorDefaultBrush}"
+                  Margin="4,4"/>
+          <Button Content="Releases..."
+                  Click="OnReleasesClick"
+                  Style="{StaticResource TextBlockButtonStyle}"/>
         </StackPanel>
       </Border>
     </Grid>

@@ -167,6 +167,21 @@ public sealed partial class MainPage : Page
         _windowStateHelper.SetupWindowStateTracking(settingsWindow, "SettingsWindow", repository);
     }
 
+    private async void OnReleasesClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var uri = new Uri("https://github.com/scornflake/mentor-game-analysis/releases");
+            await Launcher.LaunchUriAsync(uri);
+        }
+        catch (Exception ex)
+        {
+            var logger = App.GetService<ILogger<MainPage>>();
+            logger?.LogError(ex, "Failed to open releases URL");
+            ViewModel.ErrorMessage = $"Failed to open releases page: {ex.Message}";
+        }
+    }
+
     private async void OnBrowseClick(object sender, RoutedEventArgs e)
     {
         try
