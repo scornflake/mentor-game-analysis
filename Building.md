@@ -193,6 +193,107 @@ dotnet publish src/Mentor.CLI/Mentor.CLI.csproj \
 
 For detailed build instructions including installers, code signing, and platform-specific notes, see [docs/build.md](docs/build.md).
 
+## Automated Releases with GitHub Actions
+
+The project includes a GitHub Actions workflow that automates the entire build, test, and release process for Windows.
+
+### What the Workflow Does
+
+The `Build and Release` workflow automatically:
+
+1. **Builds** the solution in Release configuration
+2. **Runs all tests** (workflow fails if any tests fail)
+3. **Creates** a Windows distribution package (ZIP)
+4. **Compiles** a Windows installer (EXE using Inno Setup)
+5. **Generates** a changelog from commit messages
+6. **Publishes** a GitHub release with both the installer and portable ZIP
+
+### How to Trigger a Release
+
+#### Manual Release (Current Setup)
+
+1. Go to the GitHub repository: https://github.com/scornflake/mentor-game-analysis
+2. Click the **Actions** tab at the top
+3. Select **Build and Release** from the workflow list on the left
+4. Click the **Run workflow** button (top right)
+5. (Optional) Enter a version override (e.g., `1.0.50`) or leave blank for auto-versioning
+6. (Optional) Check "Mark as pre-release" if this is a beta/preview release
+7. Click **Run workflow** to start
+
+The workflow takes approximately 5-10 minutes to complete.
+
+#### Automatic Release (Future Options)
+
+The workflow can be easily extended to trigger automatically. To enable:
+
+**On Git Tag Push:**
+Add to `.github/workflows/release.yml` line 4:
+```yaml
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on tags like v1.0.50
+  workflow_dispatch:
+```
+
+Then create a release by pushing a tag:
+```bash
+git tag v1.0.50
+git push origin v1.0.50
+```
+
+**On Main Branch Push:**
+Add to `.github/workflows/release.yml` line 4:
+```yaml
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+```
+
+This will create a release every time changes are merged to main.
+
+### Release Artifacts
+
+Each release includes:
+
+- **MentorSetup-{version}.exe** - Windows installer with setup wizard
+- **Mentor-Windows-win-x64.zip** - Portable Windows distribution (extract and run)
+- **Auto-generated changelog** - Categorized list of changes since last release
+
+### Changelog Generation
+
+The workflow automatically generates a changelog from commit messages using conventional commit format:
+
+- `feat:` or `feature:` → 🚀 Features section
+- `fix:` or `bug:` → 🐛 Fixes section
+- `test:` → 🧪 Tests section
+- `docs:` → 📝 Documentation section
+- All other commits → 🔧 Other Changes section
+
+**Example commit messages:**
+```bash
+git commit -m "feat: add support for Claude Opus 4"
+git commit -m "fix: correct image upload validation"
+git commit -m "docs: update API configuration guide"
+```
+
+If commits don't follow this format, they'll still be included in the changelog under "Other Changes".
+
+### Versioning
+
+Version numbers are automatically calculated from git commit count (defined in `Directory.Build.props`):
+- Format: `Major.Minor.BuildNumber` (e.g., `1.0.203`)
+- Major/Minor are set in `Directory.Build.props` (currently `1.0`)
+- BuildNumber is the total git commit count
+- Override by specifying a version when triggering the workflow manually
+
+To change the major/minor version:
+1. Edit `Directory.Build.props` and update `<VersionPrefix>1.1</VersionPrefix>`
+2. Commit the change
+3. All subsequent builds will use the new version prefix
+
 ## Development
 
 ### Architecture Overview

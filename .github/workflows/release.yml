@@ -30,20 +30,42 @@ jobs:
         with:
           dotnet-version: '9.0.x'
       
+      # Debug environment
+      - name: Debug environment
+        shell: pwsh
+        run: |
+          Write-Host "=== Environment Debug Info ===" -ForegroundColor Cyan
+          Write-Host "Working Directory: $PWD"
+          Write-Host "Git Commit Count: $(git rev-list --count HEAD)"
+          Write-Host "GitHub Run Number: $env:GITHUB_RUN_NUMBER"
+          Write-Host "Directory.Build.props exists: $(Test-Path 'Directory.Build.props')"
+          Write-Host "Get-Version.ps1 exists: $(Test-Path 'scripts/Get-Version.ps1')"
+          Write-Host "===============================" -ForegroundColor Cyan
+      
       # Determine version
       - name: Get version
         id: version
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $version = "${{ github.event.inputs.version }}"
           if ([string]::IsNullOrWhiteSpace($version)) {
-            $version = & .\scripts\Get-Version.ps1 -VersionOnly
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to determine version"
+            Write-Host "No version override provided, calculating from git..." -ForegroundColor Yellow
+            try {
+              $version = & .\scripts\Get-Version.ps1 -VersionOnly
+              Write-Host "Script returned: '$version'" -ForegroundColor Gray
+              if ([string]::IsNullOrWhiteSpace($version)) {
+                throw "Get-Version.ps1 returned empty version"
+              }
+            }
+            catch {
+              Write-Error "Failed to determine version: $_"
               exit 1
             }
+          } else {
+            Write-Host "Using version override: $version" -ForegroundColor Yellow
           }
-          Write-Host "Version: $version"
+          Write-Host "Final version: $version" -ForegroundColor Green
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
           echo "TAG=v$version" >> $env:GITHUB_OUTPUT
       
