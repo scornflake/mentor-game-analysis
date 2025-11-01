@@ -2,12 +2,11 @@
 
 > Get instant, actionable recommendations for your gameplay through intelligent screenshot analysis
 
-![Main Interface](docs/images/main-analysis.png)
-*Screenshot placeholder - Main analysis interface*
-
 ## What It Does
 
 Mentor analyzes your game screenshots using advanced AI to provide strategic recommendations, build suggestions, and gameplay insights. Simply capture your screen, ask your question, and Mentor tells you what to do next.
+
+Why?: I started playing Warframe, and it's a bit "what the heck do I do now?". I found punting images and prompts into Perplexity to be quite good, so thought "hey why not put together an app?".
 
 Whether you're optimizing your character build, deciding on your next objective, or seeking strategic advice, Mentor provides clear, prioritized recommendations backed by AI analysis and real-time web research.
 
