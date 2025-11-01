@@ -8,80 +8,99 @@
     <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
   </UserControl.Resources>
   
-  <ScrollViewer Visibility="{x:Bind Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
-    <StackPanel Spacing="16">
-      <Grid>
-        <TextBlock Text="Analysis Results"
-                   Style="{StaticResource TitleTextBlockStyle}"
-                   VerticalAlignment="Center"/>
-        <Button HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                Command="{x:Bind SaveAnalysisCommand}"
-                Style="{StaticResource AccentButtonStyle}"
-                ToolTipService.ToolTip="Save this analysis to HTML">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <FontIcon Glyph="&#xE74E;" FontSize="16"/>
-            
-            <TextBlock Text="Save"/>
+  <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="8"
+          Padding="20"
+          Visibility="{x:Bind Result, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+    <Border.Shadow>
+      <ThemeShadow />
+    </Border.Shadow>
+    <ScrollViewer>
+      <StackPanel Spacing="20">
+        <Grid>
+          <TextBlock Text="Analysis Results"
+                     Style="{StaticResource TitleTextBlockStyle}"
+                     VerticalAlignment="Center"/>
+          <Button HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Command="{x:Bind SaveAnalysisCommand}"
+                  Padding="12,8"
+                  Style="{StaticResource AccentButtonStyle}"
+                  ToolTipService.ToolTip="Save this analysis to HTML">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <FontIcon Glyph="&#xE74E;" FontSize="16"/>
+              
+              <TextBlock Text="Save"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <!-- Metadata -->
+        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12">
+          <StackPanel Spacing="6">
+            <TextBlock>
+              <Run Text="Provider: " FontWeight="SemiBold"/>
+              <Run Text="{x:Bind Result.ProviderUsed, Mode=OneWay}"/>
+            </TextBlock>
+            <TextBlock>
+              <Run Text="Confidence: " FontWeight="SemiBold"/>
+              <Run Text="{x:Bind Result.Confidence, Mode=OneWay}"/>
+            </TextBlock>
+            <TextBlock>
+              <Run Text="Generated: " FontWeight="SemiBold"/>
+              <Run Text="{x:Bind Result.GeneratedAtFormatted, Mode=OneWay}"/>
+            </TextBlock>
           </StackPanel>
-        </Button>
-      </Grid>
-
-      <!-- Metadata -->
-      <StackPanel Spacing="4">
-        <TextBlock>
-          <Run Text="Provider: " FontWeight="SemiBold"/>
-          <Run Text="{x:Bind Result.ProviderUsed, Mode=OneWay}"/>
-        </TextBlock>
-        <TextBlock>
-          <Run Text="Confidence: " FontWeight="SemiBold"/>
-          <Run Text="{x:Bind Result.Confidence, Mode=OneWay}"/>
-        </TextBlock>
-        <TextBlock>
-          <Run Text="Generated: " FontWeight="SemiBold"/>
-          <Run Text="{x:Bind Result.GeneratedAtFormatted, Mode=OneWay}"/>
-        </TextBlock>
-      </StackPanel>
-
-      <!-- Summary -->
-      <StackPanel Spacing="8">
-        <TextBlock Text="Summary" Style="{StaticResource SubtitleTextBlockStyle}"/>
-        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderThickness="1"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                CornerRadius="4"
-                Padding="12">
-          <TextBlock Text="{x:Bind Result.Summary, Mode=OneWay}"
-                     TextWrapping="Wrap"/>
         </Border>
-      </StackPanel>
 
-      <!-- Analysis -->
-      <StackPanel Spacing="8">
-        <TextBlock Text="Detailed Analysis" Style="{StaticResource SubtitleTextBlockStyle}"/>
-        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderThickness="1"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                CornerRadius="4"
-                Padding="12">
-          <TextBlock Text="{x:Bind Result.Analysis, Mode=OneWay}"
-                     TextWrapping="Wrap"/>
-        </Border>
-      </StackPanel>
+        <!-- Summary -->
+        <StackPanel Spacing="8">
+          <TextBlock Text="Summary" Style="{StaticResource SubtitleTextBlockStyle}"/>
+          <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  CornerRadius="8"
+                  Padding="16">
+            <TextBlock Text="{x:Bind Result.Summary, Mode=OneWay}"
+                       TextWrapping="Wrap"/>
+          </Border>
+        </StackPanel>
 
-      <!-- Recommendations -->
-      <StackPanel Spacing="8">
-        <TextBlock Text="Recommendations" Style="{StaticResource SubtitleTextBlockStyle}"/>
-        <ItemsRepeater ItemsSource="{x:Bind SortedRecommendations, Mode=OneWay}">
-          <ItemsRepeater.ItemTemplate>
-            <DataTemplate x:DataType="models:RecommendationItem">
-              <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                      BorderThickness="1"
-                      CornerRadius="4"
-                      Padding="12"
-                      Margin="0,0,0,12">
-                <StackPanel Spacing="8">
+        <!-- Analysis -->
+        <StackPanel Spacing="8">
+          <TextBlock Text="Detailed Analysis" Style="{StaticResource SubtitleTextBlockStyle}"/>
+          <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  CornerRadius="8"
+                  Padding="16">
+            <TextBlock Text="{x:Bind Result.Analysis, Mode=OneWay}"
+                       TextWrapping="Wrap"/>
+          </Border>
+        </StackPanel>
+
+        <!-- Recommendations -->
+        <StackPanel Spacing="8">
+          <TextBlock Text="Recommendations" Style="{StaticResource SubtitleTextBlockStyle}"/>
+          <ItemsRepeater ItemsSource="{x:Bind SortedRecommendations, Mode=OneWay}">
+            <ItemsRepeater.ItemTemplate>
+              <DataTemplate x:DataType="models:RecommendationItem">
+                <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                  <Border.Shadow>
+                    <ThemeShadow />
+                  </Border.Shadow>
+                  <StackPanel Spacing="8">
                   <Grid>
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="Auto"/>
@@ -122,13 +141,14 @@
                       <Run Text="{x:Bind Context}"/>
                     </TextBlock>
                   </StackPanel>
-                </StackPanel>
-              </Border>
-            </DataTemplate>
-          </ItemsRepeater.ItemTemplate>
-        </ItemsRepeater>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+          </ItemsRepeater>
+        </StackPanel>
       </StackPanel>
-    </StackPanel>
-  </ScrollViewer>
+    </ScrollViewer>
+  </Border>
 </UserControl>
 

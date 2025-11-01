@@ -18,7 +18,7 @@
     </Grid.RowDefinitions>
 
     <!-- Fixed Header with Back Button -->
-    <Grid Grid.Row="0" Padding="20,20,20,12">
+    <Grid Grid.Row="0" Padding="12,16,16,12">
       <Button Content="← Back"
               Click="OnBackClick"
               Style="{StaticResource TextBlockButtonStyle}"
@@ -29,14 +29,14 @@
     </Grid>
 
     <!-- Scrollable Settings Content -->
-    <ScrollViewer Grid.Row="1" Padding="20,12,20,20">
+    <ScrollViewer Grid.Row="1" Padding="16,12,16,16">
       <StackPanel Spacing="32">
 
         <!-- Global Settings Section -->
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="12">
           <TextBlock Text="Global Settings"
                      Style="{StaticResource SubtitleTextBlockStyle}"/>
-          <TextBlock Text="Fixed providers and tools that can only have their API keys configured. Includes Perplexity, Brave Search, and Tavily Search."
+          <TextBlock Text="Fixed providers and tools that can only have their API keys configured. Includes Perplexity, and Tavily Search."
                      FontSize="12"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      Margin="0,0,0,8"/>
@@ -46,7 +46,10 @@
                   BorderThickness="1"
                   CornerRadius="8"
                   Padding="16">
-            <StackPanel Spacing="16">
+            <Border.Shadow>
+              <ThemeShadow />
+            </Border.Shadow>
+            <StackPanel Spacing="12">
               
               <!-- Perplexity API Key -->
               <StackPanel Spacing="8">
@@ -84,7 +87,7 @@
               </StackPanel>
 
               <!-- Brave API Key -->
-              <StackPanel Spacing="8">
+              <!-- <StackPanel Spacing="8">
                 <TextBlock Text="Brave Search API Key" FontWeight="SemiBold"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
@@ -116,7 +119,7 @@
                     </Grid>
                   </Button>
                 </Grid>
-              </StackPanel>
+              </StackPanel> -->
 
               <!-- Tavily API Key -->
               <StackPanel Spacing="8">
@@ -158,7 +161,7 @@
         </StackPanel>
 
         <!-- Export Settings Section -->
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="12">
           <TextBlock Text="Export Settings"
                      Style="{StaticResource SubtitleTextBlockStyle}"/>
           <TextBlock Text="Configure automatic export of analysis results to HTML files."
@@ -171,6 +174,9 @@
                   BorderThickness="1"
                   CornerRadius="8"
                   Padding="16">
+            <Border.Shadow>
+              <ThemeShadow />
+            </Border.Shadow>
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -196,13 +202,14 @@
         </StackPanel>
 
         <!-- LLM Providers Section -->
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="12">
           <Grid>
             <TextBlock Text="LLM Providers"
                        Style="{StaticResource SubtitleTextBlockStyle}"/>
             <Button Content="+ Add Provider"
                     Command="{x:Bind ViewModel.AddProviderCommand}"
                     HorizontalAlignment="Right"
+                    Padding="12,8"
                     Style="{StaticResource AccentButtonStyle}"/>
           </Grid>
 
@@ -215,6 +222,9 @@
                         CornerRadius="8"
                         Padding="16"
                         Margin="0,0,0,12">
+                  <Border.Shadow>
+                    <ThemeShadow />
+                  </Border.Shadow>
                   <Grid>
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*"/>
@@ -295,12 +305,12 @@
                                   IsEnabled="{x:Bind IsRetrievalAugmentedGenerationEnabled, Mode=OneWay}"
                                   ToolTipService.ToolTip="If enabled, searches and reads articles before analysis. If disabled, LLM decides when to use search tools."/>
                       </StackPanel>
-                      <StackPanel Orientation="Horizontal" 
+                      <!-- <StackPanel Orientation="Horizontal" 
                                   Spacing="12">
                         <CheckBox Content="Server has MCP Search"
                                   IsChecked="{x:Bind ServerHasMcpSearch, Mode=TwoWay}"
                                   ToolTipService.ToolTip="If enabled, skips setting up local web search tools and expects the LLM server to have MCP search capability. Overrides RAG setting."/>
-                      </StackPanel>
+                      </StackPanel> -->
                     </StackPanel>
 
                     <Button Grid.Column="1"
@@ -318,13 +328,14 @@
         </StackPanel>
 
         <!-- Web Search Tools Section -->
-        <StackPanel Spacing="16" Visibility="Collapsed">
+        <StackPanel Spacing="12" Visibility="Collapsed">
           <Grid>
             <TextBlock Text="Web Search Tools"
                        Style="{StaticResource SubtitleTextBlockStyle}"/>
             <Button Content="+ Add Tool"
                     Command="{x:Bind ViewModel.AddToolCommand}"
                     HorizontalAlignment="Right"
+                    Padding="12,8"
                     Style="{StaticResource AccentButtonStyle}"/>
           </Grid>
 
@@ -337,6 +348,9 @@
                         CornerRadius="8"
                         Padding="16"
                         Margin="0,0,0,12">
+                  <Border.Shadow>
+                    <ThemeShadow />
+                  </Border.Shadow>
                   <Grid>
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*"/>
@@ -420,7 +434,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
-            Margin="20"
+            Margin="16"
             Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
             BorderBrush="{ThemeResource SystemFillColorSuccessBrush}"
             BorderThickness="1"
@@ -444,7 +458,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
-            Margin="20"
+            Margin="16"
             Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
             BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
             BorderThickness="1"

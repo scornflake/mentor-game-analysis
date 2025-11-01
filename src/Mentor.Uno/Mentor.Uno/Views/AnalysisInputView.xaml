@@ -11,8 +11,17 @@
     <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
   </UserControl.Resources>
   
-  <ScrollViewer MaxWidth="400" Margin="0,0,20,0">
-    <StackPanel Spacing="16">
+  <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="8"
+          Padding="20"
+          MaxWidth="420">
+    <Border.Shadow>
+      <ThemeShadow />
+    </Border.Shadow>
+    <ScrollViewer>
+      <StackPanel Spacing="12">
       <!-- Game Name -->
       <StackPanel Spacing="8">
         <TextBlock Text="Game Name:" FontWeight="SemiBold"/>
@@ -66,7 +75,7 @@
                   Visibility="{x:Bind ImageSource, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
         <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
-                CornerRadius="4">
+                CornerRadius="8">
           <Image Source="{x:Bind ImageSource, Mode=OneWay}"
                  Stretch="Uniform"
                  HorizontalAlignment="Center"
@@ -109,6 +118,7 @@
       <Button Content="Analyze Screenshot"
               Command="{x:Bind AnalyzeCommand}"
               HorizontalAlignment="Stretch"
+              Padding="16,10"
               Style="{StaticResource AccentButtonStyle}"/>
 
       <!-- Progress Indicator -->
@@ -135,7 +145,8 @@
         <views:JobProgressView AnalysisProgress="{x:Bind AnalysisProgress, Mode=OneWay}"
                                Margin="0,8,0,0"/>
       </StackPanel>
-    </StackPanel>
-  </ScrollViewer>
+      </StackPanel>
+    </ScrollViewer>
+  </Border>
 </UserControl>
 

@@ -17,27 +17,41 @@
     </Grid.RowDefinitions>
 
     <!-- Fixed Header -->
-    <Grid Grid.Row="0" Padding="20,20,20,0">
-      <StackPanel Orientation="Horizontal" 
-                  HorizontalAlignment="Right"
-                  Spacing="8">
-        <Button Command="{x:Bind ViewModel.OpenSaveFolderCommand}"
-                ToolTipService.ToolTip="Open saved analysis folder">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <FontIcon Glyph="&#xE8B7;" FontSize="16"/>
-            <TextBlock Text="Show Saved Analysis"/>
-          </StackPanel>
-        </Button>
-        <Button Content="⚙ Settings"
-                Click="OnSettingsClick"
-                Style="{StaticResource TextBlockButtonStyle}"/>
-      </StackPanel>
+    <Grid Grid.Row="0" Padding="12,16,16,12">
+      <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+              BorderThickness="1"
+              CornerRadius="8"
+              Padding="12,8"
+              HorizontalAlignment="Right">
+        <Border.Shadow>
+          <ThemeShadow />
+        </Border.Shadow>
+        <StackPanel Orientation="Horizontal" 
+                    Spacing="8">
+          <Button Command="{x:Bind ViewModel.OpenSaveFolderCommand}"
+                  ToolTipService.ToolTip="Open saved analysis folder"
+                  Style="{StaticResource TextBlockButtonStyle}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <FontIcon Glyph="&#xE8B7;" FontSize="16"/>
+              <TextBlock Text="Show Saved Analysis"/>
+            </StackPanel>
+          </Button>
+          <Border Width="1" 
+                  Background="{ThemeResource CardStrokeColorDefaultBrush}"
+                  Margin="4,4"/>
+          <Button Content="⚙ Settings"
+                  Click="OnSettingsClick"
+                  Style="{StaticResource TextBlockButtonStyle}"/>
+        </StackPanel>
+      </Border>
     </Grid>
 
     <!-- Main Content Area -->
-    <Grid Grid.Row="1" Padding="20,0,20,20">
+    <Grid Grid.Row="1" Padding="16,12,16,16">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="16"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
@@ -62,13 +76,20 @@
                                 BrowseClick="OnBrowseClick"
                                 ImagePreviewTapped="OnImagePreviewTapped"/>
 
+      <!-- Subtle Divider -->
+      <Border Grid.Column="1"
+              Width="1"
+              Background="{ThemeResource CardStrokeColorDefaultBrush}"
+              Margin="0,20"
+              VerticalAlignment="Stretch"/>
+
       <!-- Results Section (shown when analysis complete and result exists) -->
-      <views:AnalysisResultsView Grid.Column="1"
+      <views:AnalysisResultsView Grid.Column="2"
                                   Result="{x:Bind ViewModel.Result, Mode=OneWay}"
                                   SaveAnalysisCommand="{x:Bind ViewModel.SaveAnalysisCommand}"/>
 
       <!-- Empty State (shown when no analysis and no result) -->
-      <StackPanel Grid.Column="1"
+      <StackPanel Grid.Column="2"
                   VerticalAlignment="Center"
                   HorizontalAlignment="Center"
                   Spacing="10"
@@ -86,11 +107,11 @@
     <!-- Error Message Overlay (Full Width Bottom) -->
     <Border Grid.Row="0" Grid.RowSpan="2"
             VerticalAlignment="Bottom"
-            Margin="20,0,20,20"
+            Margin="16,0,16,16"
             Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
             BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
             BorderThickness="1"
-            Padding="20,16"
+            Padding="16"
             CornerRadius="8"
             MaxHeight="300"
             Visibility="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource StringToVisibilityConverter}}">
@@ -189,11 +210,11 @@
     <!-- Rejection Message Overlay (Full Width Bottom) -->
     <Border Grid.Row="0" Grid.RowSpan="2"
             VerticalAlignment="Bottom"
-            Margin="20,0,20,20"
+            Margin="16,0,16,16"
             Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
             BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
             BorderThickness="1"
-            Padding="20,16"
+            Padding="16"
             CornerRadius="8"
             MaxHeight="300"
             Visibility="{x:Bind ViewModel.RejectionMessage, Mode=OneWay, Converter={StaticResource StringToVisibilityConverter}}">
