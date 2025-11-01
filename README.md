@@ -28,17 +28,17 @@ I started playing Warframe, and it's a bit "what the heck do I do now?" and "how
 ### Main Analysis Interface
 
 ![Main Interface](docs/images/main-analysis.png)
-*Screenshot placeholder - Upload or paste your game screenshot, enter your question, and select an AI provider*
+*Upload or paste your game screenshot, enter your question, and select an AI provider*
 
 ### Analysis Results
 
 ![Analysis Results](docs/images/analysis-results.png)
-*Screenshot placeholder - View detailed, prioritized recommendations with reasoning and context*
+*View detailed, prioritized recommendations with reasoning and context*
 
 ### Settings & Configuration
 
 ![Settings Page](docs/images/settings-page.png)
-*Screenshot placeholder - Configure LLM providers and search tools with your API keys*
+*Configure LLM providers and search tools with your API keys*
 
 ## Current State
 

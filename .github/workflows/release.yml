@@ -1,0 +1,185 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (optional, e.g., 1.0.50)'
+        required: false
+        default: ''
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for version calculation
+      
+      # Setup .NET 9 SDK
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      # Determine version
+      - name: Get version
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $version = & .\scripts\Get-Version.ps1 -VersionOnly
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to determine version"
+              exit 1
+            }
+          }
+          Write-Host "Version: $version"
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "TAG=v$version" >> $env:GITHUB_OUTPUT
+      
+      # Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore Mentor.sln
+      
+      # Build solution in Release configuration
+      - name: Build solution
+        run: dotnet build Mentor.sln --configuration Release --no-restore
+      
+      # Run all tests
+      - name: Run tests
+        run: dotnet test Mentor.sln --configuration Release --no-build --verbosity normal
+      
+      # Create Windows distribution
+      - name: Create Windows distribution
+        shell: pwsh
+        run: |
+          .\scripts\create-windows-dist.ps1 -Arch win-x64
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to create Windows distribution"
+            exit 1
+          }
+      
+      # Build installer with Inno Setup
+      - name: Compile Inno Setup installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+        with:
+          path: scripts/installer.iss
+          options: /DMyAppVersion=${{ steps.version.outputs.VERSION }}
+      
+      # Verify installer was created
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          $installerPath = "dist\MentorSetup-${{ steps.version.outputs.VERSION }}.exe"
+          if (-not (Test-Path $installerPath)) {
+            Write-Error "Installer not found at: $installerPath"
+            exit 1
+          }
+          $size = (Get-Item $installerPath).Length / 1MB
+          Write-Host "✅ Installer created: $installerPath ($([math]::Round($size, 2)) MB)"
+      
+      # Generate changelog
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: |
+            {
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feat", "feature"]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": ["fix", "bug"]
+                },
+                {
+                  "title": "## 🧪 Tests",
+                  "labels": ["test"]
+                },
+                {
+                  "title": "## 📝 Documentation",
+                  "labels": ["docs"]
+                },
+                {
+                  "title": "## 🔧 Other Changes",
+                  "labels": []
+                }
+              ],
+              "template": "#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
+              "pr_template": "- #{{TITLE}} (##{{NUMBER}})",
+              "empty_template": "- No changes",
+              "label_extractor": [
+                {
+                  "pattern": "^(feat|feature)(\\(.+\\))?:",
+                  "target": "feat"
+                },
+                {
+                  "pattern": "^(fix|bug)(\\(.+\\))?:",
+                  "target": "fix"
+                },
+                {
+                  "pattern": "^test(\\(.+\\))?:",
+                  "target": "test"
+                },
+                {
+                  "pattern": "^docs(\\(.+\\))?:",
+                  "target": "docs"
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: Mentor v${{ steps.version.outputs.VERSION }}
+          body: |
+            # Mentor v${{ steps.version.outputs.VERSION }}
+            
+            ## Download
+            
+            - **Windows Installer**: `MentorSetup-${{ steps.version.outputs.VERSION }}.exe`
+            - **Windows Portable**: `Mentor-Windows-win-x64.zip`
+            
+            ## Changes
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Installation
+            
+            ### Windows Installer
+            1. Download `MentorSetup-${{ steps.version.outputs.VERSION }}.exe`
+            2. Run the installer
+            3. Follow the installation wizard
+            
+            ### Windows Portable
+            1. Download `Mentor-Windows-win-x64.zip`
+            2. Extract to a folder of your choice
+            3. Run `Mentor.exe`
+            
+            ## System Requirements
+            - Windows 10 version 1809 or later
+            - No additional software installation required (self-contained)
+          files: |
+            dist/MentorSetup-${{ steps.version.outputs.VERSION }}.exe
+            dist/Mentor-Windows-win-x64.zip
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
