@@ -4,9 +4,7 @@
 
 ## What It Does
 
-Mentor analyzes your game screenshots using advanced AI to provide strategic recommendations, build suggestions, and gameplay insights. Simply capture your screen, ask your question, and Mentor tells you what to do next.
-
-Whether you're optimizing your character build, deciding on your next objective, or seeking strategic advice, Mentor provides clear, prioritized recommendations backed by AI analysis and real-time web research.
+Mentor aims to analyze your game screenshots using AI to provide strategic recommendations, build suggestions, and gameplay insights. Simply capture your screen, ask your question, and Mentor tells you what to do next.
 
 ## Why
 
@@ -29,6 +27,22 @@ Also, this is a "real project" where I can play around with AI tool calling, age
 
 📖 **New User?** See the [Setup and Run Guide](docs/Setup%20and%20Run.md) for step-by-step installation and configuration instructions.
 
+## Current State
+
+- Perplexity and Claude providers 
+- Local "openai compatible" provider - works. Sort of ... [with many caveats](docs/Local%20LLMS.md).
+- The AI "tool calling" and "agentic-ness" leave a lot to be desired. But hey, v1 is out and actually does something useful (maybe!)
+
+### Analysis - where's it at? any good?
+
+Game Analysis is likely, well, not great (at the moment).
+
+- It's the same as sending an image to Perplexity/Claude, and asking for the analysis
+- Right now the tool doesn't have inante knowledge of games
+- But it's got a a prettier ui :)
+- It'll help you out if you are early game, but probably wont tell anyone who's into Steel Path anything they don't know
+
+
 ## Screenshots
 
 ### Main Analysis Interface
@@ -46,11 +60,7 @@ Also, this is a "real project" where I can play around with AI tool calling, age
 ![Settings Page](docs/images/settings-page.png)
 *Configure LLM providers and search tools with your API keys*
 
-## Current State
 
-- Perplexity and Claude providers work pretty good
-- Local "openai compatible" - work. Sort of ... [with many caveats](docs/Local%20LLMS.md).
-- The AI "tool calling" and "agentic-ness" leave a lot to be desired. But hey, v1 is out and actually does something useful (maybe!)
 
 ### Download & Run
 
