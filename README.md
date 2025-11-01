@@ -40,6 +40,11 @@ I started playing Warframe, and it's a bit "what the heck do I do now?" and "how
 ![Settings Page](docs/images/settings-page.png)
 *Screenshot placeholder - Configure LLM providers and search tools with your API keys*
 
+## Current State
+
+- Perplexity and Claude providers work pretty good
+- Local "openai compatible" - work. Sort of ... [with many caveats](docs/Local%20LLMS.md).
+
 ## Quick Start
 
 ### Download & Run
