@@ -25,6 +25,10 @@ Also, this is a "real project" where I can play around with AI tool calling, age
 - ⚡ **Cross-Platform** - Runs on Windows, macOS, and Linux (last two not really tested)
 - 🎨 **Modern UI** - Clean, responsive interface built with Uno Platform
 
+## Quick Start
+
+📖 **New User?** See the [Setup and Run Guide](docs/Setup%20and%20Run.md) for step-by-step installation and configuration instructions.
+
 ## Screenshots
 
 ### Main Analysis Interface
@@ -47,8 +51,6 @@ Also, this is a "real project" where I can play around with AI tool calling, age
 - Perplexity and Claude providers work pretty good
 - Local "openai compatible" - work. Sort of ... [with many caveats](docs/Local%20LLMS.md).
 - The AI "tool calling" and "agentic-ness" leave a lot to be desired. But hey, v1 is out and actually does something useful (maybe!)
-
-## Quick Start
 
 ### Download & Run
 
@@ -160,6 +162,7 @@ Want to know if your setup is competitive? Ask "How does this compare to meta bu
 
 ## Documentation
 
+- **[docs/Setup and Run.md](docs/Setup%20and%20Run.md)** - Quick installation and configuration guide
 - **[Building.md](Building.md)** - Build instructions, development setup, project structure
 - **[docs/build.md](docs/build.md)** - Detailed platform-specific build instructions
 - **[docs/architecture.md](docs/architecture.md)** - Technical architecture overview
