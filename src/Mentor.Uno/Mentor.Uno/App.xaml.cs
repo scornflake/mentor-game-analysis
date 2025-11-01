@@ -45,6 +45,7 @@ public partial class App : Application
             {
                 // Register configuration repository
                 services.AddConfigurationRepository();
+                services.AddUserDataPathService();
 
                 // Register core services
                 services.AddHttpClient();
@@ -53,6 +54,7 @@ public partial class App : Application
                 services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
                 services.AddSingleton<IHtmlTextExtractor, HtmlTextExtractor>();
                 services.AddSingleton<SearchResultFormatter>();
+                services.AddSingleton<GameRuleRepository>();
                 services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
                 services.AddKeyedTransient<IWebSearchTool, TavilyWebSearch>(KnownSearchTools.Tavily);
                 services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);

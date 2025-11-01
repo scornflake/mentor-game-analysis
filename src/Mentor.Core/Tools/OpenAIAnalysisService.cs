@@ -12,8 +12,8 @@ namespace Mentor.Core.Tools;
 /// </summary>
 public class OpenAIAnalysisService : OpenAIAnalysisServiceBase
 {
-    public OpenAIAnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, SearchResultFormatter searchResultFormatter) 
-        : base(llmClient, logger, toolFactory, searchResultFormatter)
+    public OpenAIAnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, SearchResultFormatter searchResultFormatter, GameRuleRepository? gameRuleRepository = null) 
+        : base(llmClient, logger, toolFactory, searchResultFormatter, gameRuleRepository)
     {
     }
 
@@ -24,18 +24,19 @@ public class OpenAIAnalysisService : OpenAIAnalysisServiceBase
         ILLMClient llmClient, 
         ILogger<AnalysisService> logger, 
         IToolFactory toolFactory,
-        SearchResultFormatter searchResultFormatter)
+        SearchResultFormatter searchResultFormatter,
+        GameRuleRepository? gameRuleRepository = null)
     {
         // Then check RetrievalAugmentedGeneration
         if (llmClient.Configuration.RetrievalAugmentedGeneration)
         {
             logger.LogInformation("Creating OpenAIAnalysisServiceRAG for upfront research");
-            return new OpenAIAnalysisServiceRAG(llmClient, logger, toolFactory, searchResultFormatter);
+            return new OpenAIAnalysisServiceRAG(llmClient, logger, toolFactory, searchResultFormatter, gameRuleRepository);
         }
 
         // Default to basic implementation
         logger.LogInformation("Creating basic OpenAIAnalysisService");
-        return new OpenAIAnalysisService(llmClient, logger, toolFactory, searchResultFormatter);
+        return new OpenAIAnalysisService(llmClient, logger, toolFactory, searchResultFormatter, gameRuleRepository);
     }
 
     public override async Task<Recommendation> AnalyzeAsync(

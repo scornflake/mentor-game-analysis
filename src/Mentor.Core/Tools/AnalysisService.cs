@@ -16,14 +16,16 @@ public abstract class AnalysisService : IAnalysisService
     internal readonly ILLMClient _llmClient;
     internal readonly ILogger<AnalysisService> _logger;
     internal readonly IToolFactory _toolFactory;
+    internal readonly GameRuleRepository? _gameRuleRepository;
     protected AnalysisRequest? _currentRequest = null;
     protected AnalysisProgress? _analysisProgress;
 
-    public AnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory)
+    public AnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, GameRuleRepository? gameRuleRepository = null)
     {
         _llmClient = llmClient ?? throw new ArgumentNullException(nameof(llmClient));
         _logger = logger;
         _toolFactory = toolFactory;
+        _gameRuleRepository = gameRuleRepository;
     }
 
     protected virtual string GetSystemPromptText(AnalysisRequest request)
@@ -36,6 +38,26 @@ public abstract class AnalysisService : IAnalysisService
 
         msg += "Analyze the provided screenshot and provide actionable recommendations. " +
                "Do some research first. Back up all findings with accurate and relevant articles. Make sure the articles are reasonably recent and representative.";
+
+        // Inject game rules if enabled
+        if (_llmClient.Configuration.UseGameRules && 
+            _gameRuleRepository != null && 
+            !string.IsNullOrEmpty(request.GameName))
+        {
+            try
+            {
+                var rulesText = _gameRuleRepository.GetFormattedRulesAsync(request.GameName).GetAwaiter().GetResult();
+                if (!string.IsNullOrEmpty(rulesText))
+                {
+                    msg += "\n\n" + rulesText;
+                    _logger.LogInformation("Injected game rules for {GameName} into system prompt", request.GameName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load game rules for {GameName}", request.GameName);
+            }
+        }
 
         return msg;
     }

@@ -1,0 +1,33 @@
+{
+  "provider": "perplexity",
+  "evaluator": "claude",
+  "screenshots": [
+    {
+      "path": "../media/acceltra prime rad build.png",
+      "prompt": "Analyze this Acceltra Prime build and suggest improvements for early steel Path content against grineer",
+      "evaluationCriteria": [
+        {
+          "criterion": "Should recommend corrosive or viral damage types for Grineer armor in Steel Path",
+          "expectation": "positive",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Should NOT recommend fire or blast damage as primary damage types",
+          "expectation": "negative",
+          "weight": 0.8
+        },
+        {
+          "criterion": "Should mention specific mod names (e.g., Hunter Munitions, Galvanized mods)",
+          "expectation": "positive",
+          "weight": 1.0
+        },
+        {
+          "criterion": "Should consider Steel Path enemy scaling and armor mechanics",
+          "expectation": "positive",
+          "weight": 1.0
+        }
+      ]
+    }
+  ]
+}
+

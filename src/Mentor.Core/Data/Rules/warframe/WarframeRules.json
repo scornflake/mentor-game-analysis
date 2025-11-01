@@ -1,0 +1,99 @@
+[
+  {
+    "RuleId": "wf-status-001",
+    "RuleText": "Cdeo prime deals primarily Puncture damage",
+    "Category": "StatusMechanics",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-status-002",
+    "RuleText": "Cedo prime Deals 60% bonus damage per unique status effect on target.",
+    "Category": "StatusMechanics",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-status-003",
+    "RuleText": "Cedo prime primary fire shoots wide-spread, close-ranged buckshot in a fully automatic fashion. Innate 0.8 meter punch through. Innate multishot of 6 pellets.",
+    "Category": "WeaponSpecific",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-status-004",
+    "RuleText": "Cedo prime alternate Fire launches a glaive that explodes in a 6 meter radius on impact with a surface or enemy and bounces up to 11 times. Initial hit and explosion apply status separately. Initial hit has the listed status chance of 50%. Explosion always applies two separate procs, these are guaranteed and not affected by mods. First proc is based off of modded damage types. Second proc is randomized from the following;  Toxin,  Cold,  Electricity, or  Heat. It consumes no ammo. Multishot affects the number of glaives released per use, each with their own trajectory. Initial hit benefits from the passive damage bonus while the explosion does not.",
+    "Category": "WeaponSpecific",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-synergy-004",
+    "RuleText": "Cedo prime Innate  Shotgun Ammo Mutation effect when used by Lavos.",
+    "Category": "Synergies",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-damage-001",
+    "RuleText": "Corrosive damage (Toxin + Electric) is highly effective against Grineer armored units - strip armor quickly for increased damage",
+    "Category": "DamageTypes",
+    "Confidence": 0.9
+  },
+  {
+    "RuleId": "wf-damage-002",
+    "RuleText": "Viral damage (Toxin + Cold) reduces enemy health by up to 325% when fully stacked - excellent for all factions",
+    "Category": "DamageTypes",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-damage-003",
+    "RuleText": "Radiation damage (Heat + Electric) is effective against Eidolons and heavily armored Alloy units",
+    "Category": "DamageTypes",
+    "Confidence": 0.85
+  },
+  {
+    "RuleId": "wf-synergy-001",
+    "RuleText": "Hunter Munitions synergizes with high critical chance weapons (>25%) to create frequent slash procs that bypass armor",
+    "Category": "Synergies",
+    "Confidence": 0.9
+  },
+  {
+    "RuleId": "wf-synergy-002",
+    "RuleText": "Galvanized mods provide stacking buffs on kill - excellent for Steel Path and high-level content where kills are frequent",
+    "Category": "Synergies",
+    "Confidence": 0.85
+  },
+  {
+    "RuleId": "wf-mod-priority-001",
+    "RuleText": "Multishot mods (Split Chamber, Hell's Chamber) are universally valuable - they effectively multiply damage output",
+    "Category": "ModPriority",
+    "Confidence": 0.95
+  },
+  {
+    "RuleId": "wf-mod-priority-002",
+    "RuleText": "Serration, Hornet Strike, and Point Blank (base damage mods) should be maxed first - they provide the foundation for all weapon builds",
+    "Category": "ModPriority",
+    "Confidence": 0.9
+  },
+  {
+    "RuleId": "wf-mod-priority-003",
+    "RuleText": "Critical mods (Point Strike, Vital Sense) are valuable on weapons with 20%+ base crit chance - creates multiplicative scaling",
+    "Category": "ModPriority",
+    "Confidence": 0.85
+  },
+  {
+    "RuleId": "wf-enemy-002",
+    "RuleText": "Infested enemies are vulnerable to Heat - Heat procs good",
+    "Category": "EnemyWeakness",
+    "Confidence": 0.85
+  },
+  {
+    "RuleId": "wf-build-strategy-001",
+    "RuleText": "For Steel Path content (level 100+), prioritize armor stripping (Corrosive, Viral+Slash) and damage multipliers over raw base damage for grineer",
+    "Category": "BuildStrategy",
+    "Confidence": 0.85
+  },
+  {
+    "RuleId": "wf-weapon-specific-001",
+    "RuleText": "Phantasma benefits greatly from status mods due to status based, beam-based damage model with infinite punch through",
+    "Category": "WeaponSpecific",
+    "Confidence": 0.85
+  }
+]
+

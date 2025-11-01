@@ -17,8 +17,8 @@ public abstract class OpenAIAnalysisServiceBase : AnalysisService
     protected List<ResearchResult>? _researchResults;
     protected readonly SearchResultFormatter _searchResultFormatter;
 
-    protected OpenAIAnalysisServiceBase(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, SearchResultFormatter searchResultFormatter) 
-        : base(llmClient, logger, toolFactory)
+    protected OpenAIAnalysisServiceBase(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, SearchResultFormatter searchResultFormatter, GameRuleRepository? gameRuleRepository = null) 
+        : base(llmClient, logger, toolFactory, gameRuleRepository)
     {
         _searchResultFormatter = searchResultFormatter ?? throw new ArgumentNullException(nameof(searchResultFormatter));
     }

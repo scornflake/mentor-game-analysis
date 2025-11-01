@@ -13,8 +13,8 @@ namespace Mentor.Core.Tools;
 /// </summary>
 public class OpenAIAnalysisServiceRAG : OpenAIAnalysisServiceBase
 {
-    public OpenAIAnalysisServiceRAG(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, SearchResultFormatter searchResultFormatter) 
-        : base(llmClient, logger, toolFactory, searchResultFormatter)
+    public OpenAIAnalysisServiceRAG(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, SearchResultFormatter searchResultFormatter, GameRuleRepository? gameRuleRepository = null) 
+        : base(llmClient, logger, toolFactory, searchResultFormatter, gameRuleRepository)
     {
     }
 

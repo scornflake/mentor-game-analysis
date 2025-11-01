@@ -24,6 +24,7 @@ public class LLMProviderFactory : ILLMProviderFactory
     {
         // make an AnalysisService based on the name
         var toolFactory = _serviceProvider.GetRequiredService<IToolFactory>();
+        var gameRuleRepository = _serviceProvider.GetRequiredService<GameRuleRepository>();
         var providerName = llmClient.Configuration.ProviderType;
         ValidateProviderName(providerName);
 
@@ -32,19 +33,19 @@ public class LLMProviderFactory : ILLMProviderFactory
             var analysisLogging = _serviceProvider.GetRequiredService<ILogger<AnalysisService>>();
             var searchResultFormatter = _serviceProvider.GetRequiredService<SearchResultFormatter>();
             analysisLogging.LogInformation("Creating AnalysisService for OpenAI provider: {Name}, {Model}", llmClient.Configuration.Name, llmClient.Configuration.Model);
-            return OpenAIAnalysisService.Create(llmClient, analysisLogging, toolFactory, searchResultFormatter);
+            return OpenAIAnalysisService.Create(llmClient, analysisLogging, toolFactory, searchResultFormatter, gameRuleRepository);
         }
         else if (providerName == "perplexity")
         {
             var analysisLogging = _serviceProvider.GetRequiredService<ILogger<PerplexityAnalysisService>>();
             analysisLogging.LogInformation("Creating AnalysisService for Perplexity provider.");
-            return new PerplexityAnalysisService(llmClient, analysisLogging, toolFactory);
+            return new PerplexityAnalysisService(llmClient, analysisLogging, toolFactory, gameRuleRepository);
         }
         else if (providerName == "claude")
         {
             var analysisLogging = _serviceProvider.GetRequiredService<ILogger<ClaudeAnalysisService>>();
             analysisLogging.LogInformation("Creating AnalysisService for Claude provider.");
-            return new ClaudeAnalysisService(llmClient, analysisLogging, toolFactory);
+            return new ClaudeAnalysisService(llmClient, analysisLogging, toolFactory, gameRuleRepository);
         }
         throw new NotSupportedException($"AnalysisService does not support provider '{providerName}'.");
     }

@@ -12,7 +12,7 @@ namespace Mentor.Core.Tools;
  */
 public class PerplexityAnalysisService: AnalysisService
 {
-    public PerplexityAnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory) : base(llmClient, logger, toolFactory)
+    public PerplexityAnalysisService(ILLMClient llmClient, ILogger<AnalysisService> logger, IToolFactory toolFactory, GameRuleRepository? gameRuleRepository = null) : base(llmClient, logger, toolFactory, gameRuleRepository)
     {
     }
 

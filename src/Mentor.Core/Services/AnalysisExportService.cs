@@ -9,26 +9,12 @@ namespace Mentor.Core.Services;
 public class AnalysisExportService : IAnalysisExportService
 {
     private readonly ILogger<AnalysisExportService> _logger;
+    private readonly IUserDataPathService _userDataPathService;
 
-    public AnalysisExportService(ILogger<AnalysisExportService> logger)
+    public AnalysisExportService(ILogger<AnalysisExportService> logger, IUserDataPathService userDataPathService)
     {
         _logger = logger;
-    }
-
-    private string GetBaseSavePath()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "Mentor",
-            "Saved Analysis"
-        );
-    }
-
-    private void EnsureBaseSavePathExists()
-    {
-        var basePath = GetBaseSavePath();
-        Directory.CreateDirectory(basePath);
-        _logger.LogInformation("Ensured base save path exists: {BasePath}", basePath);
+        _userDataPathService = userDataPathService ?? throw new ArgumentNullException(nameof(userDataPathService));
     }
 
     public void OpenSaveFolder()
@@ -36,10 +22,12 @@ public class AnalysisExportService : IAnalysisExportService
         try
         {
             // Ensure the folder exists
-            EnsureBaseSavePathExists();
-            
+            var basePath = _userDataPathService.GetSavedAnalysisPath();
+            _userDataPathService.EnsureDirectoryExists(basePath);
+            _logger.LogInformation("Ensured base save path exists: {BasePath}", basePath);
+
             // Get the path
-            var path = GetBaseSavePath();
+            var path = _userDataPathService.GetSavedAnalysisPath();
             
             _logger.LogInformation("Opening save folder: {Path}", path);
             
@@ -70,7 +58,7 @@ public class AnalysisExportService : IAnalysisExportService
                 throw new ArgumentException("Image data is required", nameof(request));
 
             // Get base path
-            var basePath = GetBaseSavePath();
+            var basePath = _userDataPathService.GetSavedAnalysisPath();
 
             // Create folder name with game name and timestamp
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");

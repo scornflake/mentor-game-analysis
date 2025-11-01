@@ -1,0 +1,21 @@
+{
+  "name": "warframe-items-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "warframe",
+    "cli",
+    "items"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "Command-line utility to search and filter Warframe items",
+  "dependencies": {
+    "@wfcd/items": "^1.1270.884"
+  }
+}

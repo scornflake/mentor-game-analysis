@@ -512,6 +512,7 @@ public class Program
         var services = new ServiceCollection();
         
         services.AddConfigurationRepository();
+        services.AddUserDataPathService();
         
         services.AddHttpClient();
         services.AddLogging(sp =>
@@ -521,6 +522,7 @@ public class Program
         services.AddSingleton<IToolFactory, ToolFactory>();
         services.AddSingleton<ILLMProviderFactory, LLMProviderFactory>();
         services.AddSingleton<IHtmlTextExtractor, HtmlTextExtractor>();
+        services.AddSingleton<GameRuleRepository>();
         services.AddKeyedTransient<IWebSearchTool, BraveWebSearch>(KnownSearchTools.Brave);
         services.AddKeyedTransient<IWebSearchTool, TavilyWebSearch>(KnownSearchTools.Tavily);
         services.AddKeyedTransient<IArticleReader, ArticleReader>(KnownTools.ArticleReader);

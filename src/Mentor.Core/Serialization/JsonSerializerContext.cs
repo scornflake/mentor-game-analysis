@@ -23,6 +23,9 @@ namespace Mentor.Core.Serialization;
 [JsonSerializable(typeof(TavilySearchRequest))]
 [JsonSerializable(typeof(TavilySearchResponse))]
 [JsonSerializable(typeof(TavilyResult))]
+[JsonSerializable(typeof(GameRule))]
+[JsonSerializable(typeof(List<GameRule>))]
+// Note: SubjectiveEvaluation types are in a separate project, so they're handled via normal reflection
 internal partial class MentorJsonSerializerContext : JsonSerializerContext
 {
     /// <summary>

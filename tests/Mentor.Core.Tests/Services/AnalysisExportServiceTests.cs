@@ -11,6 +11,7 @@ namespace Mentor.Core.Tests.Services;
 public class AnalysisExportServiceTests : IDisposable
 {
     private readonly Mock<ILogger<AnalysisExportService>> _mockLogger;
+    private readonly Mock<IUserDataPathService> _mockUserDataPathService;
     private readonly AnalysisExportService _service;
     private readonly string _testOutputPath;
     private readonly List<string> _pathsToCleanup = new();
@@ -18,11 +19,18 @@ public class AnalysisExportServiceTests : IDisposable
     public AnalysisExportServiceTests()
     {
         _mockLogger = new Mock<ILogger<AnalysisExportService>>();
-        _service = new AnalysisExportService(_mockLogger.Object);
+        _mockUserDataPathService = new Mock<IUserDataPathService>();
         
         // Use a test-specific output path in temp directory
         _testOutputPath = Path.Combine(Path.GetTempPath(), "MentorTests", "SavedAnalysis");
         Directory.CreateDirectory(_testOutputPath);
+        
+        // Mock the path service to return our test directory
+        _mockUserDataPathService
+            .Setup(x => x.GetSavedAnalysisPath())
+            .Returns(_testOutputPath);
+        
+        _service = new AnalysisExportService(_mockLogger.Object, _mockUserDataPathService.Object);
     }
 
     public void Dispose()
