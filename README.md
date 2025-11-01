@@ -12,6 +12,8 @@ Whether you're optimizing your character build, deciding on your next objective,
 
 I started playing Warframe, and it's a bit "what the heck do I do now?" and "how can I make this weapon not suck?". I found punting images and prompts into Perplexity to be quite good, so thought hey - why not put together an app?
 
+Also, this is a "real project" where I can play around with AI tool calling, agentic ideas, and such.
+
 ## Features
 
 - 🎯 **Smart Analysis** - AI-powered recommendations tailored to your specific game state
@@ -44,6 +46,7 @@ I started playing Warframe, and it's a bit "what the heck do I do now?" and "how
 
 - Perplexity and Claude providers work pretty good
 - Local "openai compatible" - work. Sort of ... [with many caveats](docs/Local%20LLMS.md).
+- The AI "tool calling" and "agentic-ness" leave a lot to be desired. But hey, v1 is out and actually does something useful!
 
 ## Quick Start
 
