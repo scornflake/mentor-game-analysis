@@ -1,5 +1,6 @@
 # TODO
 
+
 # Improving
 [x] - Get job status working
 [x] - Make perplexity/travily/brave "hidden" from the user settings.
